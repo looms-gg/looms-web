@@ -31,6 +31,23 @@ describe("formatErrorMessage", () => {
     expect(formatErrorMessage(err)).toContain("Rate limit reached")
   })
 
+  it("translates auth request rate limit errors", () => {
+    const err = { message: "AuthApiError: Request rate limit reached" }
+    expect(formatErrorMessage(err)).toContain("Too many attempts in a short time")
+  })
+
+  it("translates over_request_rate_limit errors", () => {
+    const err = { message: "over_request_rate_limit: Request rate limit reached" }
+    expect(formatErrorMessage(err)).toContain("Too many attempts in a short time")
+  })
+
+  it("translates auth email send rate limit errors", () => {
+    const err = {
+      message: "over_email_send_rate_limit: Email rate limit exceeded",
+    }
+    expect(formatErrorMessage(err)).toContain("Email rate limit reached")
+  })
+
   it("translates garment quota error messages", () => {
     const err = {
       message: "Account quota exceeded: maximum 150 garments allowed per account.",

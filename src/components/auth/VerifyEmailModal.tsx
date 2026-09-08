@@ -43,7 +43,9 @@ export function VerifyEmailModal() {
       setResendError(formatErrorMessage(error))
       return
     }
-    setResendWait(45)
+    // Supabase enforces a 60s per-user window on signup confirmation emails;
+    // retrying sooner than that just burns the shared auth rate-limit budget.
+    setResendWait(60)
   }
 
   return (

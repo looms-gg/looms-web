@@ -25,6 +25,18 @@ export function formatErrorMessage(error: unknown): string {
   const lower = rawMessage.toLowerCase()
 
   if (lower.includes("rate limit") || lower.includes("too many requests")) {
+    if (
+      lower.includes("over_email_send_rate_limit") ||
+      (lower.includes("email") && lower.includes("rate limit"))
+    ) {
+      return "Email rate limit reached. Only a few emails can be sent per hour, so please wait a bit before requesting another one."
+    }
+    if (
+      lower.includes("over_request_rate_limit") ||
+      lower.includes("request rate limit")
+    ) {
+      return "Too many attempts in a short time. Please wait a couple of minutes and try again."
+    }
     if (lower.includes("garment") || lower.includes("texture")) {
       return "Upload rate limit reached. You can upload up to 15 garments every 10 minutes. Please wait a moment before trying again."
     }

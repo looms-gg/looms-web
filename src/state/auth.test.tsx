@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { formatErrorMessage } from "../lib/errorFormat"
 import { MAX_LIMITS } from "../lib/sanitize"
 import { supabase } from "../lib/supabase"
+import { absoluteAppUrl } from "../lib/basePath"
 import { AuthProvider, useAuth } from "./auth"
 
 function mountAuth() {
@@ -70,9 +71,39 @@ describe("auth module", () => {
     expect(signUp).toHaveBeenCalledWith(
       expect.objectContaining({
         options: expect.objectContaining({
+          // Must include the Vite base path so email confirmation redirects
+          // back to the deployed app, not the bare origin (bug report).
+          emailRedirectTo: absoluteAppUrl(),
           data: expect.objectContaining({
             username: "BadName",
           }),
+        }),
+      }),
+    )
+  })
+
+  it("resendConfirmation redirects to the app URL including base path", async () => {
+    const resend = vi.spyOn(supabase.auth, "resend").mockResolvedValue({
+      data: null,
+      error: null,
+    } as never)
+
+    const { getAuth } = mountAuth()
+    // An unconfirmed user hitting login is what sets pendingEmail in the app.
+    vi.spyOn(supabase.auth, "signInWithPassword").mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: "Email not confirmed" },
+    } as never)
+    await getAuth().signInWithPassword({ email: "user@example.com", password: "pw123456" })
+    await vi.waitFor(() => expect(getAuth().pendingEmail).toBe("user@example.com"))
+
+    await getAuth().resendConfirmation()
+
+    expect(resend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "signup",
+        options: expect.objectContaining({
+          emailRedirectTo: absoluteAppUrl(),
         }),
       }),
     )
@@ -173,5 +204,53 @@ describe("auth module", () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe(formatErrorMessage(raw))
     expect(error?.message).toMatch(/Profile update rate limit|Rate limit reached/)
+  })
+
+  it("signUpWithPassword succeeds without a doomed sign-in retry for unconfirmed users", async () => {
+    const signUp = vi.spyOn(supabase.auth, "signUp").mockResolvedValue({
+      data: {
+        user: { id: "user-2", email: "user@example.com", email_confirmed_at: null } as never,
+        session: null,
+      },
+      error: null,
+    } as never)
+    const signIn = vi
+      .spyOn(supabase.auth, "signInWithPassword")
+      .mockRejectedValue(new Error("must not be called"))
+    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+      if (table === "profiles") {
+        return {
+          upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
+        } as never
+      }
+      throw new Error(`unexpected table ${table}`)
+    })
+
+    const { getAuth } = mountAuth()
+    const { error } = await getAuth().signUpWithPassword({
+      email: "user@example.com",
+      password: "password123",
+      username: "Thomakosxd",
+    })
+
+    expect(error).toBeNull()
+    expect(signUp).toHaveBeenCalledTimes(1)
+    expect(signIn).not.toHaveBeenCalled()
+  })
+
+  it("signUpWithPassword formats signup API errors", async () => {
+    vi.spyOn(supabase.auth, "signUp").mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: "Request rate limit reached" } as never,
+    } as never)
+
+    const { getAuth } = mountAuth()
+    const { error } = await getAuth().signUpWithPassword({
+      email: "user@example.com",
+      password: "password123",
+      username: "Thomakosxd",
+    })
+
+    expect(error?.message).toContain("Too many attempts in a short time")
   })
 })

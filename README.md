@@ -26,6 +26,7 @@ GitHub is for developers: pull requests, code review, and bugs that need a repro
 | [DESIGN.md](DESIGN.md)                                          | Visual system and UI tokens        |
 | [AGENTS.md](AGENTS.md)                                          | Rules for contributors and agents  |
 | [Threat modeling](docs/THREAT_MODELING_AND_ABUSE_PREVENTION.md) | Security and abuse prevention      |
+| [Platform docs](docs/platform/README.md)                       | AI-ready briefings: product, features, tech, brand |
 
 
 ---
@@ -44,5 +45,10 @@ npm run build
 ```
 
 Copy `[.env.example](.env.example)` to `.env` (and/or `.env.local` for `VITE_*` keys). Deploy with `./deploy.command` after `gh auth login` — that pushes `main`, applies Supabase migrations, and publishes to GitHub Pages.
+
+**Email confirmation links:** Supabase must allow the app's URL or sign-up links bounce to the wrong host (e.g. `localhost:3000`). In the Supabase dashboard → Authentication → URL Configuration:
+
+- **Site URL:** `https://looms-gg.github.io/looms-web/`
+- **Redirect URLs** should include `https://looms-gg.github.io/looms-web/**` and `http://localhost:*/**` (the app sends the current origin + base path with every auth email, so local sign-ups come back to local).
 
 PRs welcome. Talk through bigger ideas on Discord first so we are not building past each other!

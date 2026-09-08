@@ -20,8 +20,35 @@ import {
 import { resolveAvatarUrl } from "./profileDisplay"
 import { formatErrorMessage } from "../lib/errorFormat"
 import { mapProfileRow, PROFILE_SELECT } from "../lib/mapProfileRow"
+import { absoluteAppUrl } from "../lib/basePath"
 
 const LAST_SEEN_CLIENT_THROTTLE_MS = 5 * 60 * 1000
+
+/** Minimum spacing between background sign-in attempts while waiting for email confirmation. */
+const UNLOCK_RETRY_INTERVAL_MS = 30 * 1000
+
+/** Verification poll cadence: starts here and doubles up to the max. */
+const UNLOCK_POLL_INITIAL_INTERVAL_MS = 5 * 1000
+
+/** Poll cap keeps the background /auth/v1/user traffic well under Supabase's
+ * shared per-IP auth rate limits (30 requests per 5 minutes). */
+const UNLOCK_POLL_MAX_INTERVAL_MS = 30 * 1000
+
+/**
+ * True when a freshly fetched user adds nothing over the current one.
+ * The verification poll uses this to avoid setting state (and thereby tearing
+ * down and immediately re-running its own effect) when the server returns an
+ * unchanged user — that used to create a request loop that could trip
+ * Supabase's auth rate limits during signup.
+ */
+function isSameAuthUser(prev: User | null, next: User): boolean {
+  if (!prev) return false
+  return (
+    prev.id === next.id &&
+    prev.email_confirmed_at === next.email_confirmed_at &&
+    prev.email === next.email
+  )
+}
 
 export interface AuthContextValue {
   user: User | null
@@ -74,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
   const [emailVerifyOpen, setEmailVerifyOpen] = useState(false)
   const pendingUnlockRef = useRef<{ email: string; password: string } | null>(null)
+  const unlockAttemptAtRef = useRef(0)
   const verifiedFlashTimer = useRef<number | null>(null)
   const openedForUserId = useRef<string | null>(null)
   const lastSeenTouchedAt = useRef(0)
@@ -199,33 +227,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!pending) return
 
     let cancelled = false
+    let running = false
+    let delayMs = UNLOCK_POLL_INITIAL_INTERVAL_MS
+    let timer: number | null = null
 
     async function tick() {
-      if (cancelled || document.visibilityState === "hidden") return
-      const unlock = pendingUnlockRef.current
-      if (unlock && !session) {
-        const { error } = await supabase.auth.signInWithPassword(unlock)
-        if (!error) pendingUnlockRef.current = null
-        if (error && !isUnconfirmedAuthError(error.message)) return
+      if (cancelled || running || document.visibilityState === "hidden") return
+      running = true
+      try {
+        const unlock = pendingUnlockRef.current
+        if (
+          unlock &&
+          !session &&
+          Date.now() - unlockAttemptAtRef.current >= UNLOCK_RETRY_INTERVAL_MS
+        ) {
+          unlockAttemptAtRef.current = Date.now()
+          const { error } = await supabase.auth.signInWithPassword(unlock)
+          if (!error) pendingUnlockRef.current = null
+          if (error && !isUnconfirmedAuthError(error.message)) return
+        }
+        const { data } = await supabase.auth.getUser()
+        if (cancelled || !data.user) return
+        // Skip identical users so this effect is not torn down and immediately
+        // re-run, which used to fire auth requests in a tight loop.
+        if (isSameAuthUser(user, data.user)) return
+        setUser(data.user)
+      } catch {
+        // Transient network failure — the next scheduled attempt retries.
+      } finally {
+        running = false
       }
-      const { data } = await supabase.auth.getUser()
-      if (cancelled || !data.user) return
-      setUser(data.user)
     }
 
-    const interval = window.setInterval(() => void tick(), 4000)
+    function scheduleNext() {
+      if (cancelled) return
+      timer = window.setTimeout(() => {
+        void tick().finally(scheduleNext)
+      }, delayMs)
+      delayMs = Math.min(delayMs * 2, UNLOCK_POLL_MAX_INTERVAL_MS)
+    }
+
     const onVisible = () => {
       if (document.visibilityState === "visible") void tick()
     }
     document.addEventListener("visibilitychange", onVisible)
-    void tick()
+    scheduleNext()
 
     return () => {
       cancelled = true
-      window.clearInterval(interval)
+      if (timer) window.clearTimeout(timer)
       document.removeEventListener("visibilitychange", onVisible)
     }
-  }, [session, user, emailVerified])
+    // pendingEmail flips when an unconfirmed signup/login starts watching, so
+    // the effect re-runs even though pendingUnlockRef is a ref.
+  }, [session, user, emailVerified, pendingEmail])
 
   const signInWithPassword = useCallback(
     async ({ email, password }: { email: string; password: string }) => {
@@ -260,7 +315,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+          // Include the Vite base path so confirmation lands on the deployed
+          // app (…/looms-web/), not the bare origin.
+          emailRedirectTo: absoluteAppUrl(),
           data: {
             username: cleanUsername,
             minecraft_username: cleanMc || null,
@@ -268,20 +325,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       })
 
-      if (error) return { error: new Error(error.message) }
+      if (error) return { error: new Error(formatErrorMessage(error)) }
 
       if (data.user && !isEmailVerified(data.user)) {
         watchUnconfirmed(email, password)
-      }
-
-      if (!data.session && data.user && !isEmailVerified(data.user)) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        if (signInError && !isUnconfirmedAuthError(signInError.message)) {
-          return { error: new Error(signInError.message) }
-        }
       }
 
       if (data.user) {
@@ -303,7 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: absoluteAppUrl(),
       },
     })
     return { error: error ? new Error(error.message) : null }
@@ -393,7 +440,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resendConfirmation = useCallback(async () => {
     const email = user?.email ?? pendingEmail
     if (!email) return { error: new Error("No email to confirm") }
-    const { error } = await supabase.auth.resend({ type: "signup", email })
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: absoluteAppUrl() },
+    })
     return { error: error ? new Error(error.message) : null }
   }, [pendingEmail, user?.email])
 
