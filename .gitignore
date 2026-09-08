@@ -1,0 +1,62 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.*
+.env*.local
+!.env.example
+
+# Supabase CLI local cache (never commit)
+supabase/.temp/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Isolated git worktrees
+.worktrees/
+
+# AI / agent tooling (local only — keep out of the public repo)
+.agents/
+.claude/
+.codex/
+.cursor/
+.freebuff/
+.gemini/
+.impeccable/
+.superpowers/
+.windsurf/
+.aider*
+.continue/
+.desloppify/
+.github/copilot-instructions.md
+.github/instructions/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.cursorrules
+.cursorignore
+skills-lock.json
+scorecard.png
+DESIGN.md
+PRODUCT.md
+docs/design.md
+docs/superpowers/
+docs/THREAT_MODELING_AND_ABUSE_PREVENTION.md

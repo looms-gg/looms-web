@@ -1,0 +1,41 @@
+{
+  "name": "looms",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "preview": "vite preview",
+    "db:push": "supabase db push",
+    "db:types": "supabase gen types typescript > src/lib/database.types.ts",
+    "db:seed-garments": "python3 scripts/seed-garments.py"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^7.3.1",
+    "@fortawesome/free-solid-svg-icons": "^7.3.1",
+    "@fortawesome/react-fontawesome": "^3.5.0",
+    "@supabase/supabase-js": "^2.115.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.3",
+    "skinview3d": "^3.4.2",
+    "three": "^0.156.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
+    "daisyui": "^5.7.28",
+    "happy-dom": "^20.14.0",
+    "oxlint": "^1.79.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.0.18"
+  }
+}

@@ -1,0 +1,271 @@
+[
+  {
+    "id": "ash-crop",
+    "name": "Ash Crop",
+    "slot": "hair",
+    "group": "head",
+    "added": 18,
+    "blurb": "Mud-brown crop. Short enough that your forehead can still participate.",
+    "file": "hair-brown.png",
+    "saved_count": 61
+  },
+  {
+    "id": "ink-fall",
+    "name": "Ink Fall",
+    "slot": "hair",
+    "group": "head",
+    "added": 19,
+    "blurb": "Ink-black hair that refuses to stop at the jaw. It has a back to haunt.",
+    "file": "hair-black.png",
+    "covers": [
+      "head",
+      "torso"
+    ],
+    "saved_count": 33
+  },
+  {
+    "id": "rose-drape",
+    "name": "Rose Drape",
+    "slot": "hair",
+    "group": "head",
+    "added": 20,
+    "blurb": "Candy-pink curtains of hair. People will see you coming. That's the point.",
+    "file": "hair-pink.png",
+    "covers": [
+      "head",
+      "torso"
+    ],
+    "saved_count": 27
+  },
+  {
+    "id": "striped-coat",
+    "name": "Striped Coat",
+    "slot": "coat",
+    "group": "torso",
+    "added": 14,
+    "blurb": "Lilac coat, plum stripes, slim sleeves. Looks like you raided a magician's closet.",
+    "file": "striped-coat.png",
+    "saved_count": 36
+  },
+  {
+    "id": "pink-hoodie",
+    "name": "Pink Hoodie",
+    "slot": "shirt",
+    "group": "torso",
+    "added": 16,
+    "blurb": "Blush hoodie with a marshmallow tummy. Striped sleeves because one pink wasn't enough.",
+    "file": "pink-hoodie.png",
+    "saved_count": 19
+  },
+  {
+    "id": "winter-coat",
+    "name": "Winter Coat",
+    "slot": "coat",
+    "group": "torso",
+    "added": 17,
+    "blurb": "Big red coat with white fluff. You will be warm. You will look like a wrapped present.",
+    "file": "winter-coat.png",
+    "covers": [
+      "head",
+      "torso",
+      "legs"
+    ],
+    "saved_count": 11
+  },
+  {
+    "id": "sneakers",
+    "name": "Sneakers",
+    "slot": "shoes",
+    "group": "legs",
+    "added": 15,
+    "blurb": "Chalk-grey runners with a black toe. For sprinting absolutely nowhere.",
+    "file": "sneakers.png",
+    "saved_count": 24
+  },
+  {
+    "id": "camo-pants",
+    "name": "Camo Pants",
+    "slot": "pants",
+    "group": "legs",
+    "added": 21,
+    "blurb": "Moss camo from the waist down. Hide in the bushes. Or the couch. Same vibe.",
+    "file": "camo-pants.png",
+    "covers": [
+      "torso",
+      "legs"
+    ],
+    "saved_count": 8
+  },
+  {
+    "id": "christmas-sweater",
+    "name": "Christmas Sweater",
+    "slot": "shirt",
+    "group": "torso",
+    "added": 22,
+    "blurb": "Pine sweater with a little red tree on it. Wear it in July. Start arguments.",
+    "file": "christmas-sweater.png",
+    "covers": [
+      "torso",
+      "legs"
+    ],
+    "saved_count": 6
+  },
+  {
+    "id": "baggy-skull-pants",
+    "name": "Baggy Skull Pants",
+    "slot": "pants",
+    "group": "legs",
+    "added": 23,
+    "blurb": "Huge charcoal baggies. Your shoes are in there somewhere. Probably.",
+    "file": "baggy-skull-pants.png",
+    "covers": [
+      "torso",
+      "legs"
+    ],
+    "saved_count": 5
+  },
+  {
+    "id": "football-helmet",
+    "name": "Football Helmet",
+    "slot": "hat",
+    "group": "head",
+    "added": 24,
+    "blurb": "Maroon helmet, white stripe, scary little visor. You are legally required to yell HUT.",
+    "file": "football-helmet.png",
+    "saved_count": 9
+  },
+  {
+    "id": "moon-pants",
+    "name": "Moon Pants",
+    "slot": "pants",
+    "group": "legs",
+    "added": 25,
+    "blurb": "Night-grey pants with moons on them. For stomping around at 2am looking haunted.",
+    "file": "moon-pants.png",
+    "covers": [
+      "torso",
+      "legs"
+    ],
+    "saved_count": 7
+  },
+  {
+    "id": "heartbreaker-hair",
+    "name": "Heartbreaker Hair",
+    "slot": "hair",
+    "group": "head",
+    "added": 26,
+    "blurb": "Dusty rose bangs that say I did this on purpose. The rest just... falls.",
+    "file": "heartbreaker-hair.png",
+    "covers": [
+      "head",
+      "torso"
+    ],
+    "saved_count": 12
+  },
+  {
+    "id": "open-plaid",
+    "name": "Open Plaid",
+    "slot": "shirt",
+    "group": "torso",
+    "added": 27,
+    "blurb": "Maroon flannel, left wide open. Buttons are for cowards.",
+    "file": "open-plaid-shirt.png",
+    "covers": [
+      "torso",
+      "legs"
+    ],
+    "saved_count": 8
+  },
+  {
+    "id": "bear-hat",
+    "name": "Bear Hat",
+    "slot": "hat",
+    "group": "head",
+    "added": 28,
+    "blurb": "You are a ginger bear now. Ears and everything. Mouth still works for snacks.",
+    "file": "bear-hat.png",
+    "saved_count": 14
+  },
+  {
+    "id": "anonymous-mask",
+    "name": "Anonymous Mask",
+    "slot": "face",
+    "group": "head",
+    "added": 29,
+    "blurb": "Cream smirk, black brows. Nobody knows it's you. Everybody knows it's you.",
+    "file": "anonymous-mask.png",
+    "saved_count": 21
+  },
+  {
+    "id": "skull-mask",
+    "name": "Skull Mask",
+    "slot": "face",
+    "group": "head",
+    "added": 30,
+    "blurb": "White skull. Tiny horns. Halloween called, it wants its whole personality back.",
+    "file": "skull-mask.png",
+    "saved_count": 17
+  },
+  {
+    "id": "ombre-hair",
+    "name": "Ombre Fall",
+    "slot": "hair",
+    "group": "head",
+    "added": 33,
+    "blurb": "Black and white gradient hair, like burnt ends! (with less fire tho!)",
+    "file": "ombre-hair.png",
+    "covers": [
+      "head",
+      "torso"
+    ],
+    "saved_count": 6
+  },
+  {
+    "id": "knee-high-converse",
+    "name": "Knee-High Converse",
+    "slot": "shoes",
+    "group": "legs",
+    "added": 34,
+    "blurb": "Black converse that go UP. Checker stripe so people know you mean it.",
+    "file": "knee-high-converse.png",
+    "saved_count": 8
+  },
+  {
+    "id": "leather-jacket",
+    "name": "Leather Jacket",
+    "slot": "coat",
+    "group": "torso",
+    "added": 35,
+    "blurb": "Black leather, white zipper, will not zip. Cooler that way.",
+    "file": "leather-jacket.png",
+    "covers": [
+      "torso",
+      "legs"
+    ],
+    "saved_count": 9
+  },
+  {
+    "id": "dark-sweatpants",
+    "name": "Dark Sweatpants",
+    "slot": "pants",
+    "group": "legs",
+    "added": 36,
+    "blurb": "Near-black sweats. The official pants of I'm not going outside.",
+    "file": "dark-sweatpants.png",
+    "covers": [
+      "torso",
+      "legs"
+    ],
+    "saved_count": 11
+  },
+  {
+    "id": "brown-shoes",
+    "name": "Brown Shoes",
+    "slot": "shoes",
+    "group": "legs",
+    "added": 37,
+    "blurb": "Low maroon oxfords, brown so the dirt doesn't show up when u STOMP around!",
+    "file": "brown-shoes.png",
+    "saved_count": 13
+  }
+]
