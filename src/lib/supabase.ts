@@ -247,23 +247,21 @@ export function getSupabase() {
 
 type Client = ReturnType<typeof createClient<Database>>
 
-export type SupabaseFacade = Pick<Client, "auth" | "storage" | "from" | "rpc">
-
 /**
  * Lazy facade: importing this module does not construct the client.
  * Own `from`/`auth`/`storage`/`rpc` so vitest can spyOn them.
  */
-export const supabase: SupabaseFacade = {
+export const supabase = {
   get auth() {
     return getSupabase().auth
   },
   get storage() {
     return getSupabase().storage
   },
-  from(...args: Parameters<Client["from"]>) {
-    return getSupabase().from(...args)
+  from(...args: unknown[]) {
+    return (getSupabase().from as (...a: unknown[]) => unknown)(...args)
   },
-  rpc(...args: Parameters<Client["rpc"]>) {
-    return getSupabase().rpc(...args)
+  rpc(...args: unknown[]) {
+    return (getSupabase().rpc as (...a: unknown[]) => unknown)(...args)
   },
-}
+} as unknown as Client
