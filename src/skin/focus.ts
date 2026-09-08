@@ -3,21 +3,19 @@ import {
   Color,
   ColorManagement,
   DirectionalLight,
-  DoubleSide,
-  FrontSide,
-  MeshStandardMaterial,
   NearestFilter,
   NoToneMapping,
   SRGBColorSpace,
   Vector3,
-  type Material,
-  type Mesh,
   type Object3D,
-  type Texture,
+  type Mesh,
 } from "three"
 import { FunctionAnimation, SkinViewer, type PlayerObject } from "skinview3d"
 import type { SkinModel } from "./convert"
 import type { Group, Piece } from "../data/catalog"
+import { flattenSkinMaterials } from "./materials"
+
+export { flattenSkinMaterials } from "./materials"
 
 const PARTS = ["head", "body", "rightArm", "leftArm", "rightLeg", "leftLeg"] as const
 const BACK = 0.42
@@ -63,169 +61,6 @@ export function crispSkinTexture(viewer: SkinViewer) {
   map.generateMipmaps = false
   map.needsUpdate = true
   flattenSkinMaterials(viewer)
-}
-
-export function flattenSkinMaterials(viewer: SkinViewer) {
-  const currentMap = viewer.playerObject.skin.map ?? null
-  const skin = viewer.playerObject.skin as unknown as {
-    map: Texture | null
-    layer1Material: Material
-    layer1MaterialBiased: Material
-    layer2Material: Material
-    layer2MaterialBiased: Material
-  }
-
-  if (!(skin.layer1Material instanceof MeshStandardMaterial)) {
-    skin.layer1Material.dispose()
-    skin.layer1Material = new MeshStandardMaterial({
-      map: currentMap,
-      color: 0xffffff,
-      side: FrontSide,
-      roughness: 0.82,
-      metalness: 0,
-      flatShading: true,
-      transparent: true,
-      alphaTest: 1 / 255,
-      depthWrite: true,
-      toneMapped: false,
-    })
-  } else {
-    skin.layer1Material.roughness = 0.82
-    skin.layer1Material.metalness = 0
-    skin.layer1Material.flatShading = true
-    skin.layer1Material.transparent = true
-    skin.layer1Material.alphaTest = 1 / 255
-    skin.layer1Material.depthWrite = true
-    skin.layer1Material.side = FrontSide
-    skin.layer1Material.toneMapped = false
-  }
-
-  if (!(skin.layer1MaterialBiased instanceof MeshStandardMaterial)) {
-    skin.layer1MaterialBiased.dispose()
-    skin.layer1MaterialBiased = new MeshStandardMaterial({
-      map: currentMap,
-      color: 0xffffff,
-      side: FrontSide,
-      roughness: 0.82,
-      metalness: 0,
-      flatShading: true,
-      transparent: true,
-      alphaTest: 1 / 255,
-      depthWrite: true,
-      toneMapped: false,
-      polygonOffset: true,
-      polygonOffsetFactor: 1.0,
-      polygonOffsetUnits: 1.0,
-    })
-  } else {
-    skin.layer1MaterialBiased.roughness = 0.82
-    skin.layer1MaterialBiased.metalness = 0
-    skin.layer1MaterialBiased.flatShading = true
-    skin.layer1MaterialBiased.transparent = true
-    skin.layer1MaterialBiased.alphaTest = 1 / 255
-    skin.layer1MaterialBiased.depthWrite = true
-    skin.layer1MaterialBiased.side = FrontSide
-    skin.layer1MaterialBiased.toneMapped = false
-    skin.layer1MaterialBiased.polygonOffset = true
-    skin.layer1MaterialBiased.polygonOffsetFactor = 1.0
-    skin.layer1MaterialBiased.polygonOffsetUnits = 1.0
-  }
-
-  if (!(skin.layer2Material instanceof MeshStandardMaterial)) {
-    skin.layer2Material.dispose()
-    skin.layer2Material = new MeshStandardMaterial({
-      map: currentMap,
-      color: 0xffffff,
-      side: DoubleSide,
-      roughness: 0.82,
-      metalness: 0,
-      flatShading: true,
-      transparent: true,
-      alphaTest: 1 / 255,
-      depthWrite: true,
-      toneMapped: false,
-    })
-  } else {
-    skin.layer2Material.roughness = 0.82
-    skin.layer2Material.metalness = 0
-    skin.layer2Material.flatShading = true
-    skin.layer2Material.transparent = true
-    skin.layer2Material.alphaTest = 1 / 255
-    skin.layer2Material.depthWrite = true
-    skin.layer2Material.side = DoubleSide
-    skin.layer2Material.toneMapped = false
-  }
-
-  if (!(skin.layer2MaterialBiased instanceof MeshStandardMaterial)) {
-    skin.layer2MaterialBiased.dispose()
-    skin.layer2MaterialBiased = new MeshStandardMaterial({
-      map: currentMap,
-      color: 0xffffff,
-      side: DoubleSide,
-      roughness: 0.82,
-      metalness: 0,
-      flatShading: true,
-      transparent: true,
-      alphaTest: 1 / 255,
-      depthWrite: true,
-      toneMapped: false,
-      polygonOffset: true,
-      polygonOffsetFactor: 1.0,
-      polygonOffsetUnits: 1.0,
-    })
-  } else {
-    skin.layer2MaterialBiased.roughness = 0.82
-    skin.layer2MaterialBiased.metalness = 0
-    skin.layer2MaterialBiased.flatShading = true
-    skin.layer2MaterialBiased.transparent = true
-    skin.layer2MaterialBiased.alphaTest = 1 / 255
-    skin.layer2MaterialBiased.depthWrite = true
-    skin.layer2MaterialBiased.side = DoubleSide
-    skin.layer2MaterialBiased.toneMapped = false
-    skin.layer2MaterialBiased.polygonOffset = true
-    skin.layer2MaterialBiased.polygonOffsetFactor = 1.0
-    skin.layer2MaterialBiased.polygonOffsetUnits = 1.0
-  }
-
-  ;(skin.layer1Material as MeshStandardMaterial).map = currentMap
-  skin.layer1Material.needsUpdate = true
-  ;(skin.layer1MaterialBiased as MeshStandardMaterial).map = currentMap
-  skin.layer1MaterialBiased.needsUpdate = true
-  ;(skin.layer2Material as MeshStandardMaterial).map = currentMap
-  skin.layer2Material.needsUpdate = true
-  ;(skin.layer2MaterialBiased as MeshStandardMaterial).map = currentMap
-  skin.layer2MaterialBiased.needsUpdate = true
-
-  const setMeshMat = (layer: unknown, mat: Material) => {
-    ;(layer as { material?: Material | Material[] }).material = mat
-  }
-
-  setMeshMat(viewer.playerObject.skin.head.innerLayer, skin.layer1Material)
-  setMeshMat(viewer.playerObject.skin.head.outerLayer, skin.layer2Material)
-  setMeshMat(viewer.playerObject.skin.body.innerLayer, skin.layer1Material)
-  setMeshMat(viewer.playerObject.skin.body.outerLayer, skin.layer2Material)
-
-  setMeshMat(viewer.playerObject.skin.rightArm.innerLayer, skin.layer1MaterialBiased)
-  setMeshMat(viewer.playerObject.skin.rightArm.outerLayer, skin.layer2MaterialBiased)
-  setMeshMat(viewer.playerObject.skin.leftArm.innerLayer, skin.layer1MaterialBiased)
-  setMeshMat(viewer.playerObject.skin.leftArm.outerLayer, skin.layer2MaterialBiased)
-
-  setMeshMat(viewer.playerObject.skin.rightLeg.innerLayer, skin.layer1MaterialBiased)
-  setMeshMat(viewer.playerObject.skin.rightLeg.outerLayer, skin.layer2MaterialBiased)
-  setMeshMat(viewer.playerObject.skin.leftLeg.innerLayer, skin.layer1MaterialBiased)
-  setMeshMat(viewer.playerObject.skin.leftLeg.outerLayer, skin.layer2MaterialBiased)
-
-  viewer.playerObject.skin.traverse((obj) => {
-    const mesh = obj as Mesh
-    if (!mesh.isMesh) return
-    mesh.castShadow = false
-    mesh.receiveShadow = false
-    const mat = mesh.material
-    if (mat instanceof MeshStandardMaterial && mat.map !== currentMap) {
-      mat.map = currentMap
-      mat.needsUpdate = true
-    }
-  })
 }
 
 export function lightSkinViewer(viewer: SkinViewer) {

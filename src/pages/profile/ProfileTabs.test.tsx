@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom"
 import { describe, expect, it, vi } from "vitest"
 import type { GarmentRow, LookRow } from "../../lib/supabase"
 import { AuthProvider } from "../../state/auth"
+import { SessionProvider } from "../../state/closet"
 import { LikesProvider } from "../../state/likes"
 import type { LikedContent } from "./profileApi"
 import { ProfileTabs } from "./ProfileTabs"
@@ -15,28 +16,31 @@ const upload: GarmentRow = {
   user_id: "u1",
   name: "Neon Tee",
   description: null,
-  layer: "top",
-  category: "tops",
-  texture_path: "u1/g1.png",
+  slot: "shirt",
+  body_group: "torso",
+  saved_count: 0,
+  like_count: 0,
+  added: Date.now(),
+  covers: [],
   texture_url: "https://example.test/g1.png",
   is_public: true,
-  like_count: 0,
+  tags: [],
   created_at: "",
-  updated_at: "",
-} as GarmentRow
+}
 
 const look: LookRow = {
   id: "l1",
   user_id: "u1",
   name: "Plaza Fit",
-  is_public: true,
+  description: "",
+  visibility: "public",
   body_id: "body-1",
   body_hue: 0,
   model: "classic",
   stack: [],
   created_at: "",
   updated_at: "",
-} as LookRow
+}
 
 function renderTabs(props: Partial<React.ComponentProps<typeof ProfileTabs>> = {}) {
   const onTab = vi.fn()
@@ -46,16 +50,18 @@ function renderTabs(props: Partial<React.ComponentProps<typeof ProfileTabs>> = {
       <AuthProvider>
         <LikesProvider>
           <MemoryRouter>
-            <ProfileTabs
-              tab="uploads"
-              username="PixelWeaver"
-              uploads={[]}
-              looks={[]}
-              liked={emptyLiked}
-              canViewLikes
-              onTab={onTab}
-              {...props}
-            />
+            <SessionProvider>
+              <ProfileTabs
+                tab="uploads"
+                username="PixelWeaver"
+                uploads={[]}
+                looks={[]}
+                liked={emptyLiked}
+                canViewLikes
+                onTab={onTab}
+                {...props}
+              />
+            </SessionProvider>
           </MemoryRouter>
         </LikesProvider>
       </AuthProvider>,

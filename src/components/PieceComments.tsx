@@ -276,6 +276,8 @@ export function PieceComments({
   const [error, setError] = useState<string | null>(null)
   const [authOpen, setAuthOpen] = useState(false)
 
+  const canView = isPublic || user?.id === garmentOwnerId
+
   async function reload() {
     setLoading(true)
     const { comments, error: err } = await fetchGarmentComments(garmentId)
@@ -290,10 +292,11 @@ export function PieceComments({
   }
 
   useEffect(() => {
+    if (!canView) return
     void reload()
-  }, [garmentId])
+  }, [garmentId, canView])
 
-  if (!isPublic && user?.id !== garmentOwnerId) {
+  if (!canView) {
     return null
   }
 

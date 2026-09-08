@@ -1,14 +1,14 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom"
-import { faBoxOpen, faRightFromBracket, faShirt, faUser, faWandSparkles } from "@fortawesome/free-solid-svg-icons"
+import { faBoxOpen, faShirt, faWandSparkles } from "@fortawesome/free-solid-svg-icons"
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core"
 import { useSession } from "../state/closet"
 import { useAuth } from "../state/auth"
 import { CookieConsentProvider } from "../state/cookieConsent"
-import { AuthButtons } from "./AuthModal"
 import { CookieBanner } from "./CookieBanner"
 import { FaIcon } from "./FaIcon"
 import { IsoFigureFx } from "./IsoFigureFx"
 import { LoomsLogo } from "./LoomsLogo"
+import { ShellAuthControls } from "./ShellAuthControls"
 import { SiteFooter } from "./SiteFooter"
 import { ThemeToggle } from "./ThemeToggle"
 import { VerifyEmailModal } from "./VerifyEmailModal"
@@ -110,84 +110,17 @@ function ShellFrame() {
             <HeaderPills pathname={location.pathname} from={from} />
           </nav>
           <div className="flex items-center justify-self-end gap-2">
-            {user && !emailVerified ? (
-              <button
-                type="button"
-                className="btn btn-ghost btn-xs sm:btn-sm rounded-full font-bold text-primary"
-                onClick={openEmailVerify}
-              >
-                Confirm email
-              </button>
-            ) : null}
             <ThemeToggle />
-            {user ? (
-              <div className="dropdown dropdown-end">
-                <button
-                  type="button"
-                  tabIndex={0}
-                  className="btn btn-ghost btn-xs sm:btn-sm rounded-full font-bold gap-2 px-2.5 sm:px-3 border border-white/10 bg-base-200/50 hover:bg-base-200"
-                  title="User profile"
-                >
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt=""
-                      className="size-5 rounded-md border border-white/10 shadow-2xs"
-                    />
-                  ) : (
-                    <span className="grid size-5 place-items-center rounded-md bg-primary/25 text-primary text-[10px] font-black">
-                      {displayName[0].toUpperCase()}
-                    </span>
-                  )}
-                  <span className="max-w-[80px] sm:max-w-[130px] truncate">{displayName}</span>
-                </button>
-                <ul
-                  tabIndex={0}
-                  className="dropdown-content menu z-50 mt-2 w-52 rounded-2xl bg-base-300 p-2 shadow-xl border border-base-content/10"
-                >
-                  <li className="menu-title text-xs text-base-content/60 px-3 py-1.5">
-                    Signed in as <span className="font-extrabold text-base-content truncate">{displayName}</span>
-                    {profile?.minecraft_username ? (
-                      <span className="text-[11px] text-primary block mt-0.5">
-                        MC: {profile.minecraft_username}
-                      </span>
-                    ) : null}
-                  </li>
-                  <li>
-                    {profile?.username ? (
-                      <NavLink to={`/u/${encodeURIComponent(profile.username)}`} className="font-medium">
-                        <FaIcon icon={faUser} className="size-3.5" />
-                        Profile
-                      </NavLink>
-                    ) : null}
-                  </li>
-                  <li>
-                    <NavLink to="/wardrobe" className="font-medium">
-                      <FaIcon icon={faBoxOpen} className="size-3.5" />
-                      Wardrobe
-                    </NavLink>
-                  </li>
-                  <li>
-                    <NavLink to="/studio" className="font-medium">
-                      <FaIcon icon={faWandSparkles} className="size-3.5" />
-                      Studio
-                    </NavLink>
-                  </li>
-                  <li className="border-t border-base-content/10 mt-1 pt-1">
-                    <button
-                      type="button"
-                      className="text-error font-bold"
-                      onClick={() => signOut()}
-                    >
-                      <FaIcon icon={faRightFromBracket} className="size-3.5" />
-                      Log out
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            ) : (
-              <AuthButtons />
-            )}
+            <ShellAuthControls
+              user={user}
+              displayName={displayName}
+              username={profile?.username}
+              minecraftUsername={profile?.minecraft_username}
+              avatarUrl={avatarUrl}
+              emailVerified={emailVerified}
+              onOpenEmailVerify={openEmailVerify}
+              onSignOut={() => signOut()}
+            />
           </div>
         </div>
       </header>
@@ -216,9 +149,7 @@ function ShellFrame() {
       </nav>
 
       <VerifyEmailModal />
-
       <IsoFigureFx />
-
       <CookieBanner />
 
       {notice ? (

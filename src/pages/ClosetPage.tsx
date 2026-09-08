@@ -1,18 +1,17 @@
-import { useMemo, useState, type CSSProperties } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { faCloudArrowUp, faMagnifyingGlass, faWandSparkles } from "@fortawesome/free-solid-svg-icons"
-import { SLOT_LABEL, type Piece } from "../data/catalog"
+import { useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { faCloudArrowUp, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
+import { SLOT_LABEL } from "../data/catalog"
 import { ClosetRail, type LayerFilter, type Sort } from "../components/ClosetRail"
 import { FaIcon } from "../components/FaIcon"
-import { IsoThumb } from "../components/IsoThumb"
-import { PieceTile } from "../components/PieceTile"
-import { RackGrid } from "../components/RackGrid"
 import { useSession } from "../state/closet"
 import { useAuth } from "../state/auth"
 import { useCatalog } from "../state/catalog"
 import { UploadPieceModal } from "../components/UploadPieceModal"
 import { AuthModal } from "../components/AuthModal"
 import { filterClosetPieces } from "./closetBrowse"
+import { ClosetHero, pickFeaturedPieces } from "./ClosetHero"
+import { ClosetRack } from "./ClosetRack"
 
 import { DEFAULT_BODY_ID } from "../data/bodies"
 import { MAX_LIMITS } from "../lib/sanitize"
@@ -34,12 +33,7 @@ export function ClosetPage() {
   )
 
   const showHero = !query.trim()
-  const featuredPieces = useMemo(() => {
-    const ids = ["ink-fall", "winter-coat", "dark-sweatpants", "knee-high-converse"]
-    return ids
-      .map((id) => pieces.find((p) => p.id === id))
-      .filter((p): p is Piece => p != null)
-  }, [pieces])
+  const featuredPieces = useMemo(() => pickFeaturedPieces(pieces), [pieces])
 
   function wearFeatured() {
     loadLook({
@@ -65,102 +59,7 @@ export function ClosetPage() {
   return (
     <div className="space-y-6">
       {showHero ? (
-        <section className="plaza-panel hero-closet rounded-[18px]">
-          <div className="hero-dots-container" aria-hidden="true">
-            <svg
-              className="hero-polka-svg"
-              viewBox="0 0 600 320"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <g className="hero-dots-grid">
-                {/* Row 0 */}
-                <circle cx="135" cy="30" r="16" />
-                <circle cx="210" cy="30" r="24" />
-                <circle cx="285" cy="30" r="18" />
-                <circle cx="360" cy="30" r="26" />
-                <circle cx="435" cy="30" r="20" />
-                <circle cx="510" cy="30" r="28" />
-                <circle cx="585" cy="30" r="22" />
-
-                {/* Row 1 (staggered) */}
-                <circle cx="98" cy="95" r="14" />
-                <circle cx="173" cy="95" r="22" />
-                <circle cx="248" cy="95" r="18" />
-                <circle cx="323" cy="95" r="28" />
-                <circle cx="398" cy="95" r="16" />
-                <circle cx="473" cy="95" r="24" />
-                <circle cx="548" cy="95" r="20" />
-
-                {/* Row 2 */}
-                <circle cx="135" cy="160" r="20" />
-                <circle cx="210" cy="160" r="16" />
-                <circle cx="285" cy="160" r="26" />
-                <circle cx="360" cy="160" r="18" />
-                <circle cx="435" cy="160" r="28" />
-                <circle cx="510" cy="160" r="22" />
-                <circle cx="585" cy="160" r="16" />
-
-                {/* Row 3 (staggered) */}
-                <circle cx="98" cy="225" r="18" />
-                <circle cx="173" cy="225" r="26" />
-                <circle cx="248" cy="225" r="20" />
-                <circle cx="323" cy="225" r="16" />
-                <circle cx="398" cy="225" r="28" />
-                <circle cx="473" cy="225" r="18" />
-                <circle cx="548" cy="225" r="24" />
-
-                {/* Row 4 */}
-                <circle cx="135" cy="290" r="22" />
-                <circle cx="210" cy="290" r="18" />
-                <circle cx="285" cy="290" r="24" />
-                <circle cx="360" cy="290" r="28" />
-                <circle cx="435" cy="290" r="16" />
-                <circle cx="510" cy="290" r="26" />
-                <circle cx="585" cy="290" r="20" />
-              </g>
-            </svg>
-          </div>
-
-          <div className="hero-copy">
-            <h1 className="text-[2.25rem] font-extrabold leading-[1.12] tracking-tight sm:text-[2.75rem] lg:text-[3.15rem]">
-              <span className="block">Custom skins.</span>
-              <span className="block">No art skills needed!</span>
-            </h1>
-            <p className="mt-3 max-w-[44ch] text-base leading-[1.6] text-base-content/70">
-              Mix and match layered clothing, hair, and accessories into custom Minecraft skins. Free to style, export, and wear.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Link to="/studio" className="btn btn-primary rounded-full pl-5 pr-6 font-extrabold">
-                <FaIcon icon={faWandSparkles} className="size-3.5" />
-                Open Studio
-              </Link>
-              <button
-                type="button"
-                onClick={wearFeatured}
-                className="btn btn-ghost rounded-full font-bold border border-base-content/15 hover:border-primary"
-              >
-                Wear this look
-              </button>
-            </div>
-          </div>
-
-          <div className="hero-figure">
-            <div className="hero-avatar-frame">
-              <IsoThumb
-                outfit={featuredPieces}
-                bodyId={DEFAULT_BODY_ID}
-                model="classic"
-                alt="Featured Winter Explorer look"
-                className="size-full"
-                priority
-              />
-            </div>
-            <p className="mt-2 text-xs font-bold text-base-content/50">
-              Winter Explorer · <span className="tabular-nums">4</span> layers
-            </p>
-          </div>
-        </section>
+        <ClosetHero featuredPieces={featuredPieces} onWearFeatured={wearFeatured} />
       ) : null}
 
       <section
@@ -206,49 +105,19 @@ export function ClosetPage() {
 
       <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
         <ClosetRail sort={sort} layer={layer} onSort={setSort} onLayer={setLayer} />
-
-        {loading && pieces.length === 0 ? (
-          <div className="grid place-items-center rounded-[18px] border border-dashed border-base-content/15 bg-base-200 px-6 py-16 text-center">
-            <p className="text-lg font-extrabold">Opening the racks</p>
-            <p className="mt-1 max-w-sm text-sm text-base-content/65">
-              Pulling pieces from the closet.
-            </p>
-          </div>
-        ) : error && pieces.length === 0 ? (
-          <div className="grid place-items-center rounded-[18px] border border-dashed border-base-content/15 bg-base-200 px-6 py-16 text-center">
-            <p className="text-lg font-extrabold">Couldn&apos;t open the closet</p>
-            <p className="mt-1 max-w-sm text-sm text-base-content/65">{error}</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="grid place-items-center rounded-[18px] border border-dashed border-base-content/15 bg-base-200 px-6 py-16 text-center">
-            <p className="text-lg font-extrabold">Nothing in this rack</p>
-            <p className="mt-1 max-w-sm text-sm text-base-content/65">
-              Try another category, or clear search.
-            </p>
-            <button
-              type="button"
-              className="btn btn-primary mt-4 rounded-full font-extrabold"
-              onClick={() => {
-                setQuery("")
-                setLayer("all")
-              }}
-            >
-              Reset filters
-            </button>
-          </div>
-        ) : (
-          <RackGrid key={`${layer}:${sort}:${query}`}>
-            {filtered.map((piece, i) => (
-              <div
-                key={piece.id}
-                className="rack-cell"
-                style={{ "--i": Math.min(i, 9) } as CSSProperties}
-              >
-                <PieceTile piece={piece} />
-              </div>
-            ))}
-          </RackGrid>
-        )}
+        <ClosetRack
+          loading={loading}
+          error={error}
+          pieces={pieces}
+          filtered={filtered}
+          layer={layer}
+          sort={sort}
+          query={query}
+          onReset={() => {
+            setQuery("")
+            setLayer("all")
+          }}
+        />
       </div>
 
       <UploadPieceModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />

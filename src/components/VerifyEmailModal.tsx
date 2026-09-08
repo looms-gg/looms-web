@@ -4,6 +4,16 @@ import { useAuth } from "../state/auth"
 import { FaIcon } from "./FaIcon"
 import { ModalOverlay } from "./ModalOverlay"
 
+function useResendCountdown(resendWait: number, setResendWait: (fn: (value: number) => number) => void) {
+  useEffect(() => {
+    if (resendWait <= 0) return
+    const timer = window.setInterval(() => {
+      setResendWait((value) => Math.max(0, value - 1))
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [resendWait, setResendWait])
+}
+
 export function VerifyEmailModal() {
   const {
     user,
@@ -18,14 +28,7 @@ export function VerifyEmailModal() {
   const [sending, setSending] = useState(false)
 
   const email = user?.email || pendingEmail
-
-  useEffect(() => {
-    if (resendWait <= 0) return
-    const timer = window.setInterval(() => {
-      setResendWait((value) => Math.max(0, value - 1))
-    }, 1000)
-    return () => window.clearInterval(timer)
-  }, [resendWait])
+  useResendCountdown(resendWait, setResendWait)
 
   const open = Boolean(emailVerifyOpen && email)
 

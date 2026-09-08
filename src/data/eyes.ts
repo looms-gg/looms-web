@@ -71,7 +71,7 @@ function resolveAssetUrl(module: unknown): string {
 
 // Build list of eyes, whites-first then id ascending within each group
 export const bundledEyes: Eye[] = Object.keys(skinModules)
-  .sort()
+  .sort((a, b) => a.localeCompare(b))
   .map((skinPath, index) => {
     const num = index + 1
     const id = `eye-${String(num).padStart(2, "0")}`
