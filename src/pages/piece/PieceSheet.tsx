@@ -94,6 +94,7 @@ export function PieceSheet({
             piece={piece}
             owned={owned}
             wearing={wearing}
+            isCreator={isCreator}
             onLikeCountChange={onLikeCountChange}
             onWear={onWear}
             onAddToWardrobe={onAddToWardrobe}

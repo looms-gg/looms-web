@@ -1,28 +1,53 @@
+import { useRef } from "react"
 import { NavLink } from "react-router-dom"
 import {
   faBoxOpen,
   faRightFromBracket,
+  faShieldHalved,
   faUser,
   faWandSparkles,
 } from "@fortawesome/free-solid-svg-icons"
 import { AuthButtons } from "../auth/AuthModal"
 import { FaIcon } from "../ui/FaIcon"
+import { isAdmin } from "../../lib/admin"
 
 export function ShellAccountMenu({
+  userId,
   displayName,
   username,
   minecraftUsername,
   avatarUrl,
   onSignOut,
 }: {
+  userId?: string | null
   displayName: string
   username?: string | null
   minecraftUsername?: string | null
   avatarUrl?: string | null
   onSignOut: () => void
 }) {
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const closeDropdown = () => {
+    if (typeof document !== "undefined") {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur()
+      }
+      const focused = dropdownRef.current?.querySelectorAll<HTMLElement>(":focus")
+      focused?.forEach((el) => el.blur())
+    }
+  }
+
   return (
-    <div className="dropdown dropdown-end">
+    <div
+      ref={dropdownRef}
+      className="dropdown dropdown-end"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          closeDropdown()
+        }
+      }}
+    >
       <button
         type="button"
         tabIndex={0}
@@ -45,6 +70,12 @@ export function ShellAccountMenu({
       <ul
         tabIndex={0}
         className="dropdown-content menu z-50 mt-2 w-52 rounded-2xl bg-base-300 p-2 shadow-xl border border-base-content/10"
+        onClick={(e) => {
+          const target = e.target as HTMLElement | null
+          if (target?.closest("a, button")) {
+            closeDropdown()
+          }
+        }}
       >
         <li className="menu-title text-xs text-base-content/60 px-3 py-1.5">
           Signed in as{" "}
@@ -73,8 +104,23 @@ export function ShellAccountMenu({
             Studio
           </NavLink>
         </li>
+        {isAdmin(userId) ? (
+          <li>
+            <NavLink to="/admin" className="font-bold text-warning hover:text-warning">
+              <FaIcon icon={faShieldHalved} className="size-3.5" />
+              Admin Panel
+            </NavLink>
+          </li>
+        ) : null}
         <li className="border-t border-base-content/10 mt-1 pt-1">
-          <button type="button" className="text-error font-bold" onClick={onSignOut}>
+          <button
+            type="button"
+            className="text-error font-bold"
+            onClick={() => {
+              closeDropdown()
+              onSignOut()
+            }}
+          >
             <FaIcon icon={faRightFromBracket} className="size-3.5" />
             Log out
           </button>
@@ -116,6 +162,7 @@ export function ShellAuthControls({
       ) : null}
       {user ? (
         <ShellAccountMenu
+          userId={(user as { id?: string })?.id}
           displayName={displayName}
           username={username}
           minecraftUsername={minecraftUsername}

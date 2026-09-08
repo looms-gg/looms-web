@@ -6,6 +6,7 @@ import { useAuth } from "../../state/auth"
 import { useLikes } from "../../state/likes"
 import { CookieConsentProvider } from "../../state/cookieConsent"
 import { CookieBanner } from "./CookieBanner"
+import { SiteBanner } from "./SiteBanner"
 import { FaIcon } from "../ui/FaIcon"
 import { IsoFigureFx } from "../iso/IsoFigureFx"
 import { LoomsLogo } from "../ui/LoomsLogo"
@@ -143,6 +144,7 @@ function ShellFrame() {
           </div>
         </div>
       </header>
+      <SiteBanner />
 
       <main
         className={

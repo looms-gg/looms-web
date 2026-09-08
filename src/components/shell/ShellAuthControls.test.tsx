@@ -54,4 +54,72 @@ describe("ShellAuthControls", () => {
     expect(onOpen).toHaveBeenCalled()
     expect(host.textContent).toContain("PixelWeaver")
   })
+
+  it("blurs active element to close dropdown when an option is clicked", () => {
+    const host = document.createElement("div")
+    document.body.appendChild(host)
+    flushSync(() => {
+      createRoot(host).render(
+        <MemoryRouter>
+          <ShellAuthControls
+            user={{ id: "u1" }}
+            displayName="PixelWeaver"
+            username="PixelWeaver"
+            emailVerified={true}
+            onOpenEmailVerify={() => {}}
+            onSignOut={() => {}}
+          />
+        </MemoryRouter>,
+      )
+    })
+
+    const wardrobeLink = Array.from(host.querySelectorAll("a")).find((a) =>
+      /Wardrobe/.test(a.textContent ?? ""),
+    ) as HTMLAnchorElement
+    expect(wardrobeLink).toBeTruthy()
+
+    wardrobeLink.focus()
+    expect(document.activeElement).toBe(wardrobeLink)
+
+    flushSync(() => {
+      wardrobeLink.click()
+    })
+
+    expect(document.activeElement).not.toBe(wardrobeLink)
+  })
+
+  it("calls onSignOut and blurs active element when log out is clicked", () => {
+    const onSignOut = vi.fn()
+    const host = document.createElement("div")
+    document.body.appendChild(host)
+    flushSync(() => {
+      createRoot(host).render(
+        <MemoryRouter>
+          <ShellAuthControls
+            user={{ id: "u1" }}
+            displayName="PixelWeaver"
+            username="PixelWeaver"
+            emailVerified={true}
+            onOpenEmailVerify={() => {}}
+            onSignOut={onSignOut}
+          />
+        </MemoryRouter>,
+      )
+    })
+
+    const logoutBtn = Array.from(host.querySelectorAll("button")).find((b) =>
+      /Log out/.test(b.textContent ?? ""),
+    ) as HTMLButtonElement
+    expect(logoutBtn).toBeTruthy()
+
+    logoutBtn.focus()
+    expect(document.activeElement).toBe(logoutBtn)
+
+    flushSync(() => {
+      logoutBtn.click()
+    })
+
+    expect(onSignOut).toHaveBeenCalled()
+    expect(document.activeElement).not.toBe(logoutBtn)
+  })
 })

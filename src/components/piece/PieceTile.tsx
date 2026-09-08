@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { faBookmark, faCheck, faPlus } from "@fortawesome/free-solid-svg-icons"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
 import { useAuthOptional } from "../../state/auth"
@@ -21,25 +21,43 @@ export function PieceTile({
   const { upsert } = useCatalog()
   const { owns, addToWardrobe } = useCloset()
   const location = useLocation()
+  const navigate = useNavigate()
   const from = location.pathname + location.search
   const owned = owns(piece.id)
   const wearMode = action === "wear"
   const [authOpen, setAuthOpen] = useState(false)
 
+  function handleTileClick(e: React.MouseEvent) {
+    const target = e.target as HTMLElement | null
+    if (target?.closest("a, button, input")) return
+    navigate(`/piece/${piece.id}`, { state: { from } })
+  }
+
   return (
     <>
-      <Link
-        to={`/piece/${piece.id}`}
-        state={{ from }}
-        className="piece-tile tile-lift relative no-underline text-inherit group"
+      <div
+        onClick={handleTileClick}
+        className="piece-tile tile-lift relative cursor-pointer no-underline text-inherit group"
       >
-        <IsoThumb piece={piece} alt={piece.name} />
+        <Link
+          to={`/piece/${piece.id}`}
+          state={{ from }}
+          tabIndex={-1}
+          aria-hidden="true"
+          className="block"
+        >
+          <IsoThumb piece={piece} alt={piece.name} />
+        </Link>
         <div className="relative z-10 min-w-0 bg-neutral px-4 pb-4 pt-3">
-          <h3
-            className="block min-w-0 max-w-full truncate whitespace-nowrap overflow-hidden text-ellipsis font-extrabold"
-            title={piece.name}
-          >
-            {piece.name}
+          <h3 className="block min-w-0 max-w-full truncate whitespace-nowrap overflow-hidden text-ellipsis font-extrabold">
+            <Link
+              to={`/piece/${piece.id}`}
+              state={{ from }}
+              className="text-inherit hover:underline focus:outline-none"
+              title={piece.name}
+            >
+              {piece.name}
+            </Link>
           </h3>
           <p className="block min-w-0 max-w-full truncate whitespace-nowrap overflow-hidden text-ellipsis text-sm font-semibold text-primary">
             <MakerLink username={piece.maker} />
@@ -88,7 +106,7 @@ export function PieceTile({
             )}
           </div>
         </div>
-      </Link>
+      </div>
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   )

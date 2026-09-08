@@ -1,12 +1,15 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import { Shell } from "./components/shell/Shell"
 import { RequireAuth } from "./components/auth/RequireAuth"
+import { AdminGuard } from "./components/auth/AdminGuard"
 import { routerBasename } from "./lib/basePath"
 import { ExplorePage } from "./pages/ExplorePage"
 import { PiecePage } from "./pages/PiecePage"
+import { LookPage } from "./pages/LookPage"
 import { ProfilePage } from "./pages/ProfilePage"
 import { StudioPage } from "./pages/StudioPage"
 import { WardrobePage } from "./pages/WardrobePage"
+import { AdminPage } from "./pages/AdminPage"
 import { LegalDocument } from "./pages/legal/LegalDocument"
 import { ClosetProvider } from "./state/closet"
 import { ThemeProvider } from "./state/theme"
@@ -26,6 +29,7 @@ export default function App() {
                   <Route element={<Shell />}>
                     <Route index element={<ExplorePage />} />
                     <Route path="piece/:id" element={<PiecePage />} />
+                    <Route path="look/:id" element={<LookPage />} />
                     <Route path="u/:username" element={<ProfilePage />} />
                     <Route
                       path="wardrobe"
@@ -53,6 +57,14 @@ export default function App() {
                     <Route path="terms" element={<LegalDocument docId="terms" />} />
                     <Route path="cookies" element={<LegalDocument docId="cookies" />} />
                     <Route path="guidelines" element={<LegalDocument docId="guidelines" />} />
+                    <Route
+                      path="admin"
+                      element={
+                        <AdminGuard>
+                          <AdminPage />
+                        </AdminGuard>
+                      }
+                    />
                   </Route>
                 </Routes>
               </BrowserRouter>

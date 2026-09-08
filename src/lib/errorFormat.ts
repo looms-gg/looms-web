@@ -43,10 +43,16 @@ export function formatErrorMessage(error: unknown): string {
     if (lower.includes("profile")) {
       return "Profile update rate limit reached. Please wait a few minutes before editing your profile again."
     }
+    if (lower.includes("content_report") || lower.includes("report")) {
+      return "Report rate limit reached. You can submit up to 10 reports every 10 minutes. Please wait before submitting again."
+    }
     return "Rate limit reached. Please slow down and wait a moment before trying again."
   }
 
   if (lower.includes("quota exceeded") || lower.includes("account quota")) {
+    if (lower.includes("content_report") || lower.includes("report")) {
+      return "Report limit reached. You have too many pending reports under review. Please wait for them to be processed."
+    }
     if (lower.includes("garment_comments") || lower.includes("comment")) {
       return "Comment limit reached (max 2000 comments). Delete older comments before posting more."
     }

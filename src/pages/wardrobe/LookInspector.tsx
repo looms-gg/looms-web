@@ -1,4 +1,5 @@
-import { faDownload } from "@fortawesome/free-solid-svg-icons"
+import { useState } from "react"
+import { faDownload, faLink, faCheck } from "@fortawesome/free-solid-svg-icons"
 import { FaIcon } from "../../components/ui/FaIcon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { SLOTS } from "../../data/catalog"
@@ -7,6 +8,7 @@ import { tryDownloadSkinFile } from "../../skin/compose"
 import { useCloset, type Look } from "../../state/closet"
 import { committedLookName } from "../../state/lookMeta"
 import { MAX_LIMITS, sanitizeText } from "../../lib/sanitize"
+import { copyShareLink, getLookShareUrl } from "../../lib/share"
 import { InlineEditableText } from "./InlineEditableText"
 
 export function LookInspector({
@@ -19,6 +21,7 @@ export function LookInspector({
   className?: string
 }) {
   const { updateLookMeta, notify } = useCloset()
+  const [copied, setCopied] = useState(false)
 
   const outfit = piecesFromEquipped(look.equipped, look.stack)
   const layerCount = SLOTS.filter((slot) => look.equipped[slot]).length
@@ -122,6 +125,26 @@ export function LookInspector({
           >
             <FaIcon icon={faDownload} className="size-3.5 mr-1.5" />
             Download skin
+          </button>
+          <button
+            type="button"
+            className={`btn ${copied ? "btn-success" : "btn-ghost"} rounded-full font-bold w-full border border-base-content/10`}
+            onClick={() => {
+              void (async () => {
+                const url = getLookShareUrl(look.id)
+                const ok = await copyShareLink(url)
+                if (ok) {
+                  setCopied(true)
+                  notify("Outfit link copied to clipboard!")
+                  setTimeout(() => setCopied(false), 2000)
+                }
+              })()
+            }}
+            title={copied ? "Link copied to clipboard!" : `Share ${look.name}`}
+            aria-label={copied ? "Link copied" : `Share ${look.name}`}
+          >
+            <FaIcon icon={copied ? faCheck : faLink} className="size-3.5 mr-1.5" />
+            {copied ? "Copied!" : "Share outfit link"}
           </button>
         </div>
       </div>

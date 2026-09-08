@@ -19,6 +19,8 @@ describe("PieceComments", () => {
     vi.spyOn(comments, "fetchGarmentComments").mockResolvedValue([
       {
         id: "c1",
+        targetType: "garment",
+        targetId: "g1",
         garmentId: "g1",
         userId: "u2",
         parentId: null,

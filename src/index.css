@@ -138,6 +138,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
   /* Keep header/logo from shifting when page height toggles the scrollbar. */
   scrollbar-gutter: stable;
+  overscroll-behavior-y: none;
 }
 
 h1,
@@ -172,6 +173,7 @@ body {
   font-family: var(--font-sans);
   background: var(--color-base-100);
   color: var(--color-base-content);
+  overscroll-behavior-y: none;
 }
 
 #root {

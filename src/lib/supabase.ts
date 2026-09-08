@@ -38,6 +38,7 @@ export type LookRow = {
   body_id: string
   body_hue: number
   model: SkinModel
+  like_count?: number
   created_at: string
   updated_at: string
 }
@@ -73,6 +74,50 @@ export type GarmentCommentRow = {
   body: string
   created_at: string
   updated_at: string
+}
+
+export type LookCommentRow = {
+  id: string
+  look_id: string
+  user_id: string
+  parent_id: string | null
+  body: string
+  created_at: string
+  updated_at: string
+}
+
+export type ContentReportRow = {
+  id: string
+  reporter_id: string
+  target_type: "look" | "piece" | "comment" | "profile"
+  target_id: string
+  target_sub_type: string | null
+  target_label: string | null
+  reason: string
+  details: string | null
+  status: "pending" | "resolved" | "dismissed"
+  action_taken: string | null
+  resolved_by: string | null
+  resolved_at: string | null
+  created_at: string
+}
+
+export type SiteBannerRow = {
+  id: string
+  is_active: boolean
+  text: string
+  link_url: string | null
+  link_label: string | null
+  style: "info" | "accent" | "warning" | "neutral"
+  dismissible: boolean
+  created_at: string
+  updated_at: string
+  updated_by: string | null
+}
+
+export type AdminUserRow = {
+  user_id: string
+  created_at: string
 }
 
 export type Database = {
@@ -190,6 +235,38 @@ export type Database = {
           },
         ]
       }
+      look_comments: {
+        Row: LookCommentRow
+        Insert: Omit<LookCommentRow, "id" | "created_at" | "updated_at"> & {
+          id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<LookCommentRow>
+        Relationships: [
+          {
+            foreignKeyName: "look_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "look_comments_look_id_fkey"
+            columns: ["look_id"]
+            isOneToOne: false
+            referencedRelation: "looks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "look_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "look_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       likes: {
         Row: LikeRow
         Insert: Omit<LikeRow, "id" | "created_at"> & {
@@ -207,12 +284,47 @@ export type Database = {
           },
         ]
       }
+      content_reports: {
+        Row: ContentReportRow
+        Insert: Omit<ContentReportRow, "id" | "created_at"> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Partial<ContentReportRow>
+        Relationships: []
+      }
+      site_banners: {
+        Row: SiteBannerRow
+        Insert: Omit<SiteBannerRow, "id" | "created_at" | "updated_at"> & {
+          id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<SiteBannerRow>
+        Relationships: []
+      }
+      admin_users: {
+        Row: AdminUserRow
+        Insert: AdminUserRow
+        Update: Partial<AdminUserRow>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
       touch_last_seen: {
         Args: Record<string, never>
         Returns: undefined
+      }
+      get_trending_looks_past_day: {
+        Args: { p_limit?: number }
+        Returns: Array<
+          LookRow & {
+            recent_like_count: number
+            username: string
+            avatar_url: string | null
+          }
+        >
       }
     }
   }

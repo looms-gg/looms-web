@@ -9,6 +9,9 @@ export const MAX_LIMITS = {
   BIO: 300,
   SEARCH_QUERY: 80,
   COMMENT: 500,
+  REPORT_DETAILS: 1000,
+  SITE_BANNER_TEXT: 300,
+  SITE_BANNER_LINK_LABEL: 50,
 } as const
 
 // Unicode directional overrides and invisible control characters:

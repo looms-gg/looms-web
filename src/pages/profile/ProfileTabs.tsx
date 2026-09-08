@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import { PieceTile } from "../../components/piece/PieceTile"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { RackGrid } from "../../components/piece/RackGrid"
@@ -130,7 +131,10 @@ function LookCard({ look: row }: { look: LookRow }) {
   const outfit = piecesFromEquipped(look.equipped, look.stack)
 
   return (
-    <div className="piece-tile overflow-hidden rounded-[18px] bg-neutral">
+    <Link
+      to={`/look/${row.id}`}
+      className="piece-tile tile-lift block overflow-hidden rounded-[18px] bg-neutral no-underline text-inherit group"
+    >
       <IsoThumb
         outfit={outfit}
         bodyId={look.bodyId}
@@ -140,13 +144,13 @@ function LookCard({ look: row }: { look: LookRow }) {
       />
       <div className="relative z-10 min-w-0 bg-neutral px-4 pb-4 pt-3">
         <h3
-          className="block min-w-0 max-w-full truncate whitespace-nowrap overflow-hidden text-ellipsis font-extrabold"
+          className="block min-w-0 max-w-full truncate whitespace-nowrap overflow-hidden text-ellipsis font-extrabold group-hover:text-primary transition-colors"
           title={look.name}
         >
           {look.name}
         </h3>
         <p className="mt-2 text-sm text-base-content/60">Public look</p>
       </div>
-    </div>
+    </Link>
   )
 }

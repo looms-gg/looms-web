@@ -1,6 +1,10 @@
-import { useMemo, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { faCloudArrowUp, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
+import { useEffect, useMemo, useState } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
+import {
+  faCloudArrowUp,
+  faMagnifyingGlass,
+  faWandSparkles,
+} from "@fortawesome/free-solid-svg-icons"
 import { SLOT_LABEL } from "../data/catalog"
 import { ExploreRail } from "../components/explore/ExploreRail"
 import { FaIcon } from "../components/ui/FaIcon"
@@ -10,69 +14,149 @@ import { useCatalog } from "../state/catalog"
 import { UploadPieceModal } from "../components/piece/UploadPieceModal"
 import { AuthModal } from "../components/auth/AuthModal"
 import { filterExplorePieces, type SlotFilter, type Sort } from "../lib/exploreBrowse"
-import { ExploreHero, pickFeaturedPieces } from "./explore/ExploreHero"
+import {
+  DEFAULT_FEATURED_LOOKS,
+  fetchPublicLooksFeed,
+  fetchTrendingLooksPastDay,
+  filterAndSortPublicLooks,
+  publicLookToLook,
+  type LookModelFilter,
+  type LookSort,
+  type PublicLook,
+} from "../state/publicLooks"
+import { ExploreHero } from "./explore/ExploreHero"
 import { ExploreRack } from "./explore/ExploreRack"
-
-import { DEFAULT_BODY_ID } from "../data/bodies"
 import { MAX_LIMITS } from "../lib/sanitize"
+import { formatErrorMessage } from "../lib/errorFormat"
 
 export function ExplorePage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get("tab")
+  const mode: "pieces" | "looks" = tabParam === "looks" ? "looks" : "pieces"
+
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<Sort>("Newest")
   const [slot, setSlot] = useState<SlotFilter>("all")
+  const [lookSort, setLookSort] = useState<LookSort>("Trending")
+  const [lookModel, setLookModel] = useState<LookModelFilter>("all")
+
+  const [looks, setLooks] = useState<PublicLook[]>([])
+  const [looksLoading, setLooksLoading] = useState(true)
+  const [looksError, setLooksError] = useState<string | null>(null)
+  const [trendingLooks, setTrendingLooks] = useState<PublicLook[]>([])
+  const [trendingLoading, setTrendingLoading] = useState(true)
+
   const [uploadOpen, setUploadOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const { user } = useAuth()
-  const { pieces, loading, error } = useCatalog()
+  const { pieces, loading: piecesLoading, error: piecesError } = useCatalog()
   const { loadLook } = useCloset()
   const navigate = useNavigate()
 
-  const filtered = useMemo(
+  useEffect(() => {
+    let active = true
+    setTrendingLoading(true)
+    void fetchTrendingLooksPastDay(3)
+      .then((res) => {
+        if (active) {
+          if (res.length >= 3) {
+            setTrendingLooks(res)
+          } else {
+            setTrendingLooks(DEFAULT_FEATURED_LOOKS)
+          }
+          setTrendingLoading(false)
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setTrendingLooks(DEFAULT_FEATURED_LOOKS)
+          setTrendingLoading(false)
+        }
+      })
+    void fetchPublicLooksFeed()
+      .then((res) => {
+        if (active) {
+          setLooks(res)
+          setLooksLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setLooksError(formatErrorMessage(err))
+          setLooksLoading(false)
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  function setMode(nextMode: "pieces" | "looks") {
+    const next = new URLSearchParams(searchParams)
+    if (nextMode === "looks") {
+      next.set("tab", "looks")
+    } else {
+      next.delete("tab")
+    }
+    setSearchParams(next, { replace: true })
+  }
+
+  const filteredPieces = useMemo(
     () => filterExplorePieces(pieces, query, slot, sort),
     [slot, pieces, query, sort],
   )
 
-  const showHero = !query.trim()
-  const featuredPieces = useMemo(() => pickFeaturedPieces(pieces), [pieces])
+  const filteredLooks = useMemo(
+    () => filterAndSortPublicLooks(looks, query, lookSort, lookModel),
+    [looks, query, lookSort, lookModel],
+  )
 
-  function wearFeatured() {
-    loadLook({
-      id: "featured-look",
-      name: "Winter Explorer",
-      equipped: {
-        hair: "ink-fall",
-        coat: "winter-coat",
-        pants: "dark-sweatpants",
-        shoes: "knee-high-converse",
-      },
-      stack: ["coat", "pants", "shoes", "hair"],
-      bodyId: DEFAULT_BODY_ID,
-      bodyHue: 0,
-      model: "classic",
-      savedAt: Date.now(),
-      description: "",
-      visibility: "private",
-    })
+  const showHero = !query.trim()
+
+  function handleWearLook(look: PublicLook) {
+    loadLook(publicLookToLook(look))
     void navigate("/studio")
+  }
+
+  function handleLookLikeCountChange(lookId: string, nextCount: number) {
+    setLooks((prev) =>
+      prev.map((l) => (l.id === lookId ? { ...l, likeCount: nextCount } : l)),
+    )
   }
 
   return (
     <div className="space-y-6">
       {showHero ? (
-        <ExploreHero featuredPieces={featuredPieces} onWearFeatured={wearFeatured} />
+        <ExploreHero
+          trendingLooks={trendingLooks}
+          loading={trendingLoading}
+          onWearLook={handleWearLook}
+        />
       ) : null}
 
       <section
         id="closet"
-        className="flex flex-col gap-4 rounded-[18px] bg-base-200 p-5 md:flex-row md:items-center md:justify-between"
+        className="flex flex-col gap-4 rounded-[22px] bg-base-200 p-5 md:flex-row md:items-center md:justify-between"
       >
         <div>
-          <h2 className="text-2xl font-extrabold tracking-tight">Browse all pieces</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight">
+            {mode === "pieces" ? "Browse all pieces" : "Browse community looks"}
+          </h2>
           <p className="text-sm font-medium text-base-content/60">
-            <span className="tabular-nums">{filtered.length}</span> items
-            {slot === "all" ? " available" : ` · ${SLOT_LABEL[slot]}`}
+            {mode === "pieces" ? (
+              <>
+                <span className="tabular-nums">{filteredPieces.length}</span> items
+                {slot === "all" ? " available" : ` · ${SLOT_LABEL[slot]}`}
+              </>
+            ) : (
+              <>
+                <span className="tabular-nums">{filteredLooks.length}</span> looks published
+                {lookModel === "all" ? "" : ` · ${lookModel === "slim" ? "Slim 3px" : "Classic 4px"}`}
+              </>
+            )}
           </p>
         </div>
+
         <div className="flex w-full max-w-md items-center gap-2">
           <label className="input input-bordered flex h-11 grow items-center gap-2 rounded-full bg-base-100">
             <FaIcon icon={faMagnifyingGlass} className="size-3.5 opacity-50" />
@@ -80,43 +164,81 @@ export function ExplorePage() {
               type="search"
               maxLength={MAX_LIMITS.SEARCH_QUERY}
               className="grow border-none bg-transparent shadow-none outline-none focus:border-none focus:shadow-none focus:outline-none focus:ring-0"
-              placeholder="Search clothing..."
-              aria-label="Search clothing"
+              placeholder={mode === "pieces" ? "Search clothing..." : "Search looks or creators..."}
+              aria-label={mode === "pieces" ? "Search clothing" : "Search looks"}
               value={query}
               onChange={(event) => setQuery(event.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))}
             />
           </label>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm sm:btn-md rounded-full font-bold gap-2 shrink-0 px-3.5 sm:px-4"
-            onClick={() => {
-              if (user) {
-                setUploadOpen(true)
-              } else {
-                setAuthOpen(true)
-              }
-            }}
-          >
-            <FaIcon icon={faCloudArrowUp} className="size-3.5" />
-            <span className="hidden sm:inline">Upload Piece</span>
-          </button>
+
+          {mode === "pieces" ? (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm sm:btn-md rounded-full font-bold gap-2 shrink-0 px-3.5 sm:px-4 shadow-sm active:scale-[0.96] transition-transform"
+              onClick={() => {
+                if (user) {
+                  setUploadOpen(true)
+                } else {
+                  setAuthOpen(true)
+                }
+              }}
+            >
+              <FaIcon icon={faCloudArrowUp} className="size-3.5" />
+              <span className="hidden sm:inline">Upload Piece</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm sm:btn-md rounded-full font-bold gap-2 shrink-0 px-3.5 sm:px-4 shadow-sm active:scale-[0.96] transition-transform"
+              onClick={() => {
+                if (user) {
+                  void navigate("/studio")
+                } else {
+                  setAuthOpen(true)
+                }
+              }}
+            >
+              <FaIcon icon={faWandSparkles} className="size-3.5" />
+              <span className="hidden sm:inline">Open Studio</span>
+            </button>
+          )}
         </div>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <ExploreRail sort={sort} slot={slot} onSort={setSort} onSlot={setSlot} />
+        <ExploreRail
+          mode={mode}
+          onModeChange={setMode}
+          pieceCount={pieces.length}
+          lookCount={looks.length}
+          sort={sort}
+          slot={slot}
+          lookSort={lookSort}
+          model={lookModel}
+          onSort={setSort}
+          onSlot={setSlot}
+          onLookSort={setLookSort}
+          onModel={setLookModel}
+        />
         <ExploreRack
-          loading={loading}
-          error={error}
+          mode={mode}
+          loading={mode === "pieces" ? piecesLoading : looksLoading}
+          error={mode === "pieces" ? piecesError : looksError}
           pieces={pieces}
-          filtered={filtered}
+          filtered={filteredPieces}
+          looks={looks}
+          filteredLooks={filteredLooks}
           slot={slot}
           sort={sort}
+          lookSort={lookSort}
+          model={lookModel}
           query={query}
           onReset={() => {
             setQuery("")
             setSlot("all")
+            setLookModel("all")
           }}
+          onLookLikeCountChange={handleLookLikeCountChange}
         />
       </div>
 

@@ -1,10 +1,12 @@
 import { useId, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
-import { faCamera, faGear, faUpload } from "@fortawesome/free-solid-svg-icons"
+import { faCamera, faFlag, faGear, faUpload } from "@fortawesome/free-solid-svg-icons"
 import { FaIcon } from "../../components/ui/FaIcon"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { MAX_LIMITS } from "../../lib/sanitize"
 import type { ProfileRow } from "../../lib/supabase"
 import { useAuth } from "../../state/auth"
+import { AuthModal } from "../../components/auth/AuthModal"
+import { ReportModal } from "../../components/moderation/ReportModal"
 import {
   canChangeUsername,
   formatLastSeen,
@@ -24,7 +26,7 @@ export function ProfileHeader({
   isOwner: boolean
   onSaved: () => void | Promise<void>
 }) {
-  const { updateProfile } = useAuth()
+  const { user, updateProfile } = useAuth()
   const bannerInputId = useId()
   const avatarInputId = useId()
   const bannerRef = useRef<HTMLInputElement>(null)
@@ -35,6 +37,8 @@ export function ProfileHeader({
   const [editingUsername, setEditingUsername] = useState(false)
   const [draftUsername, setDraftUsername] = useState(profile.username)
   const [privacyOpen, setPrivacyOpen] = useState(false)
+  const [authOpen, setAuthOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -271,7 +275,23 @@ export function ProfileHeader({
             >
               <FaIcon icon={faGear} className="size-4" />
             </button>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm btn-circle min-h-11 min-w-11 text-base-content/60 hover:text-error"
+              title="Report profile"
+              aria-label="Report profile"
+              onClick={() => {
+                if (!user) {
+                  setAuthOpen(true)
+                  return
+                }
+                setReportOpen(true)
+              }}
+            >
+              <FaIcon icon={faFlag} className="size-4" />
+            </button>
+          )}
         </div>
 
         {isOwner && editingBio ? (
@@ -322,6 +342,18 @@ export function ProfileHeader({
           void applyUpdate({ show_likes: next })
         }}
       />
+
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
+      {user ? (
+        <ReportModal
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          targetType="profile"
+          targetId={profile.id}
+          targetLabel={`Profile: @${profile.username}`}
+          reporterId={user.id}
+        />
+      ) : null}
     </section>
   )
 }
