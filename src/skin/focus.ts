@@ -87,10 +87,7 @@ export function lightSkinViewer(viewer: SkinViewer) {
   viewer.cameraLight.intensity = 0.35
   viewer.cameraLight.color = new Color(0xfff6ea)
 
-  if (
-    !viewer.scene.getObjectByName("loomsKeyLight") &&
-    !viewer.scene.getObjectByName("skinplexKeyLight")
-  ) {
+  if (!viewer.scene.getObjectByName("loomsKeyLight")) {
     const key = new DirectionalLight(0xfff3dc, 1.85)
     key.name = "loomsKeyLight"
     key.position.set(-22, 38, 30)

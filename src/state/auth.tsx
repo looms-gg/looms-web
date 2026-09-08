@@ -237,7 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         watchUnconfirmed(email, password)
         return { error: null }
       }
-      return { error: error ? new Error(error.message) : null }
+      return { error: error ? new Error(formatErrorMessage(error)) : null }
     },
     [watchUnconfirmed],
   )

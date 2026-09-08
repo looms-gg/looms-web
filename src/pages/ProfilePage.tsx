@@ -23,9 +23,13 @@ export function ProfilePage() {
   const auth = useAuthOptional()
   const urlTab = parseProfileTab(searchParams.toString())
   const [optimisticTab, setOptimisticTab] = useState<ProfileTab | null>(null)
-  if (optimisticTab != null && optimisticTab === urlTab) {
-    setOptimisticTab(null)
-  }
+
+  useEffect(() => {
+    if (optimisticTab != null && optimisticTab === urlTab) {
+      setOptimisticTab(null)
+    }
+  }, [optimisticTab, urlTab])
+
   const tab = optimisticTab ?? urlTab
 
   const [profile, setProfile] = useState<ProfileRow | null>(null)

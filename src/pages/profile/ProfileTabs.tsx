@@ -135,7 +135,7 @@ function LookCard({ look: row }: { look: LookRow }) {
         outfit={outfit}
         bodyId={look.bodyId}
         bodyHue={look.bodyHue}
-        model={look.model ?? "classic"}
+        model={look.model}
         alt={look.name}
       />
       <div className="relative z-10 min-w-0 bg-neutral px-4 pb-4 pt-3">

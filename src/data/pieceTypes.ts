@@ -80,6 +80,25 @@ export function visibleCovers(piece: Piece, painted: Group[]): Group[] {
   return covers.length ? covers : declared
 }
 
+/**
+ * Shared live/iso preview framing: single-piece crops to visible covers;
+ * full-figure and multi-piece outfits stay wide (`covers` undefined).
+ */
+export function preparePreview(
+  outfit: Piece[],
+  painted: Group[],
+  options?: { fullFigure?: boolean },
+): { covers: Group[] | undefined; group: Group | "full" } {
+  if (options?.fullFigure || outfit.length !== 1) {
+    return { covers: undefined, group: "full" }
+  }
+  const covers = visibleCovers(outfit[0], painted)
+  return {
+    covers,
+    group: covers.length === 1 ? covers[0] : "full",
+  }
+}
+
 export function focusForPiece(piece: Piece): Group | "full" {
   const covers = pieceCovers(piece)
   return covers.length === 1 ? covers[0] : "full"

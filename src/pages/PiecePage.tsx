@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react"
+import { useEffect, useState, type CSSProperties } from "react"
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom"
 import { getPiece } from "../data/catalog"
 import { AuthModal } from "../components/auth/AuthModal"
@@ -26,6 +26,26 @@ export function PiecePage() {
   const { owns, addToWardrobe, wear, addAndWear, equipped } = useCloset()
   const [editing, setEditing] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" })
+      } catch {
+        try {
+          window.scrollTo(0, 0)
+        } catch {
+          /* ignore */
+        }
+      }
+      if (document.documentElement) {
+        document.documentElement.scrollTop = 0
+      }
+      if (document.body) {
+        document.body.scrollTop = 0
+      }
+    }
+  }, [id, location.key])
 
   const stateFrom = (location.state as { from?: string } | null)?.from
   const backTo = stateFrom || "/"

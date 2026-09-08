@@ -65,16 +65,16 @@ export async function exportLook(
 }
 
 export function useStudioBoard() {
-  const session = useCloset()
+  const closet = useCloset()
   const { pieces: catalogPieces } = useCatalog()
   const matchingSavedLook =
-    session.activeLook ??
+    closet.activeLook ??
     findMatchingLook(
-      session.looks,
-      session.equipped,
-      session.bodyId,
-      session.bodyHue,
-      session.model,
+      closet.looks,
+      closet.equipped,
+      closet.bodyId,
+      closet.bodyHue,
+      closet.model,
     )
   const [prevLookId, setPrevLookId] = useState<string | null>(matchingSavedLook?.id ?? null)
   const [name, setName] = useState(matchingSavedLook?.name ?? "")
@@ -89,30 +89,30 @@ export function useStudioBoard() {
 
   const [rack, setRack] = useState<StudioRackTab>("all")
   const [hueOpen, setHueOpen] = useState(false)
-  const outfit = piecesFromEquipped(session.equipped, session.stack)
-  const ownedBySlot = ownedBySlotMap(session.owned, catalogPieces)
+  const outfit = piecesFromEquipped(closet.equipped, closet.stack)
+  const ownedBySlot = ownedBySlotMap(closet.owned, catalogPieces)
   const racks = filledSlots(ownedBySlot)
-  const body = bodyOrDefault(session.bodyId)
-  const bodyTint = shiftHex(body.swatch, session.bodyHue)
+  const body = bodyOrDefault(closet.bodyId)
+  const bodyTint = shiftHex(body.swatch, closet.bodyHue)
 
-  const parsedEye = session.equipped.eyes ? parseEyeId(session.equipped.eyes) : null
+  const parsedEye = closet.equipped.eyes ? parseEyeId(closet.equipped.eyes) : null
   const eyeOffset = parsedEye?.offset ?? 0
 
   const setEyeOffset = (offset: number) => {
-    if (!session.equipped.eyes) return
-    const { baseId } = parseEyeId(session.equipped.eyes)
+    if (!closet.equipped.eyes) return
+    const { baseId } = parseEyeId(closet.equipped.eyes)
     const clamped = clampEyeOffset(offset)
-    session.wear(formatEyeId(baseId, clamped))
+    closet.wear(formatEyeId(baseId, clamped))
   }
 
   const wearEye = (id: string, offset?: number) => {
     const targetOffset = offset !== undefined ? offset : eyeOffset
     const { baseId } = parseEyeId(id)
-    session.wear(formatEyeId(baseId, targetOffset))
+    closet.wear(formatEyeId(baseId, targetOffset))
   }
 
   return {
-    ...session,
+    ...closet,
     name,
     setName,
     rack,
@@ -129,33 +129,33 @@ export function useStudioBoard() {
     setEyeOffset,
     wearEye,
     pickTone: (id: string) =>
-      pickBodyTone(id, session.bodyId, session.setBody, setHueOpen),
+      pickBodyTone(id, closet.bodyId, closet.setBody, setHueOpen),
     confirmOverwriteLook,
     onSave: (event: FormEvent) => {
       event.preventDefault()
       const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
-      const existing = session.looks.find(
+      const existing = closet.looks.find(
         (l) => l.name.trim().toLowerCase() === clean.toLowerCase(),
       )
       if (existing) {
         setConfirmOverwriteLook(existing)
         return
       }
-      session.saveLook(clean)
+      void closet.saveLook(clean)
       setName(clean)
     },
     onConfirmOverwrite: () => {
       if (confirmOverwriteLook) {
         const clean =
           sanitizeText(name, MAX_LIMITS.LOOK_NAME) || confirmOverwriteLook.name
-        session.overwriteLook(confirmOverwriteLook.id, clean)
+        void closet.overwriteLook(confirmOverwriteLook.id, clean)
         setName(clean)
         setConfirmOverwriteLook(null)
       }
     },
     onSaveAsNew: () => {
       const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
-      session.saveLook(clean)
+      void closet.saveLook(clean)
       setName(clean)
       setConfirmOverwriteLook(null)
     },
@@ -163,6 +163,6 @@ export function useStudioBoard() {
       setConfirmOverwriteLook(null)
     },
     downloadSkin: () =>
-      exportLook(outfit, session.bodyId, session.bodyHue, name, session.model, session.notify),
+      exportLook(outfit, closet.bodyId, closet.bodyHue, name, closet.model, closet.notify),
   }
 }

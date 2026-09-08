@@ -44,7 +44,7 @@ export function LookInspector({
           outfit={outfit}
           bodyId={look.bodyId}
           bodyHue={look.bodyHue}
-          model={look.model ?? "classic"}
+          model={look.model}
           alt={look.name}
         />
       </div>
@@ -114,7 +114,7 @@ export function LookInspector({
                   look.bodyId,
                   look.bodyHue,
                   look.name.trim() || "looms-look",
-                  look.model ?? "classic",
+                  look.model,
                 )
                 if (!ok) notify("Couldn't export that skin.")
               })()

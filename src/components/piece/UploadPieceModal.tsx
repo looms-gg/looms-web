@@ -8,8 +8,9 @@ import {
 import { useAuthOptional } from "../../state/auth"
 import { useCloset } from "../../state/closet"
 import { useCatalog } from "../../state/catalog"
-import { supabase } from "../../lib/supabase"
+import { supabase, type GarmentRow } from "../../lib/supabase"
 import { CLOTHING_SLOTS, SLOT_GROUP, type Slot } from "../../data/catalog"
+import { garmentToPiece } from "../../data/garment"
 import { MAX_LIMITS, sanitizeText, sanitizeUsername, validateFileSize } from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { FaIcon } from "../ui/FaIcon"
@@ -138,7 +139,8 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
         data: { publicUrl },
       } = supabase.storage.from("garments").getPublicUrl(storagePath)
 
-      const { error: dbError } = await supabase.from("garments").insert({
+      const maker = profile?.username ? sanitizeUsername(profile.username) : "you"
+      const row: GarmentRow = {
         id: pieceId,
         user_id: user.id,
         name: pieceName,
@@ -152,26 +154,30 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
         texture_url: publicUrl,
         is_public: isPublic,
         tags: [],
+        created_at: new Date().toISOString(),
+      }
+
+      const { error: dbError } = await supabase.from("garments").insert({
+        id: row.id,
+        user_id: row.user_id,
+        name: row.name,
+        description: row.description,
+        slot: row.slot,
+        body_group: row.body_group,
+        saved_count: row.saved_count,
+        like_count: row.like_count,
+        added: row.added,
+        covers: row.covers,
+        texture_url: row.texture_url,
+        is_public: row.is_public,
+        tags: row.tags,
       })
 
       if (dbError) {
         throw new Error(`Failed to save garment record: ${dbError.message}`)
       }
 
-      upsert({
-        id: pieceId,
-        name: pieceName,
-        slot,
-        group: SLOT_GROUP[slot],
-        maker: profile?.username ? sanitizeUsername(profile.username) : "you",
-        savedCount: 0,
-        likeCount: 0,
-        added: Date.now(),
-        blurb: pieceDescription,
-        skin: publicUrl,
-        userId: user.id,
-        isPublic,
-      })
+      upsert(garmentToPiece(row, maker))
       addToWardrobe(pieceId)
       notify(`Uploaded "${pieceName}" to your wardrobe!`)
       onClose()

@@ -124,6 +124,10 @@ describe("session module", () => {
       id: "look-2",
       name: "Loaded Skin",
       equipped: { hat: "hat-cap" },
+      stack: ["hat-cap"],
+      bodyId: persistDefaults.bodyId,
+      bodyHue: 0,
+      model: "classic",
       savedAt: 1000,
       description: "",
       visibility: "private",
@@ -297,25 +301,8 @@ describe("session module", () => {
       }),
     } as any)
 
-    vi.spyOn(authModule, "useAuth").mockReturnValue({
-      user: { id: "user-test-1", email: "test@looms.dev" } as any,
-      session: {} as any,
-      profile: { id: "user-test-1", username: "Tester" } as any,
-      avatarUrl: null,
-      loading: false,
-      emailVerified: true,
-      pendingEmail: null,
-      emailVerifyOpen: false,
-      openEmailVerify: vi.fn(),
-      dismissEmailVerify: vi.fn(),
-      resendConfirmation: vi.fn(),
-      signInWithPassword: vi.fn(),
-      signUpWithPassword: vi.fn(),
-      signInWithOtp: vi.fn(),
-      signOut: vi.fn(),
-      updateProfile: vi.fn(),
-      refreshProfile: vi.fn(),
-    })
+    const mockAuthVal = stubAuth("user-test-1")
+    vi.spyOn(authModule, "useAuth").mockReturnValue(mockAuthVal)
 
     let session!: ReturnType<typeof useCloset>
     function Consumer() {
@@ -324,25 +311,6 @@ describe("session module", () => {
     }
 
     const host = document.createElement("div")
-    const mockAuthVal = {
-      user: { id: "user-test-1", email: "test@looms.dev" } as any,
-      session: {} as any,
-      profile: { id: "user-test-1", username: "Tester" } as any,
-      avatarUrl: null,
-      loading: false,
-      emailVerified: true,
-      pendingEmail: null,
-      emailVerifyOpen: false,
-      openEmailVerify: vi.fn(),
-      dismissEmailVerify: vi.fn(),
-      resendConfirmation: vi.fn(),
-      signInWithPassword: vi.fn(),
-      signUpWithPassword: vi.fn(),
-      signInWithOtp: vi.fn(),
-      signOut: vi.fn(),
-      updateProfile: vi.fn(),
-      refreshProfile: vi.fn(),
-    }
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={mockAuthVal}>

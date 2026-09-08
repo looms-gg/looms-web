@@ -9,10 +9,10 @@ export type Look = {
   id: string
   name: string
   equipped: Equipped
-  stack?: string[]
-  bodyId?: string
-  bodyHue?: number
-  model?: SkinModel
+  stack: string[]
+  bodyId: string
+  bodyHue: number
+  model: SkinModel
   savedAt: number
   description: string
   visibility: LookVisibility
@@ -40,6 +40,17 @@ export const persistDefaults: Persist = {
   looks: [],
   player: null,
   activeLookId: null,
+}
+
+/** Fresh Persist copy for ClosetProvider seed/reset (mutable arrays/objects). */
+export function freshPersist(): Persist {
+  return {
+    ...persistDefaults,
+    owned: [],
+    equipped: {},
+    stack: [],
+    looks: [],
+  }
 }
 
 export function clampHue(value: unknown) {

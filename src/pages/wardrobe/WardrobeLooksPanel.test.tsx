@@ -27,6 +27,10 @@ const rainDay: Look = {
   description: "Wet streets",
   visibility: "private",
   equipped: { coat: "winter-coat" },
+  stack: ["winter-coat"],
+  bodyId: "body-4",
+  bodyHue: 0,
+  model: "classic",
   savedAt: Date.now(),
 }
 
@@ -36,6 +40,10 @@ const storm: Look = {
   description: "",
   visibility: "private",
   equipped: {},
+  stack: [],
+  bodyId: "body-4",
+  bodyHue: 0,
+  model: "classic",
   savedAt: Date.now(),
 }
 

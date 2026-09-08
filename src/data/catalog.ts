@@ -13,6 +13,7 @@ export {
   GROUP_LABEL,
   GROUPS,
   pieceCovers,
+  preparePreview,
   SLOT_GROUP,
   SLOT_LABEL,
   SLOT_STACK,

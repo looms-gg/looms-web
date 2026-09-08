@@ -202,7 +202,7 @@ export function AuthModal({
             maxLength={100}
             autoComplete="email"
             className={fieldClass}
-            placeholder="you@example.com"
+            placeholder="you@looms.gg"
           />
         </div>
 

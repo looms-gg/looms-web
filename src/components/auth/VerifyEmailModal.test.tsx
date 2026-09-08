@@ -17,6 +17,8 @@ function authValue(overrides: Partial<AuthContextValue> = {}): AuthContextValue 
     profile: { id: "u1", username: "PixelWeaver" } as AuthContextValue["profile"],
     avatarUrl: null,
     loading: false,
+    profileError: null,
+    dismissProfileError: vi.fn(),
     emailVerified: false,
     pendingEmail: "weaver@looms.dev",
     emailVerifyOpen: true,

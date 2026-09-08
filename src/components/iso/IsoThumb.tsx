@@ -6,6 +6,28 @@ import type { SkinModel } from "../../skin/convert"
 
 const RIM_DIRS = ["ne", "e", "se"] as const
 
+type IsoThumbShared = {
+  alt: string
+  chip?: boolean
+  priority?: boolean
+  className?: string
+  model?: SkinModel
+}
+
+export type IsoThumbProps =
+  | (IsoThumbShared & {
+      piece: Piece
+      outfit?: never
+      bodyId?: never
+      bodyHue?: never
+    })
+  | (IsoThumbShared & {
+      outfit: Piece[]
+      piece?: never
+      bodyId?: string
+      bodyHue?: number
+    })
+
 function nearestScrollRoot(el: Element) {
   let node = el.parentElement
   while (node && node !== document.documentElement) {
@@ -30,17 +52,7 @@ export function IsoThumb({
   chip = false,
   priority = false,
   className = "",
-}: {
-  piece?: Piece
-  outfit?: Piece[]
-  bodyId?: string
-  bodyHue?: number
-  model?: SkinModel
-  alt: string
-  chip?: boolean
-  priority?: boolean
-  className?: string
-}) {
+}: IsoThumbProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const outfitRef = useRef(outfit)
   outfitRef.current = outfit

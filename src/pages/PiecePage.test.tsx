@@ -195,4 +195,12 @@ describe("PiecePage", () => {
     })
     expect(document.body.textContent).toMatch(/sign in|log in|password/i)
   })
+
+  it("scrolls to the top of the page when item detail view is opened", () => {
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation(() => {})
+    renderPiece(`/piece/${pieces[0].id}`)
+    expect(scrollToSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ top: 0, left: 0 }),
+    )
+  })
 })

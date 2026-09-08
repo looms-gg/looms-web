@@ -200,6 +200,7 @@ function CommentCard({
             className="btn btn-ghost btn-xs min-h-9 rounded-full font-bold text-error"
             title="Delete comment"
             onClick={() => {
+              if (!viewerId) return
               setError(null)
               void deleteGarmentComment({ id: comment.id, userId: viewerId })
                 .then(() => onChanged())

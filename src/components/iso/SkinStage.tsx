@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import type { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../../data/bodies"
-import { visibleCovers, type Group, type Piece } from "../../data/catalog"
-import { composeSkin, focusForGroups, groupsFromAtlas } from "../../skin/compose"
+import { preparePreview, type Piece } from "../../data/catalog"
+import { composeSkin, groupsFromAtlas } from "../../skin/compose"
 import { applyGroupFocus, crispSkinTexture, isoPoseAnimation, mountLiveViewer, poseGroupForParts, skinviewModel } from "../../skin/focus"
 import type { SkinModel } from "../../skin/convert"
 import { ISO_RIM_FILL } from "./IsoFigureFx"
@@ -29,7 +29,6 @@ export function SkinStage({
   bodyId = DEFAULT_BODY_ID,
   bodyHue = 0,
   model = "classic",
-  group = "full",
   fullFigure = false,
   className = "",
 }: {
@@ -37,7 +36,6 @@ export function SkinStage({
   bodyId?: string
   bodyHue?: number
   model?: SkinModel
-  group?: Group | "full"
   fullFigure?: boolean
   className?: string
 }) {
@@ -133,22 +131,16 @@ export function SkinStage({
         const next = outfitRef.current
         viewer.loadSkin(skin, { model: skinviewModel(model) })
         crispSkinTexture(viewer)
-        const studio = fullFigure
         const painted = groupsFromAtlas(skin)
-        const covers =
-          studio || (group === "full" && next.length !== 1)
-            ? undefined
-            : next.length === 1
-              ? visibleCovers(next[0], painted)
-              : painted
-        const pose = studio ? "full" : covers ? poseGroupForParts(covers) : group
+        const { covers, group } = preparePreview(next, painted, { fullFigure })
+        const pose = covers ? poseGroupForParts(covers) : group
         viewer.animation = isoPoseAnimation(pose)
         const focus = () => {
           applyGroupFocus(
             viewer,
-            studio ? "full" : covers ? focusForGroups(covers) : group,
+            group,
             next,
-            studio ? ["head", "torso", "legs"] : covers,
+            fullFigure ? ["head", "torso", "legs"] : covers,
             true,
           )
         }
@@ -165,7 +157,7 @@ export function SkinStage({
       cancelled = true
       replayRef.current = null
     }
-  }, [bodyHue, bodyId, fullFigure, group, model, outfitIds])
+  }, [bodyHue, bodyId, fullFigure, model, outfitIds])
 
   return (
     <div className={`skin-stage relative overflow-hidden bg-base-200 ${className}`}>

@@ -11,6 +11,10 @@ const look: Look = {
   description: "",
   visibility: "private",
   equipped: {},
+  stack: [],
+  bodyId: "body-4",
+  bodyHue: 0,
+  model: "classic",
   savedAt: Date.now(),
 }
 

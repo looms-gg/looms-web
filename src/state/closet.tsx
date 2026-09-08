@@ -10,12 +10,12 @@ import {
 } from "react"
 import { addAndWearPiece, addPiece, setBodyPersist, wearOwned } from "./closetActions"
 import { bodyOrDefault } from "../data/bodies"
-import { equippedFromStack, findMatchingLook, mergeStack, moveStackId } from "../data/outfit"
+import { findMatchingLook, mergeStack, moveStackId } from "../data/outfit"
 import { getPiece, type Slot } from "../data/catalog"
 import type { SkinModel } from "../skin/convert"
 import {
   clampHue,
-  persistDefaults,
+  freshPersist,
   type Look,
   type Persist,
 } from "./persist"
@@ -32,23 +32,28 @@ import {
 
 export type { Look, Persist }
 
+export type ClosetMutationResult = {
+  error: Error | null
+  inserted?: boolean
+}
+
 type ClosetContextValue = Persist & {
   notice: string | null
   activeLook: Look | null
   setActiveLook: (look: Look | null) => void
-  addToWardrobe: (pieceId: string) => Promise<{ inserted: boolean }>
+  addToWardrobe: (pieceId: string) => Promise<ClosetMutationResult>
   wear: (pieceId: string) => void
-  addAndWear: (pieceId: string) => Promise<{ inserted: boolean }>
+  addAndWear: (pieceId: string) => Promise<ClosetMutationResult>
   clearSlot: (slot: Slot) => void
   moveStack: (pieceId: string, steps: number) => void
   setBody: (bodyId: string) => void
   setBodyHue: (hue: number) => void
   setModel: (model: SkinModel) => void
   loadLook: (look: Look) => void
-  saveLook: (name: string) => void
-  overwriteLook: (id: string, name: string) => void
-  renameLook: (id: string, name: string) => void
-  updateLookMeta: (id: string, patch: LookMetaPatch) => void
+  saveLook: (name: string) => Promise<ClosetMutationResult>
+  overwriteLook: (id: string, name: string) => Promise<ClosetMutationResult>
+  renameLook: (id: string, name: string) => Promise<ClosetMutationResult>
+  updateLookMeta: (id: string, patch: LookMetaPatch) => Promise<ClosetMutationResult>
   setPlayerName: (name: string) => void
   clearPlayerName: () => void
   owns: (pieceId: string) => boolean
@@ -65,13 +70,15 @@ type PatchResult = {
   cloudOp?: () => void
 }
 
+type WardrobeRowStatus = "ok" | "dup" | "fail"
+
 export function ClosetProvider({ children }: { children: ReactNode }) {
   const auth = useContext(AuthContext)
   const user = auth?.user ?? null
   const userId = user?.id ?? null
   const sessionOwner = userId ?? "signed-out"
   const [owner, setOwner] = useState<string | "signed-out" | "pending">("pending")
-  const [state, setState] = useState<Persist>(persistDefaults)
+  const [state, setState] = useState<Persist>(freshPersist)
   const [activeLook, setActiveLook] = useState<Look | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [noticeTick, setNoticeTick] = useState(0)
@@ -81,8 +88,9 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
 
   if (owner !== sessionOwner) {
     setOwner(sessionOwner)
-    setState(persistDefaults)
-    stateRef.current = persistDefaults
+    const reset = freshPersist()
+    setState(reset)
+    stateRef.current = reset
     setActiveLook(null)
     looksLoadedFor.current = null
   }
@@ -120,13 +128,14 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
           if (curr) {
             return cloudLooks.find((l) => l.id === curr.id) ?? curr
           }
+          const live = stateRef.current
           return (
             findMatchingLook(
               cloudLooks,
-              state.equipped,
-              state.bodyId,
-              state.bodyHue,
-              state.model,
+              live.equipped,
+              live.bodyId,
+              live.bodyHue,
+              live.model,
             ) ?? null
           )
         })
@@ -175,6 +184,35 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
     setNoticeTick((tick) => tick + 1)
   }, [])
 
+  const runLookWrite = useCallback(
+    async (
+      promise: PromiseLike<{ error: { message: string } | null }>,
+    ): Promise<ClosetMutationResult> => {
+      const { error } = await promise
+      if (error) {
+        flash(formatErrorMessage(error))
+        return { error: new Error(error.message) }
+      }
+      return { error: null }
+    },
+    [flash],
+  )
+
+  const ensureWardrobeRow = useCallback(
+    async (pieceId: string): Promise<WardrobeRowStatus> => {
+      if (!userId) return "fail"
+      const { error } = await supabase
+        .from("wardrobe_items")
+        .insert({ user_id: userId, garment_id: pieceId })
+      if (!error) return "ok"
+      const code = (error as { code?: string }).code
+      if (code === "23505") return "dup"
+      flash(formatErrorMessage(error))
+      return "fail"
+    },
+    [flash, userId],
+  )
+
   const patch = useCallback(
     (updater: (prev: Persist) => PatchResult) => {
       // Apply outside setState: keeps the transition pure and runs effects after.
@@ -189,30 +227,20 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   )
 
   const addToWardrobe = useCallback(
-    async (pieceId: string): Promise<{ inserted: boolean }> => {
-      if (!userId) return { inserted: false }
+    async (pieceId: string): Promise<ClosetMutationResult> => {
+      if (!userId) return { error: new Error("Not authenticated"), inserted: false }
       const piece = getPiece(pieceId)
-      if (!piece || piece.slot === "eyes") return { inserted: false }
+      if (!piece || piece.slot === "eyes") return { error: null, inserted: false }
 
-      const { error } = await supabase
-        .from("wardrobe_items")
-        .insert({ user_id: userId, garment_id: pieceId })
-
-      if (error) {
-        const code = (error as { code?: string }).code
-        if (code === "23505") {
-          patch((prev) => addPiece(prev, pieceId))
-          return { inserted: false }
-        }
-        flash(formatErrorMessage(error))
-        return { inserted: false }
+      const status = await ensureWardrobeRow(pieceId)
+      if (status === "fail") {
+        return { error: new Error("Failed to add to wardrobe"), inserted: false }
       }
       patch((prev) => addPiece(prev, pieceId))
-      return { inserted: true }
+      return { error: null, inserted: status === "ok" }
     },
-    [flash, patch, userId],
+    [ensureWardrobeRow, patch, userId],
   )
-
 
   const wear = useCallback(
     (pieceId: string) => {
@@ -222,37 +250,27 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   )
 
   const addAndWear = useCallback(
-    async (pieceId: string): Promise<{ inserted: boolean }> => {
+    async (pieceId: string): Promise<ClosetMutationResult> => {
       const piece = getPiece(pieceId)
-      if (!piece) return { inserted: false }
+      if (!piece) return { error: null, inserted: false }
       if (piece.slot === "eyes") {
         patch((prev) => wearOwned(prev, pieceId))
-        return { inserted: false }
+        return { error: null, inserted: false }
       }
-      if (!userId) return { inserted: false }
+      if (!userId) return { error: new Error("Not authenticated"), inserted: false }
       if (state.owned.includes(pieceId)) {
         patch((prev) => wearOwned(prev, pieceId))
-        return { inserted: false }
+        return { error: null, inserted: false }
       }
-      const { error } = await supabase
-        .from("wardrobe_items")
-        .insert({ user_id: userId, garment_id: pieceId })
-
-      if (error) {
-        const code = (error as { code?: string }).code
-        if (code === "23505") {
-          patch((prev) => addAndWearPiece(prev, pieceId))
-          return { inserted: false }
-        }
-        flash(formatErrorMessage(error))
-        return { inserted: false }
+      const status = await ensureWardrobeRow(pieceId)
+      if (status === "fail") {
+        return { error: new Error("Failed to add to wardrobe"), inserted: false }
       }
       patch((prev) => addAndWearPiece(prev, pieceId))
-      return { inserted: true }
+      return { error: null, inserted: status === "ok" }
     },
-    [flash, patch, state.owned, userId],
+    [ensureWardrobeRow, patch, state.owned, userId],
   )
-
 
   const clearSlot = useCallback(
     (slot: Slot) => {
@@ -303,10 +321,10 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
           ...prev,
           activeLookId: look.id,
           equipped: look.equipped,
-          stack: mergeStack(look.stack ?? [], look.equipped),
+          stack: mergeStack(look.stack, look.equipped),
           bodyId: bodyOrDefault(look.bodyId).id,
           bodyHue: clampHue(look.bodyHue),
-          model: look.model ?? prev.model,
+          model: look.model,
         },
         message: `Loaded ${look.name}.`,
       }))
@@ -315,13 +333,14 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   )
 
   const saveLook = useCallback(
-    (name: string) => {
-      if (!user) return
+    async (name: string): Promise<ClosetMutationResult> => {
+      if (!user) return { error: new Error("Not authenticated") }
       const lookName = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
       const lookId = crypto.randomUUID()
       const ownerId = user.id
+      let look: Look | null = null
       patch((prev) => {
-        const look: Look = {
+        look = {
           id: lookId,
           name: lookName,
           equipped: { ...prev.equipped },
@@ -337,32 +356,26 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
           next: { ...prev, activeLookId: lookId, looks: [look, ...prev.looks] },
           message: `Saved ${look.name}.`,
           activeLook: look,
-          cloudOp: () => {
-            supabase
-              .from("looks")
-              .insert({
-                id: lookId,
-                user_id: ownerId,
-                ...lookPersistFields(look),
-              })
-              .then(({ error }) => {
-                if (error) {
-                  console.error("Error saving look to Supabase:", error)
-                  flash(formatErrorMessage(error))
-                }
-              })
-          },
         }
       })
+      if (!look) return { error: new Error("Failed to save look") }
+      return runLookWrite(
+        supabase.from("looks").insert({
+          id: lookId,
+          user_id: ownerId,
+          ...lookPersistFields(look),
+        }),
+      )
     },
-    [flash, patch, user],
+    [patch, runLookWrite, user],
   )
 
   const overwriteLook = useCallback(
-    (id: string, name: string) => {
-      if (!user) return
+    async (id: string, name: string): Promise<ClosetMutationResult> => {
+      if (!user) return { error: new Error("Not authenticated") }
       const targetName = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
       const ownerId = user.id
+      let updated: Look | undefined
       patch((prev) => {
         const nextLooks = prev.looks.map((l) =>
           l.id === id
@@ -378,7 +391,7 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
               }
             : l,
         )
-        const updated = nextLooks.find((l) => l.id === id)
+        updated = nextLooks.find((l) => l.id === id)
         if (!updated) {
           return { next: { ...prev, activeLookId: id, looks: nextLooks } }
         }
@@ -386,69 +399,58 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
           next: { ...prev, activeLookId: id, looks: nextLooks },
           message: `Overwrote ${targetName}.`,
           activeLook: updated,
-          cloudOp: () => {
-            supabase
-              .from("looks")
-              .update({
-                ...lookPersistFields(updated),
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", id)
-              .eq("user_id", ownerId)
-              .then(({ error }) => {
-                if (error) {
-                  console.error("Error updating look in Supabase:", error)
-                  flash(formatErrorMessage(error))
-                }
-              })
-          },
         }
       })
+      if (!updated) return { error: null }
+      return runLookWrite(
+        supabase
+          .from("looks")
+          .update({
+            ...lookPersistFields(updated),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .eq("user_id", ownerId),
+      )
     },
-    [flash, patch, user],
+    [patch, runLookWrite, user],
   )
 
   const updateLookMeta = useCallback(
-    (id: string, meta: LookMetaPatch) => {
-      if (!user) return
+    async (id: string, meta: LookMetaPatch): Promise<ClosetMutationResult> => {
+      if (!user) return { error: new Error("Not authenticated") }
       const ownerId = user.id
+      let updated: Look | undefined
       patch((prev) => {
         const current = prev.looks.find((look) => look.id === id)
         if (!current) return { next: prev }
-        const updated = applyLookMeta(current, meta)
+        updated = applyLookMeta(current, meta)
         return {
           next: {
             ...prev,
-            looks: prev.looks.map((look) => (look.id === id ? updated : look)),
-          },
-          cloudOp: () => {
-            supabase
-              .from("looks")
-              .update({
-                name: updated.name,
-                description: updated.description,
-                visibility: updated.visibility,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", id)
-              .eq("user_id", ownerId)
-              .then(({ error }) => {
-                if (error) {
-                  console.error("Error updating look meta in Supabase:", error)
-                  flash(formatErrorMessage(error))
-                }
-              })
+            looks: prev.looks.map((look) => (look.id === id ? updated! : look)),
           },
         }
       })
+      if (!updated) return { error: null }
+      return runLookWrite(
+        supabase
+          .from("looks")
+          .update({
+            name: updated.name,
+            description: updated.description,
+            visibility: updated.visibility,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id)
+          .eq("user_id", ownerId),
+      )
     },
-    [flash, patch, user],
+    [patch, runLookWrite, user],
   )
 
   const renameLook = useCallback(
-    (id: string, name: string) => {
-      updateLookMeta(id, { name })
-    },
+    (id: string, name: string) => updateLookMeta(id, { name }),
     [updateLookMeta],
   )
 

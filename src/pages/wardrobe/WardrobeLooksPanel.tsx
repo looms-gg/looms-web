@@ -97,7 +97,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
                         outfit={piecesFromEquipped(look.equipped, look.stack)}
                         bodyId={look.bodyId}
                         bodyHue={look.bodyHue}
-                        model={look.model ?? "classic"}
+                        model={look.model}
                         alt={look.name}
                       />
                       <div className="bg-neutral px-4 py-3 min-w-0">

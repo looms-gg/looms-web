@@ -1,7 +1,8 @@
 import { MAX_LIMITS, sanitizeText } from "../lib/sanitize"
 import { equippedFromStack } from "../data/outfit"
+import { bodyOrDefault } from "../data/bodies"
 import type { LookRow } from "../lib/supabase"
-import type { Look, LookVisibility } from "./persist"
+import { clampHue, type Look, type LookVisibility } from "./persist"
 
 export type { LookVisibility }
 
@@ -21,14 +22,15 @@ export function asLookDescription(value: unknown): string {
 }
 
 export function lookRowToLook(row: LookRow): Look {
+  const stack = Array.isArray(row.stack) ? row.stack : []
   return {
     id: row.id,
     name: row.name,
-    stack: row.stack,
-    equipped: equippedFromStack(row.stack ?? []),
-    bodyId: row.body_id,
-    bodyHue: row.body_hue,
-    model: row.model,
+    stack,
+    equipped: equippedFromStack(stack),
+    bodyId: bodyOrDefault(row.body_id).id,
+    bodyHue: clampHue(row.body_hue),
+    model: row.model === "slim" ? "slim" : "classic",
     savedAt: new Date(row.created_at).getTime(),
     description: asLookDescription(row.description),
     visibility: asLookVisibility(row.visibility),
@@ -40,10 +42,10 @@ export function lookPersistFields(look: Look) {
     name: look.name,
     description: look.description,
     visibility: look.visibility,
-    stack: look.stack ?? [],
-    body_id: look.bodyId ?? "",
-    body_hue: look.bodyHue ?? 0,
-    model: look.model ?? ("classic" as const),
+    stack: look.stack,
+    body_id: look.bodyId,
+    body_hue: look.bodyHue,
+    model: look.model,
   }
 }
 

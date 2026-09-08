@@ -85,6 +85,21 @@ describe("lookMeta", () => {
       body_hue: 12,
       model: "slim",
       visibility: "public",
+      stack: ["ash-crop"],
     })
+  })
+
+  it("defaults missing stack, body, and model at the LookRow boundary", () => {
+    const look = lookRowToLook({
+      ...row,
+      stack: undefined as unknown as string[],
+      body_id: undefined as unknown as string,
+      body_hue: undefined as unknown as number,
+      model: undefined as unknown as LookRow["model"],
+    })
+    expect(look.stack).toEqual([])
+    expect(look.bodyId).toBeTruthy()
+    expect(look.bodyHue).toBe(0)
+    expect(look.model).toBe("classic")
   })
 })

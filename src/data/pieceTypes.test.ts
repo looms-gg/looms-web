@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   focusForPiece,
   pieceCovers,
+  preparePreview,
   SLOT_GROUP,
   SLOT_STACK,
   visibleCovers,
@@ -39,6 +40,27 @@ describe("pieceTypes", () => {
     expect(focusForPiece(pants)).toBe("full")
     expect(visibleCovers(pants, ["head", "torso", "legs"])).toEqual(["torso", "legs"])
     expect(visibleCovers(pants, ["head"])).toEqual(["torso", "legs"])
+  })
+
+  it("preparePreview crops single pieces and leaves full-figure wide", () => {
+    const coat = piece({
+      id: "c",
+      slot: "coat",
+      group: "torso",
+      covers: ["torso", "legs"],
+    })
+    expect(preparePreview([coat], ["head", "torso", "legs"])).toEqual({
+      covers: ["torso", "legs"],
+      group: "full",
+    })
+    expect(preparePreview([coat], ["head", "torso", "legs"], { fullFigure: true })).toEqual({
+      covers: undefined,
+      group: "full",
+    })
+    expect(preparePreview([coat, coat], ["torso"], { fullFigure: false })).toEqual({
+      covers: undefined,
+      group: "full",
+    })
   })
 
   it("keeps stack order and slot→group map aligned", () => {

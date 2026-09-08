@@ -7,7 +7,6 @@ import {
   faSliders,
 } from "@fortawesome/free-solid-svg-icons"
 import {
-  SLOTS,
   SLOT_LABEL,
   type Piece,
   type Slot,

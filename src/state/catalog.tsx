@@ -13,8 +13,10 @@ import { supabase, type GarmentRow } from "../lib/supabase"
 import { AuthContext } from "./auth"
 import { formatErrorMessage } from "../lib/errorFormat"
 
-type GarmentWithMaker = GarmentRow & {
-  profiles: { username: string } | { username: string }[] | null
+type MakerProfileEmbed = { username: string } | { username: string }[] | null
+
+type GarmentEmbedRow = GarmentRow & {
+  profiles: MakerProfileEmbed
 }
 
 type CatalogContextValue = {
@@ -27,9 +29,28 @@ type CatalogContextValue = {
 
 const CatalogContext = createContext<CatalogContextValue | null>(null)
 
-function makerFromRow(row: GarmentWithMaker) {
-  const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
+function asMakerProfileEmbed(value: unknown): MakerProfileEmbed {
+  if (value == null) return null
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is { username: string } =>
+        Boolean(item) && typeof item === "object" && typeof (item as { username?: unknown }).username === "string",
+      )
+      .map((item) => ({ username: item.username }))
+  }
+  if (typeof value === "object" && typeof (value as { username?: unknown }).username === "string") {
+    return { username: (value as { username: string }).username }
+  }
+  return null
+}
+
+function makerFromEmbed(profiles: MakerProfileEmbed) {
+  const profile = Array.isArray(profiles) ? profiles[0] : profiles
   return profile?.username?.trim() || "maker"
+}
+
+export function mapGarmentEmbed(row: GarmentEmbedRow): Piece {
+  return garmentToPiece(row, makerFromEmbed(row.profiles))
 }
 
 export async function loadGarments(userId?: string | null): Promise<Piece[]> {
@@ -41,8 +62,24 @@ export async function loadGarments(userId?: string | null): Promise<Piece[]> {
   const { data, error } = await query.order("added", { ascending: false })
   if (error) throw error
 
-  return ((data ?? []) as GarmentWithMaker[]).map((row) =>
-    garmentToPiece(row, makerFromRow(row)),
+  return (data ?? []).map((row) =>
+    mapGarmentEmbed({
+      id: row.id,
+      user_id: row.user_id,
+      name: row.name,
+      description: row.description,
+      slot: row.slot,
+      body_group: row.body_group,
+      saved_count: row.saved_count,
+      like_count: row.like_count,
+      added: row.added,
+      covers: row.covers,
+      texture_url: row.texture_url,
+      is_public: row.is_public,
+      tags: row.tags,
+      created_at: row.created_at,
+      profiles: asMakerProfileEmbed(row.profiles),
+    }),
   )
 }
 

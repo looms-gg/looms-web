@@ -1,7 +1,7 @@
 import { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../data/bodies"
-import { visibleCovers, type Group, type Piece } from "../data/catalog"
-import { composePieceSkin, composeSkin, focusForGroups, groupsFromAtlas } from "./compose"
+import { preparePreview, type Group, type Piece } from "../data/catalog"
+import { composePieceSkin, composeSkin, groupsFromAtlas } from "./compose"
 import { applyGroupFocus, crispSkinTexture, lightSkinViewer, skinviewModel } from "./focus"
 import { ensureModel, type SkinModel } from "./convert"
 import { washFromCanvas } from "./wash"
@@ -228,12 +228,12 @@ export async function isoPieceThumb(
         const skin = await composePieceSkin(piece)
         const wash = washFromCanvas(skin)
         const normalized = ensureModel(skin, model)
-        const covers = visibleCovers(piece, groupsFromAtlas(normalized))
+        const { covers, group } = preparePreview([piece], groupsFromAtlas(normalized))
         return {
           skin: normalized,
           wash,
-          group: focusForGroups(covers),
-          covers,
+          group,
+          covers: covers ?? ["head", "torso", "legs"],
           outfit: [piece],
           model: skinviewModel(model),
         }
