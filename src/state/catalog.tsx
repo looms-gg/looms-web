@@ -11,6 +11,7 @@ import { pieces as registryPieces, replaceCatalog, upsertPiece, type Piece } fro
 import { garmentToPiece } from "../data/garment"
 import { supabase, type GarmentRow } from "../lib/supabase"
 import { AuthContext } from "./auth"
+import { formatErrorMessage } from "../lib/errorFormat"
 
 type GarmentWithMaker = GarmentRow & {
   profiles: { username: string } | { username: string }[] | null
@@ -64,7 +65,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       apply(next)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't load the closet.")
+      setError(formatErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -83,19 +84,11 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     [error, loading, pieces, reload, upsert],
   )
 
-  return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
+  return <CatalogContext value={value}>{children}</CatalogContext>
 }
 
 export function useCatalog() {
   const ctx = useContext(CatalogContext)
-  if (!ctx) {
-    return {
-      pieces: registryPieces,
-      loading: false,
-      error: null,
-      upsert: upsertPiece,
-      reload: async () => {},
-    }
-  }
+  if (!ctx) throw new Error("useCatalog must be used in CatalogProvider")
   return ctx
 }

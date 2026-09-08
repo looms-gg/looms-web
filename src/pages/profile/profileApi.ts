@@ -1,7 +1,7 @@
 import type { GarmentRow, LookRow, ProfileRow } from "../../lib/supabase"
 import { supabase } from "../../lib/supabase"
 import type { LikeTargetType } from "../../state/likeKey"
-import { mapProfileRow, PROFILE_SELECT } from "./mapProfileRow"
+import { mapProfileRow, PROFILE_SELECT } from "../../lib/mapProfileRow"
 
 export type LikedTargetRef = {
   target_type: LikeTargetType

@@ -2,13 +2,15 @@ import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { pieces } from "../../data/catalog"
+import { pieces, replaceCatalog } from "../../data/catalog"
+import { fixturePieces } from "../../data/catalogSeed"
 import { AuthContext } from "../../state/auth"
-import { SessionProvider, useSession } from "../../state/closet"
+import { CatalogProvider } from "../../state/catalog"
+import { ClosetProvider, useCloset } from "../../state/closet"
 import { supabase } from "../../lib/supabase"
 import { WardrobePiecesPanel } from "./WardrobePiecesPanel"
 
-vi.mock("../../components/IsoThumb", () => ({
+vi.mock("../../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
 }))
 
@@ -22,6 +24,7 @@ afterEach(() => {
   }
   activeRoots.length = 0
   document.body.innerHTML = ""
+  replaceCatalog(fixturePieces())
   vi.restoreAllMocks()
 })
 
@@ -45,16 +48,31 @@ const signedInAuth = {
   refreshProfile: async () => {},
 } as never
 
-function mockCloudSession() {
+function mockCloudSession(ownedIds: string[] = []) {
   vi.spyOn(supabase, "from").mockImplementation((table: string) => {
     if (table === "wardrobe_items") {
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            order: vi.fn().mockResolvedValue({
+              data: ownedIds.map((garment_id) => ({ garment_id })),
+              error: null,
+            }),
           }),
         }),
         insert: vi.fn().mockResolvedValue({ error: null }),
+      } as never
+    }
+    if (table === "garments") {
+      return {
+        select: vi.fn().mockReturnValue({
+          or: vi.fn().mockReturnValue({
+            order: vi.fn().mockRejectedValue(new Error("skip remote catalog")),
+          }),
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockRejectedValue(new Error("skip remote catalog")),
+          }),
+        }),
       } as never
     }
     return {
@@ -82,11 +100,12 @@ function setInputValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event("input", { bubbles: true }))
 }
 
-function renderPieces(signedIn = false) {
-  mockCloudSession()
-  let session!: ReturnType<typeof useSession>
+function renderPieces(options: { signedIn?: boolean; ownedIds?: string[] } = {}) {
+  const { signedIn = false, ownedIds = [] } = options
+  mockCloudSession(ownedIds)
+  let session!: ReturnType<typeof useCloset>
   function Capture() {
-    session = useSession()
+    session = useCloset()
     return null
   }
   const host = document.createElement("div")
@@ -97,15 +116,19 @@ function renderPieces(signedIn = false) {
       <MemoryRouter>
         {signedIn ? (
           <AuthContext.Provider value={signedInAuth}>
-            <SessionProvider>
-              <Capture />
-              <WardrobePiecesPanel />
-            </SessionProvider>
+            <CatalogProvider>
+              <ClosetProvider>
+                <Capture />
+                <WardrobePiecesPanel />
+              </ClosetProvider>
+            </CatalogProvider>
           </AuthContext.Provider>
         ) : (
-          <SessionProvider>
-            <WardrobePiecesPanel />
-          </SessionProvider>
+          <CatalogProvider>
+            <ClosetProvider>
+              <WardrobePiecesPanel />
+            </ClosetProvider>
+          </CatalogProvider>
         )}
       </MemoryRouter>,
     )
@@ -116,7 +139,7 @@ function renderPieces(signedIn = false) {
 describe("WardrobePiecesPanel", () => {
   it("shows empty CTA linking to explore when closet has no owned pieces", () => {
     const { host } = renderPieces()
-    expect(host.textContent).toMatch(/Closet’s still empty/)
+    expect(host.textContent).toMatch(/Wardrobe’s still empty/)
     expect(host.textContent).toMatch(/Explore pieces/)
     expect(host.querySelector("a")?.getAttribute("href")).toBe("/")
   })
@@ -127,10 +150,9 @@ describe("WardrobePiecesPanel", () => {
     expect(coat).toBeTruthy()
     expect(shirt).toBeTruthy()
 
-    const { host, getSession } = renderPieces(true)
-    flushSync(() => {
-      void getSession().addToWardrobe(coat.id)
-      void getSession().addToWardrobe(shirt.id)
+    const { host, getSession } = renderPieces({
+      signedIn: true,
+      ownedIds: [coat.id, shirt.id],
     })
     await vi.waitFor(() => {
       expect(getSession().owns(coat.id)).toBe(true)
@@ -147,9 +169,9 @@ describe("WardrobePiecesPanel", () => {
 
   it("filters by layer and resets filters when the rack is empty", async () => {
     const coat = pieces.find((p) => p.slot === "coat")!
-    const { host, getSession } = renderPieces(true)
-    flushSync(() => {
-      void getSession().addToWardrobe(coat.id)
+    const { host, getSession } = renderPieces({
+      signedIn: true,
+      ownedIds: [coat.id],
     })
     await vi.waitFor(() => {
       expect(getSession().owns(coat.id)).toBe(true)
@@ -180,10 +202,9 @@ describe("WardrobePiecesPanel", () => {
   it("filters by search query", async () => {
     const coat = pieces.find((p) => p.slot === "coat")!
     const shirt = pieces.find((p) => p.slot === "shirt")!
-    const { host, getSession } = renderPieces(true)
-    flushSync(() => {
-      void getSession().addToWardrobe(coat.id)
-      void getSession().addToWardrobe(shirt.id)
+    const { host, getSession } = renderPieces({
+      signedIn: true,
+      ownedIds: [coat.id, shirt.id],
     })
     await vi.waitFor(() => {
       expect(getSession().owns(coat.id)).toBe(true)

@@ -18,13 +18,8 @@ import {
   sanitizeUsername,
 } from "../lib/sanitize"
 import { resolveAvatarUrl } from "./profileDisplay"
-import { mapProfileRow, PROFILE_SELECT } from "../pages/profile/mapProfileRow"
-
-export function getAvatarUrl(
-  profile: { minecraft_username?: string | null; avatar_url?: string | null } | null,
-): string | null {
-  return resolveAvatarUrl(profile)
-}
+import { formatErrorMessage } from "../lib/errorFormat"
+import { mapProfileRow, PROFILE_SELECT } from "../lib/mapProfileRow"
 
 const LAST_SEEN_CLIENT_THROTTLE_MS = 5 * 60 * 1000
 
@@ -34,6 +29,8 @@ export interface AuthContextValue {
   profile: ProfileRow | null
   avatarUrl: string | null
   loading: boolean
+  profileError: string | null
+  dismissProfileError: () => void
   emailVerified: boolean
   pendingEmail: string | null
   emailVerifyOpen: boolean
@@ -73,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<ProfileRow | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileError, setProfileError] = useState<string | null>(null)
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
   const [emailVerifyOpen, setEmailVerifyOpen] = useState(false)
   const pendingUnlockRef = useRef<{ email: string; password: string } | null>(null)
@@ -104,15 +102,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle()
 
       if (error) {
-        console.error("Error fetching profile:", error.message)
+        setProfileError(formatErrorMessage(error))
         return
       }
 
+      setProfileError(null)
       if (data) {
         setProfile(mapProfileRow(data))
       }
     } catch (err) {
-      console.error("Unexpected error fetching profile:", err)
+      setProfileError(formatErrorMessage(err))
     }
   }, [])
 
@@ -288,8 +287,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.user) {
         const profilePayload: Database["public"]["Tables"]["profiles"]["Insert"] = {
           id: data.user.id,
-          username: username.trim(),
-          minecraft_username: minecraftUsername?.trim() || null,
+          username: cleanUsername,
+          minecraft_username: cleanMc || null,
         }
         await supabase.from("profiles").upsert(profilePayload)
         await fetchProfile(data.user.id)
@@ -406,7 +405,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmailVerifyOpen(false)
   }, [])
 
-  const avatarUrl = getAvatarUrl(profile)
+  const dismissProfileError = useCallback(() => {
+    setProfileError(null)
+  }, [])
+
+  const avatarUrl = resolveAvatarUrl(profile)
 
   const value: AuthContextValue = {
     user,
@@ -414,6 +417,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     avatarUrl,
     loading,
+    profileError,
+    dismissProfileError,
     emailVerified,
     pendingEmail,
     emailVerifyOpen,
@@ -428,7 +433,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshProfile,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext value={value}>{children}</AuthContext>
 }
 
 export function useAuthOptional(): AuthContextValue | null {

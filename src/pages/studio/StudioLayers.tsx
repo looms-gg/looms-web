@@ -3,8 +3,8 @@ import type { Piece, Slot } from "../../data/catalog"
 import { SLOT_LABEL } from "../../data/catalog"
 import type { Body } from "../../data/bodies"
 import { getEye } from "../../data/eyes"
-import { IsoThumb } from "../../components/IsoThumb"
-import { FaIcon } from "../../components/FaIcon"
+import { IsoThumb } from "../../components/iso/IsoThumb"
+import { FaIcon } from "../../components/ui/FaIcon"
 import type { SkinModel } from "../../skin/convert"
 
 function StackRow({
@@ -95,15 +95,7 @@ export function StudioLayers({
   onMove: (id: string, steps: number) => void
   onClear: (slot: Slot) => void
   onOpenAppearance?: () => void
-  // Optional backwards-compatible props:
-  bodies?: Body[]
-  bodyId?: string
   bodyHue?: number
-  hueOpen?: boolean
-  equippedEyes?: string
-  onPickTone?: (id: string) => void
-  onBodyHue?: (hue: number) => void
-  onWear?: (id: string) => void
 }) {
   const canShift = stackTopFirst.length > 1
 

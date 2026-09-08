@@ -2,7 +2,8 @@ import type { Equipped } from "../data/outfit"
 import { DEFAULT_BODY_ID } from "../data/bodies"
 import { HUE_MAX, HUE_MIN } from "../skin/hue"
 import type { SkinModel } from "../skin/convert"
-import type { LookVisibility } from "./lookMeta"
+
+export type LookVisibility = "private" | "public"
 
 export type Look = {
   id: string

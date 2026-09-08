@@ -1,6 +1,6 @@
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/FaIcon"
-import { ModalOverlay } from "../../components/ModalOverlay"
+import { FaIcon } from "../../components/ui/FaIcon"
+import { ModalOverlay } from "../../components/ui/ModalOverlay"
 
 export function ProfilePrivacyModal({
   open = true,

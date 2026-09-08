@@ -3,7 +3,7 @@
 **Free modular wardrobe for Minecraft skins.**  
 Browse clothing layers, stack outfits in Studio, export a vanilla PNG.
 
-**[Live site](https://looms-gg.github.io/looms-web/)** · **[Discord](https://discord.gg/k4DcnznKzd)**
+**[Live site](https://looms-gg.github.io/looms-web/)** · **[Discord](https://discord.gg/UNTRgHBBPb)**
 
 ---
 
@@ -11,7 +11,7 @@ Browse clothing layers, stack outfits in Studio, export a vanilla PNG.
 
 looms is open source. Feature requests, piece ideas, and UX feedback belong in Discord — that is where the community shapes what we build next.
 
-[Join the Discord](https://discord.gg/k4DcnznKzd) and tell us what you want to wear, browse, or fix!
+[Join the Discord](https://discord.gg/UNTRgHBBPb) and tell us what you want to wear, browse, or fix!
 
 GitHub is for developers: pull requests, code review, and bugs that need a reproducible case.
 

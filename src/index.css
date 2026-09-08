@@ -1432,7 +1432,7 @@ html.studio-lock #root {
 }
 
 @media (min-width: 64rem) {
-  .closet-rail {
+  .explore-rail {
     position: sticky;
     top: 5.5rem;
     z-index: 30;

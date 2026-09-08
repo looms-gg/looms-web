@@ -1,24 +1,41 @@
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { pieces, upsertPiece } from "../data/catalog"
-import { SessionProvider } from "../state/closet"
+import { ClosetProvider } from "../state/closet"
 import { AuthContext } from "../state/auth"
+import { CatalogProvider } from "../state/catalog"
 import * as catalogState from "../state/catalog"
+import { LikesProvider } from "../state/likes"
 import { PiecePage } from "./PiecePage"
 
-vi.mock("../components/IsoThumb", () => ({
+vi.mock("../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
 }))
 
-vi.mock("../components/SkinStage", () => ({
+vi.mock("../components/iso/SkinStage", () => ({
   SkinStage: () => <div data-testid="mock-skin-stage" />,
 }))
 
-vi.mock("../components/PieceComments", () => ({
+vi.mock("../components/piece/PieceComments", () => ({
   PieceComments: () => <div data-testid="mock-piece-comments" />,
 }))
+
+const activeRoots: ReturnType<typeof createRoot>[] = []
+
+afterEach(() => {
+  for (const root of activeRoots) {
+    try {
+      root.unmount()
+    } catch {
+      /* ignore */
+    }
+  }
+  activeRoots.length = 0
+  document.body.innerHTML = ""
+  vi.restoreAllMocks()
+})
 
 function stubAuth(userId: string | null) {
   return {
@@ -39,6 +56,8 @@ function stubAuth(userId: string | null) {
     signOut: async () => ({ error: null }),
     updateProfile: async () => ({ error: null }),
     refreshProfile: async () => {},
+    profileError: null,
+    dismissProfileError: () => {},
   }
 }
 
@@ -47,15 +66,21 @@ function renderPiece(
   userId: string | null = null,
 ) {
   const host = document.createElement("div")
+  const root = createRoot(host)
+  activeRoots.push(root)
   flushSync(() => {
-    createRoot(host).render(
+    root.render(
       <MemoryRouter initialEntries={[initialEntry]}>
         <AuthContext.Provider value={stubAuth(userId) as never}>
-          <SessionProvider>
-            <Routes>
-              <Route path="/piece/:id" element={<PiecePage />} />
-            </Routes>
-          </SessionProvider>
+          <LikesProvider>
+            <CatalogProvider>
+              <ClosetProvider>
+                <Routes>
+                  <Route path="/piece/:id" element={<PiecePage />} />
+                </Routes>
+              </ClosetProvider>
+            </CatalogProvider>
+          </LikesProvider>
         </AuthContext.Provider>
       </MemoryRouter>,
     )
@@ -105,7 +130,6 @@ describe("PiecePage", () => {
     const host = renderPiece("/piece/still-fetching")
     expect(host.querySelector('[aria-label="Loading piece"]')).toBeTruthy()
     expect(host.querySelectorAll(".profile-bone").length).toBeGreaterThan(0)
-    vi.restoreAllMocks()
   })
 
   it("shows Edit for the garment creator only, pinned top-right", () => {

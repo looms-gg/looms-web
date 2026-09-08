@@ -46,6 +46,14 @@ export function poseIsoLimbs(player: PlayerObject, group: Group | "full") {
   }
 }
 
+/** Map visible body parts onto the iso pose group (torso+legs → full). */
+export function poseGroupForParts(parts: readonly Group[]): Group | "full" {
+  if (parts.includes("torso") && parts.includes("legs")) return "full"
+  if (parts.includes("torso")) return "torso"
+  if (parts.includes("legs")) return "legs"
+  return "head"
+}
+
 export function isoPoseAnimation(group: Group | "full") {
   return new FunctionAnimation((player) => {
     poseIsoLimbs(player, group)
@@ -295,15 +303,6 @@ export function applyGroupFocus(
     rightLeg: parts.includes("legs"),
     leftLeg: parts.includes("legs"),
   }
-  const pantsShot = outfit.length === 1 && outfit[0]?.slot === "pants"
-  if (pantsShot) {
-    show.head = false
-    show.body = false
-    show.rightArm = false
-    show.leftArm = false
-    show.rightLeg = true
-    show.leftLeg = true
-  }
   for (const part of PARTS) {
     skin[part].visible = show[part]
   }
@@ -317,16 +316,7 @@ export function applyGroupFocus(
     LIVE_VIEW.yaw,
     0,
   )
-  poseIsoLimbs(
-    viewer.playerObject,
-    parts.includes("torso") && parts.includes("legs")
-      ? "full"
-      : parts.includes("torso")
-        ? "torso"
-        : parts.includes("legs")
-          ? "legs"
-          : "head",
-  )
+  poseIsoLimbs(viewer.playerObject, poseGroupForParts(parts))
 
   skin.head.outerLayer.visible = true
   skin.body.outerLayer.visible = true

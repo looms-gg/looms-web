@@ -42,7 +42,7 @@ describe("uploadProfileImage", () => {
 
   it("compresses then uploads a webp under the user folder", async () => {
     const raw = new File([new Uint8Array(1200)], "photo.png", { type: "image/png" })
-    const result = await uploadProfileImage("u1", "avatar", raw)
+    const url = await uploadProfileImage("u1", "avatar", raw)
 
     expect(compressProfileImage).toHaveBeenCalledWith(raw, "avatar")
     expect(uploadMock).toHaveBeenCalled()
@@ -51,15 +51,12 @@ describe("uploadProfileImage", () => {
     expect(file).toBeInstanceOf(File)
     expect((file as File).type).toBe("image/webp")
     expect(opts).toMatchObject({ contentType: "image/webp", upsert: true })
-    expect(result.error).toBeNull()
-    expect(result.url).toBe("https://example.test/profiles/u1/avatar.webp")
+    expect(url).toBe("https://example.test/profiles/u1/avatar.webp")
   })
 
   it("rejects disallowed types before compress", async () => {
     const gif = new File([new Uint8Array(10)], "x.gif", { type: "image/gif" })
-    const result = await uploadProfileImage("u1", "banner", gif)
-    expect(result.url).toBeNull()
-    expect(result.error?.message).toMatch(/Invalid file type/i)
+    await expect(uploadProfileImage("u1", "banner", gif)).rejects.toThrow(/Invalid file type/i)
     expect(compressProfileImage).not.toHaveBeenCalled()
     expect(uploadMock).not.toHaveBeenCalled()
   })

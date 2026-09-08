@@ -7,7 +7,8 @@ import {
   pickBodyTone,
   useStudioBoard,
 } from "./useStudioBoard"
-import { SessionProvider, useSession, type Look } from "../../state/closet"
+import { ClosetProvider, useCloset, type Look } from "../../state/closet"
+import { CatalogProvider } from "../../state/catalog"
 import * as authModule from "../../state/auth"
 import type { AuthContextValue } from "../../state/auth"
 import { supabase } from "../../lib/supabase"
@@ -31,6 +32,8 @@ function stubAuth(userId: string): AuthContextValue {
     signOut: vi.fn(),
     updateProfile: vi.fn(),
     refreshProfile: vi.fn(),
+    profileError: null,
+    dismissProfileError: vi.fn(),
   }
 }
 
@@ -95,10 +98,10 @@ describe("useStudioBoard name loading", () => {
 
   it("loads previously saved look name when a look is saved", async () => {
     let board!: ReturnType<typeof useStudioBoard>
-    let session!: ReturnType<typeof useSession>
+    let session!: ReturnType<typeof useCloset>
 
     function Harness() {
-      session = useSession()
+      session = useCloset()
       board = useStudioBoard()
       return null
     }
@@ -107,9 +110,11 @@ describe("useStudioBoard name loading", () => {
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <SessionProvider>
-            <Harness />
-          </SessionProvider>
+          <CatalogProvider>
+            <ClosetProvider>
+              <Harness />
+            </ClosetProvider>
+          </CatalogProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -127,10 +132,10 @@ describe("useStudioBoard name loading", () => {
 
   it("loads the previous name when loading a saved look", () => {
     let board!: ReturnType<typeof useStudioBoard>
-    let session!: ReturnType<typeof useSession>
+    let session!: ReturnType<typeof useCloset>
 
     function Harness() {
-      session = useSession()
+      session = useCloset()
       board = useStudioBoard()
       return null
     }
@@ -139,9 +144,11 @@ describe("useStudioBoard name loading", () => {
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <SessionProvider>
-            <Harness />
-          </SessionProvider>
+          <CatalogProvider>
+            <ClosetProvider>
+              <Harness />
+            </ClosetProvider>
+          </CatalogProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -164,10 +171,10 @@ describe("useStudioBoard name loading", () => {
 
   it("keeps the matching look name when activeLook is cleared but outfit still matches", async () => {
     let board!: ReturnType<typeof useStudioBoard>
-    let session!: ReturnType<typeof useSession>
+    let session!: ReturnType<typeof useCloset>
 
     function Harness() {
-      session = useSession()
+      session = useCloset()
       board = useStudioBoard()
       return null
     }
@@ -176,9 +183,11 @@ describe("useStudioBoard name loading", () => {
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <SessionProvider>
-            <Harness />
-          </SessionProvider>
+          <CatalogProvider>
+            <ClosetProvider>
+              <Harness />
+            </ClosetProvider>
+          </CatalogProvider>
         </authModule.AuthContext.Provider>,
       )
     })

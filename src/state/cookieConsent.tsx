@@ -37,11 +37,11 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <CookieConsentContext.Provider
+    <CookieConsentContext
       value={{ consent, bannerOpen, acceptAll, rejectNonEssential, openSettings }}
     >
       {children}
-    </CookieConsentContext.Provider>
+    </CookieConsentContext>
   )
 }
 

@@ -1,4 +1,4 @@
-import type { Piece } from "./catalog"
+import type { Piece } from "./pieceTypes"
 
 // Vite glob imports for bundled eye textures
 const skinModules = import.meta.glob<{ default: string }>(

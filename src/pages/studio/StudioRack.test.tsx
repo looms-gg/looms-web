@@ -2,15 +2,16 @@ import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { MemoryRouter } from "react-router-dom"
 import { describe, expect, it, vi } from "vitest"
-import { emptyOwnedBySlot, StudioRack } from "./StudioRack"
+import { StudioRack } from "./StudioRack"
+import { emptyOwnedBySlot } from "./studioOwned"
 import { bodies } from "../../data/bodies"
 
-vi.mock("../../components/IsoThumb", () => ({
+vi.mock("../../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
 }))
 
 describe("StudioRack", () => {
-  it("exports the piece rack and an empty slot map", () => {
+  it("renders the piece rack with an empty slot map helper", () => {
     expect(typeof StudioRack).toBe("function")
     expect(Object.keys(emptyOwnedBySlot()).length).toBeGreaterThan(0)
   })

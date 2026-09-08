@@ -4,12 +4,13 @@ import { flushSync } from "react-dom"
 import { MemoryRouter, useLocation } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { pieces, upsertPiece } from "../data/catalog"
-import { SessionProvider, useSession } from "../state/closet"
+import { ClosetProvider, useCloset } from "../state/closet"
 import { AuthContext } from "../state/auth"
+import { CatalogProvider } from "../state/catalog"
 import { supabase } from "../lib/supabase"
 import { WardrobePage } from "./WardrobePage"
 
-vi.mock("../components/IsoThumb", () => ({
+vi.mock("../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
 }))
 
@@ -73,16 +74,20 @@ function mockCloudSession() {
   })
 }
 
-function renderWardrobe(path = "/wardrobe") {
+function renderWardrobe(path = "/wardrobe", authValue: unknown = signedInAuth) {
   const host = document.createElement("div")
   const root = createRoot(host)
   activeRoots.push(root)
   flushSync(() => {
     root.render(
       <MemoryRouter initialEntries={[path]}>
-        <SessionProvider>
-          <WardrobePage />
-        </SessionProvider>
+        <AuthContext.Provider value={authValue as never}>
+          <CatalogProvider>
+            <ClosetProvider>
+              <WardrobePage />
+            </ClosetProvider>
+          </CatalogProvider>
+        </AuthContext.Provider>
       </MemoryRouter>,
     )
   })
@@ -115,9 +120,9 @@ function openTileModal(host: HTMLElement, name: string) {
 
 function renderWardrobeWithLooks(...names: string[]) {
   mockCloudSession()
-  let session!: ReturnType<typeof useSession>
+  let session!: ReturnType<typeof useCloset>
   function Capture() {
-    session = useSession()
+    session = useCloset()
     return null
   }
   const host = document.createElement("div")
@@ -127,11 +132,13 @@ function renderWardrobeWithLooks(...names: string[]) {
     root.render(
       <MemoryRouter initialEntries={["/wardrobe"]}>
         <AuthContext.Provider value={signedInAuth}>
-          <SessionProvider>
-            <Capture />
-            <WardrobePage />
-            <PathPeek />
-          </SessionProvider>
+          <CatalogProvider>
+            <ClosetProvider>
+              <Capture />
+              <WardrobePage />
+              <PathPeek />
+            </ClosetProvider>
+          </CatalogProvider>
         </AuthContext.Provider>
       </MemoryRouter>,
     )
@@ -153,7 +160,7 @@ describe("WardrobePage", () => {
 
   it("shows pieces empty state on ?tab=pieces", () => {
     const host = renderWardrobe("/wardrobe?tab=pieces")
-    expect(host.textContent).toMatch(/Closet/)
+    expect(host.textContent).toMatch(/Wardrobe/)
     expect(host.textContent).toMatch(/Explore pieces/)
   })
 
@@ -165,7 +172,7 @@ describe("WardrobePage", () => {
     flushSync(() => {
       piecesTab.click()
     })
-    expect(host.textContent).toMatch(/Closet/)
+    expect(host.textContent).toMatch(/Wardrobe/)
   })
 
   it("opens a look modal and Edit outfit navigates to studio", async () => {
@@ -286,9 +293,9 @@ describe("WardrobePage", () => {
       } as never
     })
 
-    let session!: ReturnType<typeof useSession>
+    let session!: ReturnType<typeof useCloset>
     function Capture() {
-      session = useSession()
+      session = useCloset()
       return null
     }
     const host = document.createElement("div")
@@ -318,11 +325,11 @@ describe("WardrobePage", () => {
               } as never
             }
           >
-            <SessionProvider>
+            <CatalogProvider><ClosetProvider>
               <Capture />
               <WardrobePage />
               <PathPeek />
-            </SessionProvider>
+            </ClosetProvider></CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -346,13 +353,6 @@ describe("WardrobePage", () => {
     expect(pieceLink).not.toBeNull()
     expect(host.querySelector(`button[aria-label^="Add "]`)).toBeNull()
     expect(host.querySelector('[data-testid="path"]')?.textContent).toBe("/wardrobe")
-  })
-
-  it("shows sign in prompt in My Uploads when user is signed out", () => {
-    const host = renderWardrobe("/wardrobe?tab=uploads")
-    expect(host.textContent).toMatch(/My Uploads/)
-    expect(host.textContent).toMatch(/Sign in to view your creations/)
-    expect(host.textContent).toMatch(/Sign in/)
   })
 
   it("shows empty uploads state when user is signed in with no uploads", () => {
@@ -380,9 +380,9 @@ describe("WardrobePage", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={authValue as never}>
-            <SessionProvider>
+            <CatalogProvider><ClosetProvider>
               <WardrobePage />
-            </SessionProvider>
+            </ClosetProvider></CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -425,9 +425,9 @@ describe("WardrobePage", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={authValue as never}>
-            <SessionProvider>
+            <CatalogProvider><ClosetProvider>
               <WardrobePage />
-            </SessionProvider>
+            </ClosetProvider></CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )

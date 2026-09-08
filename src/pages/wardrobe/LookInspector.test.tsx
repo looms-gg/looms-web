@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { MemoryRouter } from "react-router-dom"
 import { describe, expect, it } from "vitest"
-import { SessionProvider, useSession, type Look } from "../../state/closet"
+import { ClosetProvider, useCloset, type Look } from "../../state/closet"
 import { LookInspector } from "./LookInspector"
 
 const look: Look = {
@@ -28,9 +28,9 @@ function renderInspector(onEditOutfit: () => void = () => {}) {
   flushSync(() => {
     createRoot(host).render(
       <MemoryRouter>
-        <SessionProvider>
+        <ClosetProvider>
           <LookInspector look={look} onEditOutfit={onEditOutfit} />
-        </SessionProvider>
+        </ClosetProvider>
       </MemoryRouter>,
     )
   })
@@ -100,7 +100,7 @@ describe("LookInspector", () => {
 
   it("enforces maxLength and sanitizes look name on edit", () => {
     function Harness() {
-      const session = useSession()
+      const session = useCloset()
       const saved = session.looks[0] ?? look
       return <LookInspector look={saved} onEditOutfit={() => {}} />
     }
@@ -109,9 +109,9 @@ describe("LookInspector", () => {
     flushSync(() => {
       createRoot(host).render(
         <MemoryRouter>
-          <SessionProvider>
+          <ClosetProvider>
             <Harness />
-          </SessionProvider>
+          </ClosetProvider>
         </MemoryRouter>,
       )
     })

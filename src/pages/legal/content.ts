@@ -12,7 +12,7 @@ export type LegalDoc = {
   sections: LegalSection[]
 }
 
-const DISCORD = "https://discord.gg/k4DcnznKzd"
+const DISCORD = "https://discord.gg/UNTRgHBBPb"
 const CONTACT = "privacy@[TBD]"
 
 export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {

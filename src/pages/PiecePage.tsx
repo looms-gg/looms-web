@@ -1,13 +1,13 @@
 import { useState, type CSSProperties } from "react"
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom"
 import { getPiece } from "../data/catalog"
-import { AuthModal } from "../components/AuthModal"
-import { PieceComments } from "../components/PieceComments"
-import { useSession } from "../state/closet"
+import { AuthModal } from "../components/auth/AuthModal"
+import { PieceComments } from "../components/piece/PieceComments"
+import { useCloset } from "../state/closet"
 import { useCatalog } from "../state/catalog"
 import { useAuthOptional } from "../state/auth"
-import { PieceSheet } from "./PieceSheet"
-import { PieceSkeleton } from "./PieceSkeleton"
+import { PieceSheet } from "./piece/PieceSheet"
+import { PieceSkeleton } from "./piece/PieceSkeleton"
 import { InspectorModal } from "./wardrobe/InspectorModal"
 import { UploadInspector } from "./wardrobe/UploadInspector"
 
@@ -23,7 +23,7 @@ export function PiecePage() {
   const user = auth?.user ?? null
   const { loading, upsert } = useCatalog()
   const piece = id ? getPiece(id) : undefined
-  const { owns, addToWardrobe, wear, addAndWear, equipped } = useSession()
+  const { owns, addToWardrobe, wear, addAndWear, equipped } = useCloset()
   const [editing, setEditing] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
 
@@ -81,15 +81,15 @@ export function PiecePage() {
         onWear={() => wear(currentPiece.id)}
         onAddToWardrobe={() =>
           requireAuth(() => {
-            void addToWardrobe(currentPiece.id).then((added) => {
-              if (added) bumpSaved()
+            void addToWardrobe(currentPiece.id).then(({ inserted }) => {
+              if (inserted) bumpSaved()
             })
           })
         }
         onAddAndWear={() =>
           requireAuth(() => {
-            void addAndWear(currentPiece.id).then((added) => {
-              if (added) bumpSaved()
+            void addAndWear(currentPiece.id).then(({ inserted }) => {
+              if (inserted) bumpSaved()
             })
           })
         }

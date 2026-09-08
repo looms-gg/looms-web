@@ -2,10 +2,10 @@ import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { SessionProvider, type Look } from "../../state/closet"
+import { ClosetProvider, type Look } from "../../state/closet"
 import { WardrobeLooksPanel } from "./WardrobeLooksPanel"
 
-vi.mock("../../components/IsoThumb", () => ({
+vi.mock("../../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
 }))
 
@@ -55,9 +55,9 @@ function renderLooks(looks: Look[]) {
   flushSync(() => {
     root.render(
       <MemoryRouter>
-        <SessionProvider>
+        <ClosetProvider>
           <WardrobeLooksPanel looks={looks} />
-        </SessionProvider>
+        </ClosetProvider>
       </MemoryRouter>,
     )
   })

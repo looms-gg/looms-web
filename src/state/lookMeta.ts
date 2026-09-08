@@ -1,6 +1,9 @@
 import { MAX_LIMITS, sanitizeText } from "../lib/sanitize"
+import { equippedFromStack } from "../data/outfit"
+import type { LookRow } from "../lib/supabase"
+import type { Look, LookVisibility } from "./persist"
 
-export type LookVisibility = "private" | "public"
+export type { LookVisibility }
 
 export type LookMetaPatch = {
   name?: string
@@ -15,6 +18,33 @@ export function asLookVisibility(value: unknown): LookVisibility {
 export function asLookDescription(value: unknown): string {
   if (typeof value !== "string") return ""
   return sanitizeText(value, MAX_LIMITS.LOOK_DESCRIPTION, { multiline: true })
+}
+
+export function lookRowToLook(row: LookRow): Look {
+  return {
+    id: row.id,
+    name: row.name,
+    stack: row.stack,
+    equipped: equippedFromStack(row.stack ?? []),
+    bodyId: row.body_id,
+    bodyHue: row.body_hue,
+    model: row.model,
+    savedAt: new Date(row.created_at).getTime(),
+    description: asLookDescription(row.description),
+    visibility: asLookVisibility(row.visibility),
+  }
+}
+
+export function lookPersistFields(look: Look) {
+  return {
+    name: look.name,
+    description: look.description,
+    visibility: look.visibility,
+    stack: look.stack ?? [],
+    body_id: look.bodyId ?? "",
+    body_hue: look.bodyHue ?? 0,
+    model: look.model ?? ("classic" as const),
+  }
 }
 
 export function committedLookName(current: string, draft: string): string {

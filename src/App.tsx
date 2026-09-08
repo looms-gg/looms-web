@@ -1,14 +1,14 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
-import { Shell } from "./components/Shell"
-import { RequireAuth } from "./components/RequireAuth"
+import { Shell } from "./components/shell/Shell"
+import { RequireAuth } from "./components/auth/RequireAuth"
 import { routerBasename } from "./lib/basePath"
-import { ClosetPage } from "./pages/ClosetPage"
+import { ExplorePage } from "./pages/ExplorePage"
 import { PiecePage } from "./pages/PiecePage"
 import { ProfilePage } from "./pages/ProfilePage"
 import { StudioPage } from "./pages/StudioPage"
 import { WardrobePage } from "./pages/WardrobePage"
 import { LegalDocument } from "./pages/legal/LegalDocument"
-import { SessionProvider } from "./state/closet"
+import { ClosetProvider } from "./state/closet"
 import { ThemeProvider } from "./state/theme"
 import { AuthProvider } from "./state/auth"
 import { CatalogProvider } from "./state/catalog"
@@ -20,11 +20,11 @@ export default function App() {
       <AuthProvider>
         <LikesProvider>
           <CatalogProvider>
-            <SessionProvider>
+            <ClosetProvider>
               <BrowserRouter basename={routerBasename()}>
                 <Routes>
                   <Route element={<Shell />}>
-                    <Route index element={<ClosetPage />} />
+                    <Route index element={<ExplorePage />} />
                     <Route path="piece/:id" element={<PiecePage />} />
                     <Route path="u/:username" element={<ProfilePage />} />
                     <Route
@@ -56,7 +56,7 @@ export default function App() {
                   </Route>
                 </Routes>
               </BrowserRouter>
-            </SessionProvider>
+            </ClosetProvider>
           </CatalogProvider>
         </LikesProvider>
       </AuthProvider>

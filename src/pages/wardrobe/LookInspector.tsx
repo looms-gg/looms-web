@@ -1,13 +1,13 @@
-import { useState, useEffect, type KeyboardEvent } from "react"
-import { faDownload, faPen } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/FaIcon"
-import { IsoThumb } from "../../components/IsoThumb"
+import { faDownload } from "@fortawesome/free-solid-svg-icons"
+import { FaIcon } from "../../components/ui/FaIcon"
+import { IsoThumb } from "../../components/iso/IsoThumb"
 import { SLOTS } from "../../data/catalog"
 import { piecesFromEquipped } from "../../data/outfit"
 import { tryDownloadSkinFile } from "../../skin/compose"
-import { useSession, type Look } from "../../state/closet"
+import { useCloset, type Look } from "../../state/closet"
 import { committedLookName } from "../../state/lookMeta"
 import { MAX_LIMITS, sanitizeText } from "../../lib/sanitize"
+import { InlineEditableText } from "./InlineEditableText"
 
 export function LookInspector({
   look,
@@ -18,59 +18,22 @@ export function LookInspector({
   onEditOutfit: () => void
   className?: string
 }) {
-  const { updateLookMeta } = useSession()
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [draftName, setDraftName] = useState(look.name)
-  const [isEditingDesc, setIsEditingDesc] = useState(false)
-  const [draftDesc, setDraftDesc] = useState(look.description ?? "")
-
-  useEffect(() => {
-    setDraftName(look.name)
-    setIsEditingName(false)
-    setDraftDesc(look.description ?? "")
-    setIsEditingDesc(false)
-  }, [look.id, look.name, look.description])
+  const { updateLookMeta, notify } = useCloset()
 
   const outfit = piecesFromEquipped(look.equipped, look.stack)
   const layerCount = SLOTS.filter((slot) => look.equipped[slot]).length
 
-  function handleNameSubmit() {
-    const next = committedLookName(look.name, draftName)
+  function commitName(draft: string) {
+    const next = committedLookName(look.name, draft)
     if (next !== look.name) {
       updateLookMeta(look.id, { name: next })
     }
-    setDraftName(next)
-    setIsEditingName(false)
   }
 
-  function handleNameKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      handleNameSubmit()
-    } else if (e.key === "Escape") {
-      e.preventDefault()
-      setDraftName(look.name)
-      setIsEditingName(false)
-    }
-  }
-
-  function handleDescSubmit() {
-    const next = sanitizeText(draftDesc, MAX_LIMITS.LOOK_DESCRIPTION, { multiline: true })
+  function commitDescription(draft: string) {
+    const next = sanitizeText(draft, MAX_LIMITS.LOOK_DESCRIPTION, { multiline: true })
     if (next !== (look.description ?? "")) {
       updateLookMeta(look.id, { description: next })
-    }
-    setDraftDesc(next)
-    setIsEditingDesc(false)
-  }
-
-  function handleDescKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleDescSubmit()
-    } else if (e.key === "Escape") {
-      e.preventDefault()
-      setDraftDesc(look.description ?? "")
-      setIsEditingDesc(false)
     }
   }
 
@@ -88,33 +51,13 @@ export function LookInspector({
 
       <div className="mt-4 space-y-4">
         <div>
-          <div className="flex items-center gap-2">
-            {isEditingName ? (
-              <input
-                type="text"
-                maxLength={MAX_LIMITS.LOOK_NAME}
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                onBlur={handleNameSubmit}
-                onKeyDown={handleNameKeyDown}
-                className="input input-bordered input-sm h-9 w-full font-extrabold text-lg"
-                aria-label="Look name"
-                autoFocus
-              />
-            ) : (
-              <>
-                <h2 className="text-xl font-extrabold truncate">{look.name}</h2>
-                <button
-                  type="button"
-                  aria-label="Edit name"
-                  onClick={() => setIsEditingName(true)}
-                  className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-base-content"
-                >
-                  <FaIcon icon={faPen} className="size-3" />
-                </button>
-              </>
-            )}
-          </div>
+          <InlineEditableText
+            value={look.name}
+            maxLength={MAX_LIMITS.LOOK_NAME}
+            onCommit={commitName}
+            ariaLabel="Look name"
+            editAriaLabel="Edit name"
+          />
           <p className="mt-1 text-xs font-semibold text-base-content/60">
             <span className="tabular-nums font-bold text-primary">{layerCount}</span> layers
             {look.savedAt ? ` · ${new Date(look.savedAt).toLocaleDateString()}` : ""}
@@ -122,41 +65,15 @@ export function LookInspector({
         </div>
 
         <div>
-          <div className="flex items-start gap-2">
-            {isEditingDesc ? (
-              <textarea
-                value={draftDesc}
-                maxLength={MAX_LIMITS.LOOK_DESCRIPTION}
-                onChange={(e) => setDraftDesc(e.target.value)}
-                onBlur={handleDescSubmit}
-                onKeyDown={handleDescKeyDown}
-                className="textarea textarea-bordered textarea-sm w-full text-xs"
-                placeholder="Add a description"
-                aria-label="Look description"
-                autoFocus
-                rows={2}
-              />
-            ) : (
-              <div className="group flex w-full items-start justify-between gap-2">
-                <p
-                  onClick={() => setIsEditingDesc(true)}
-                  className={`text-xs cursor-pointer ${
-                    look.description ? "text-base-content/80" : "text-base-content/40 italic"
-                  }`}
-                >
-                  {look.description || "Add a description"}
-                </p>
-                <button
-                  type="button"
-                  aria-label="Edit description"
-                  onClick={() => setIsEditingDesc(true)}
-                  className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-base-content"
-                >
-                  <FaIcon icon={faPen} className="size-2.5" />
-                </button>
-              </div>
-            )}
-          </div>
+          <InlineEditableText
+            value={look.description ?? ""}
+            maxLength={MAX_LIMITS.LOOK_DESCRIPTION}
+            multiline
+            onCommit={commitDescription}
+            ariaLabel="Look description"
+            editAriaLabel="Edit description"
+            placeholder="Add a description"
+          />
         </div>
 
         <div className="flex items-center justify-between border-t border-base-content/10 pt-3">
@@ -191,13 +108,16 @@ export function LookInspector({
             type="button"
             className="btn btn-ghost rounded-full font-bold w-full"
             onClick={() => {
-              void tryDownloadSkinFile(
-                outfit,
-                look.bodyId,
-                look.bodyHue,
-                look.name.trim() || "looms-look",
-                look.model ?? "classic",
-              )
+              void (async () => {
+                const ok = await tryDownloadSkinFile(
+                  outfit,
+                  look.bodyId,
+                  look.bodyHue,
+                  look.name.trim() || "looms-look",
+                  look.model ?? "classic",
+                )
+                if (!ok) notify("Couldn't export that skin.")
+              })()
             }}
           >
             <FaIcon icon={faDownload} className="size-3.5 mr-1.5" />

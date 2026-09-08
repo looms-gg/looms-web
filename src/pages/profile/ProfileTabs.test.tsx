@@ -4,7 +4,8 @@ import { MemoryRouter } from "react-router-dom"
 import { describe, expect, it, vi } from "vitest"
 import type { GarmentRow, LookRow } from "../../lib/supabase"
 import { AuthProvider } from "../../state/auth"
-import { SessionProvider } from "../../state/closet"
+import { CatalogProvider } from "../../state/catalog"
+import { ClosetProvider } from "../../state/closet"
 import { LikesProvider } from "../../state/likes"
 import type { LikedContent } from "./profileApi"
 import { ProfileTabs } from "./ProfileTabs"
@@ -49,20 +50,22 @@ function renderTabs(props: Partial<React.ComponentProps<typeof ProfileTabs>> = {
     createRoot(host).render(
       <AuthProvider>
         <LikesProvider>
-          <MemoryRouter>
-            <SessionProvider>
-              <ProfileTabs
-                tab="uploads"
-                username="PixelWeaver"
-                uploads={[]}
-                looks={[]}
-                liked={emptyLiked}
-                canViewLikes
-                onTab={onTab}
-                {...props}
-              />
-            </SessionProvider>
-          </MemoryRouter>
+          <CatalogProvider>
+            <MemoryRouter>
+              <ClosetProvider>
+                <ProfileTabs
+                  tab="uploads"
+                  username="PixelWeaver"
+                  uploads={[]}
+                  looks={[]}
+                  liked={emptyLiked}
+                  canViewLikes
+                  onTab={onTab}
+                  {...props}
+                />
+              </ClosetProvider>
+            </MemoryRouter>
+          </CatalogProvider>
         </LikesProvider>
       </AuthProvider>,
     )

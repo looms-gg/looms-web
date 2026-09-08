@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react"
 import { faCamera, faGear, faUpload } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/FaIcon"
+import { FaIcon } from "../../components/ui/FaIcon"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { MAX_LIMITS } from "../../lib/sanitize"
 import type { ProfileRow } from "../../lib/supabase"
@@ -66,10 +66,12 @@ export function ProfileHeader({
     if (!file || !isOwner) return
     setBusy(true)
     setErrorMsg(null)
-    const { url, error } = await uploadProfileImage(profile.id, kind, file)
-    if (error || !url) {
+    let url: string
+    try {
+      url = await uploadProfileImage(profile.id, kind, file)
+    } catch (error) {
       setBusy(false)
-      setErrorMsg(formatErrorMessage(error ?? new Error("Upload failed")))
+      setErrorMsg(formatErrorMessage(error))
       return
     }
     const ok = await applyUpdate(

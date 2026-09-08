@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import { formatErrorMessage } from "../lib/errorFormat"
 import { supabase } from "../lib/supabase"
 import { useAuthOptional } from "./auth"
 import { likeKey, type LikeTargetType } from "./likeKey"
@@ -17,6 +18,8 @@ export { likeKey, parseLikeKey } from "./likeKey"
 interface LikesContextValue {
   likedKeys: ReadonlySet<string>
   loading: boolean
+  loadError: string | null
+  dismissLoadError: () => void
   isLiked: (type: LikeTargetType, id: string) => boolean
   toggleLike: (type: LikeTargetType, id: string) => Promise<{ error: Error | null }>
 }
@@ -28,11 +31,13 @@ export function LikesProvider({ children }: { children: ReactNode }) {
   const userId = auth?.user?.id ?? null
   const [likedKeys, setLikedKeys] = useState<Set<string>>(() => new Set())
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!userId) {
       setLikedKeys(new Set())
       setLoading(false)
+      setLoadError(null)
       return
     }
 
@@ -46,9 +51,10 @@ export function LikesProvider({ children }: { children: ReactNode }) {
       .then(({ data, error }) => {
         if (cancelled) return
         if (error) {
-          console.error("Error loading likes:", error.message)
+          setLoadError(formatErrorMessage(error))
           setLikedKeys(new Set())
         } else {
+          setLoadError(null)
           const next = new Set<string>()
           for (const row of data ?? []) {
             if (row.target_type === "garment" || row.target_type === "look") {
@@ -64,6 +70,10 @@ export function LikesProvider({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [userId])
+
+  const dismissLoadError = useCallback(() => {
+    setLoadError(null)
+  }, [])
 
   const isLiked = useCallback(
     (type: LikeTargetType, id: string) => likedKeys.has(likeKey(type, id)),
@@ -119,11 +129,11 @@ export function LikesProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo(
-    () => ({ likedKeys, loading, isLiked, toggleLike }),
-    [likedKeys, loading, isLiked, toggleLike],
+    () => ({ likedKeys, loading, loadError, dismissLoadError, isLiked, toggleLike }),
+    [likedKeys, loading, loadError, dismissLoadError, isLiked, toggleLike],
   )
 
-  return <LikesContext.Provider value={value}>{children}</LikesContext.Provider>
+  return <LikesContext value={value}>{children}</LikesContext>
 }
 
 export function useLikesOptional(): LikesContextValue | null {

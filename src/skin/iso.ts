@@ -99,16 +99,23 @@ function getIsoViewer() {
   host.style.width = "180px"
   host.style.height = "210px"
   host.style.visibility = "hidden"
-  document.body.appendChild(host)
-  viewer = new SkinViewer({
-    canvas: document.createElement("canvas"),
-    width: 180,
-    height: 210,
-  })
-  host.appendChild(viewer.canvas)
-  lightSkinViewer(viewer)
-  crispSkinTexture(viewer)
-  return viewer
+  try {
+    const next = new SkinViewer({
+      canvas: document.createElement("canvas"),
+      width: 180,
+      height: 210,
+    })
+    host.appendChild(next.canvas)
+    document.body.appendChild(host)
+    lightSkinViewer(next)
+    crispSkinTexture(next)
+    viewer = next
+    return next
+  } catch (err) {
+    host.remove()
+    viewer = null
+    throw err
+  }
 }
 
 function takeNextJob() {
@@ -138,7 +145,15 @@ function enqueue(key: string, prepare: () => Promise<Prepared>, priority = false
 }
 
 function captureJob(job: Job, prepared: Prepared) {
-  const v = getIsoViewer()
+  let v: SkinViewer
+  try {
+    v = getIsoViewer()
+  } catch (err) {
+    job.reject(err)
+    pumping = false
+    if (queue.length) schedulePump()
+    return
+  }
   v.loadSkin(prepared.skin, { model: prepared.model })
   applyGroupFocus(v, prepared.group, prepared.outfit, prepared.covers, false)
   crispSkinTexture(v)

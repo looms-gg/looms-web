@@ -5,7 +5,7 @@ import { StudioLayers } from "./StudioLayers"
 import { bodies } from "../../data/bodies"
 import { getEyePiece } from "../../data/eyes"
 
-vi.mock("../../components/IsoThumb", () => ({
+vi.mock("../../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
 }))
 

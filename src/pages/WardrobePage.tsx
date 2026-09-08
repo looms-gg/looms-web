@@ -1,12 +1,11 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { faCloudArrowUp } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../components/FaIcon"
-import { UploadPieceModal } from "../components/UploadPieceModal"
-import { AuthModal } from "../components/AuthModal"
-import { useSession } from "../state/closet"
+import { FaIcon } from "../components/ui/FaIcon"
+import { UploadPieceModal } from "../components/piece/UploadPieceModal"
+import { useCloset } from "../state/closet"
 import { useCatalog } from "../state/catalog"
-import { useAuthOptional } from "../state/auth"
+import { useAuth } from "../state/auth"
 import { parseWardrobeTab, type WardrobeTab } from "./wardrobeTab"
 import { WardrobeLooksPanel } from "./wardrobe/WardrobeLooksPanel"
 import { WardrobePiecesPanel } from "./wardrobe/WardrobePiecesPanel"
@@ -19,20 +18,21 @@ const TABS: { id: WardrobeTab; label: string }[] = [
 ]
 
 export function WardrobePage() {
-  const auth = useAuthOptional()
-  const user = auth?.user ?? null
-  const { looks } = useSession()
+  const { user } = useAuth()
+  const { looks } = useCloset()
   const { pieces } = useCatalog()
   const [params, setParams] = useSearchParams()
   const urlTab = parseWardrobeTab(params.toString())
   const [optimisticTab, setOptimisticTab] = useState<WardrobeTab | null>(null)
-  if (optimisticTab != null && optimisticTab === urlTab) {
-    setOptimisticTab(null)
-  }
-  const tab = optimisticTab ?? urlTab
 
+  useEffect(() => {
+    if (optimisticTab != null && optimisticTab === urlTab) {
+      setOptimisticTab(null)
+    }
+  }, [optimisticTab, urlTab])
+
+  const tab = optimisticTab ?? urlTab
   const [uploadOpen, setUploadOpen] = useState(false)
-  const [authOpen, setAuthOpen] = useState(false)
 
   const myUploads = useMemo(() => {
     if (!user) return []
@@ -75,32 +75,28 @@ export function WardrobePage() {
               </button>
             ))}
           </div>
-          {user && (
-            <button
-              type="button"
-              onClick={() => setUploadOpen(true)}
-              className="btn btn-outline btn-sm rounded-full font-bold"
-            >
-              <FaIcon icon={faCloudArrowUp} className="size-3.5 mr-1.5" />
-              Upload piece
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setUploadOpen(true)}
+            className="btn btn-outline btn-sm rounded-full font-bold"
+          >
+            <FaIcon icon={faCloudArrowUp} className="size-3.5 mr-1.5" />
+            Upload piece
+          </button>
         </div>
       </section>
 
       {tab === "looks" && <WardrobeLooksPanel looks={looks} />}
       {tab === "pieces" && <WardrobePiecesPanel />}
-      {tab === "uploads" && (
+      {tab === "uploads" && user ? (
         <WardrobeUploadsPanel
           user={user}
           myUploads={myUploads}
-          onSignIn={() => setAuthOpen(true)}
           onUpload={() => setUploadOpen(true)}
         />
-      )}
+      ) : null}
 
       <UploadPieceModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   )
 }

@@ -3,10 +3,13 @@ import { flushSync } from "react-dom"
 import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { type Piece } from "../../data/catalog"
-import { SessionProvider } from "../../state/closet"
+import { ClosetProvider } from "../../state/closet"
+import { CatalogProvider } from "../../state/catalog"
+import { LikesProvider } from "../../state/likes"
+import { AuthProvider } from "../../state/auth"
 import { WardrobeUploadsPanel } from "./WardrobeUploadsPanel"
 
-vi.mock("../../components/IsoThumb", () => ({
+vi.mock("../../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
 }))
 
@@ -16,7 +19,9 @@ afterEach(() => {
   for (const root of activeRoots) {
     try {
       root.unmount()
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }
   activeRoots.length = 0
   document.body.innerHTML = ""
@@ -53,18 +58,14 @@ const shirtUpload: Piece = {
 }
 
 function setInputValue(input: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value",
-  )?.set
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set
   setter?.call(input, value)
   input.dispatchEvent(new Event("input", { bubbles: true }))
 }
 
 function renderUploads(props: {
-  user: { id: string } | null
+  user: { id: string }
   myUploads?: Piece[]
-  onSignIn?: () => void
   onUpload?: () => void
 }) {
   const host = document.createElement("div")
@@ -73,14 +74,19 @@ function renderUploads(props: {
   flushSync(() => {
     root.render(
       <MemoryRouter>
-        <SessionProvider>
+        <AuthProvider>
+        <LikesProvider>
+        <CatalogProvider>
+        <ClosetProvider>
           <WardrobeUploadsPanel
             user={props.user}
             myUploads={props.myUploads ?? []}
-            onSignIn={props.onSignIn ?? (() => {})}
             onUpload={props.onUpload ?? (() => {})}
           />
-        </SessionProvider>
+        </ClosetProvider>
+        </CatalogProvider>
+        </LikesProvider>
+        </AuthProvider>
       </MemoryRouter>,
     )
   })
@@ -88,22 +94,6 @@ function renderUploads(props: {
 }
 
 describe("WardrobeUploadsPanel", () => {
-  it("shows sign-in CTA when user is signed out", () => {
-    const onSignIn = vi.fn()
-    const host = renderUploads({ user: null, onSignIn })
-
-    expect(host.textContent).toMatch(/Sign in to view your creations/)
-    const button = [...host.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "Sign in",
-    ) as HTMLButtonElement
-    expect(button).toBeTruthy()
-
-    flushSync(() => {
-      button.click()
-    })
-    expect(onSignIn).toHaveBeenCalledTimes(1)
-  })
-
   it("shows empty upload CTA when signed in with no uploads", () => {
     const onUpload = vi.fn()
     const host = renderUploads({ user: { id: "creator-1" }, onUpload })
@@ -128,8 +118,6 @@ describe("WardrobeUploadsPanel", () => {
 
     expect(host.querySelector('input[aria-label="Search uploads"]')).not.toBeNull()
     expect(host.querySelector('[aria-label="Filter uploads by layer"]')).not.toBeNull()
-    expect(host.querySelector('a[href="/piece/upload-coat-1"]')).not.toBeNull()
-    expect(host.querySelector('a[href="/piece/upload-shirt-1"]')).not.toBeNull()
     expect(host.textContent).toMatch(/My upload coat/)
     expect(host.textContent).toMatch(/My upload shirt/)
   })
@@ -172,7 +160,7 @@ describe("WardrobeUploadsPanel", () => {
       setInputValue(search, "coat")
     })
 
-    expect(host.querySelector('a[href="/piece/upload-coat-1"]')).not.toBeNull()
-    expect(host.querySelector('a[href="/piece/upload-shirt-1"]')).toBeNull()
+    expect(host.textContent).toMatch(/My upload coat/)
+    expect(host.textContent).not.toMatch(/My upload shirt/)
   })
 })

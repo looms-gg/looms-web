@@ -3,17 +3,17 @@ import { useNavigate } from "react-router-dom"
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
 import { SLOTS } from "../../data/catalog"
 import { piecesFromEquipped } from "../../data/outfit"
-import { FaIcon } from "../../components/FaIcon"
-import { IsoThumb } from "../../components/IsoThumb"
-import { RackGrid } from "../../components/RackGrid"
+import { FaIcon } from "../../components/ui/FaIcon"
+import { IsoThumb } from "../../components/iso/IsoThumb"
+import { RackGrid } from "../../components/piece/RackGrid"
 import { MAX_LIMITS } from "../../lib/sanitize"
-import { useSession, type Look } from "../../state/closet"
+import { useCloset, type Look } from "../../state/closet"
 import { LookInspector } from "./LookInspector"
 import { InspectorModal } from "./InspectorModal"
 import { WardrobeEmpty } from "./WardrobeEmpty"
 
 export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
-  const { loadLook } = useSession()
+  const { loadLook } = useCloset()
   const navigate = useNavigate()
   const [lookQuery, setLookQuery] = useState("")
   const [inspectedLookId, setInspectedLookId] = useState<string | null>(null)

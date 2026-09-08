@@ -24,7 +24,6 @@ export function formatErrorMessage(error: unknown): string {
 
   const lower = rawMessage.toLowerCase()
 
-  // 1. Rate Limit Exceeded
   if (lower.includes("rate limit") || lower.includes("too many requests")) {
     if (lower.includes("garment") || lower.includes("texture")) {
       return "Upload rate limit reached. You can upload up to 15 garments every 10 minutes. Please wait a moment before trying again."
@@ -47,7 +46,6 @@ export function formatErrorMessage(error: unknown): string {
     return "Rate limit reached. Please slow down and wait a moment before trying again."
   }
 
-  // 2. Account Quota Exceeded
   if (lower.includes("quota exceeded") || lower.includes("account quota")) {
     if (lower.includes("garment_comments") || lower.includes("comment")) {
       return "Comment limit reached (max 2000 comments). Delete older comments before posting more."
@@ -67,12 +65,10 @@ export function formatErrorMessage(error: unknown): string {
     return "Account quota exceeded. Please remove existing items before adding new ones."
   }
 
-  // 2b. Username cooldown
   if (lower.includes("username can only be changed once every 15 days")) {
     return rawMessage.trim() || "Username can only be changed once every 15 days."
   }
 
-  // 3. File Size & Format Restrictions
   if (lower.includes("file size exceeds") || lower.includes("maximum of 2mb")) {
     return "File is too large. Textures must be under 2MB."
   }
@@ -80,6 +76,5 @@ export function formatErrorMessage(error: unknown): string {
     return "Invalid file format. Minecraft skin textures must be valid PNG files."
   }
 
-  // Fallback to raw message if available, otherwise generic
   return rawMessage || "An unexpected error occurred. Please try again."
 }

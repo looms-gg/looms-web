@@ -15,10 +15,10 @@ import {
 import type { Equipped } from "../../data/outfit"
 import { bodies as defaultBodies, bodyOrDefault, type Body } from "../../data/bodies"
 import { bundledEyes, EYE_OFFSET_MAX, EYE_OFFSET_MIN, parseEyeId } from "../../data/eyes"
-import { IsoThumb } from "../../components/IsoThumb"
-import { FaIcon } from "../../components/FaIcon"
+import { IsoThumb } from "../../components/iso/IsoThumb"
+import { FaIcon } from "../../components/ui/FaIcon"
 import { HUE_MAX, HUE_MIN, hueRamp, shiftHex } from "../../skin/hue"
-import type { StudioRackTab } from "./useStudioBoard"
+import type { StudioRackTab } from "./studioOwned"
 import { MAX_LIMITS } from "../../lib/sanitize"
 
 function PieceRackRow({
@@ -468,11 +468,4 @@ export function StudioRack({
       </div>
     </aside>
   )
-}
-
-export function emptyOwnedBySlot(): Record<Slot, Piece[]> {
-  return Object.fromEntries(SLOTS.map((slot) => [slot, [] as Piece[]])) as Record<
-    Slot,
-    Piece[]
-  >
 }

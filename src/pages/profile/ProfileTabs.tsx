@@ -1,8 +1,9 @@
-import { PieceTile } from "../../components/PieceTile"
-import { IsoThumb } from "../../components/IsoThumb"
-import { RackGrid } from "../../components/RackGrid"
+import { PieceTile } from "../../components/piece/PieceTile"
+import { IsoThumb } from "../../components/iso/IsoThumb"
+import { RackGrid } from "../../components/piece/RackGrid"
 import { garmentToPiece } from "../../data/garment"
-import { equippedFromStack, piecesFromEquipped } from "../../data/outfit"
+import { lookRowToLook } from "../../state/lookMeta"
+import { piecesFromEquipped } from "../../data/outfit"
 import type { GarmentRow, LookRow } from "../../lib/supabase"
 import { useLikesOptional } from "../../state/likes"
 import type { ProfileTab } from "../profileTab"
@@ -124,16 +125,16 @@ function Empty({ copy }: { copy: string }) {
   )
 }
 
-function LookCard({ look }: { look: LookRow }) {
-  const equipped = equippedFromStack(look.stack ?? [])
-  const outfit = piecesFromEquipped(equipped, look.stack)
+function LookCard({ look: row }: { look: LookRow }) {
+  const look = lookRowToLook(row)
+  const outfit = piecesFromEquipped(look.equipped, look.stack)
 
   return (
     <div className="piece-tile overflow-hidden rounded-[18px] bg-neutral">
       <IsoThumb
         outfit={outfit}
-        bodyId={look.body_id}
-        bodyHue={look.body_hue}
+        bodyId={look.bodyId}
+        bodyHue={look.bodyHue}
         model={look.model ?? "classic"}
         alt={look.name}
       />

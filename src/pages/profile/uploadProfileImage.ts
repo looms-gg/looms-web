@@ -14,32 +14,23 @@ export async function uploadProfileImage(
   userId: string,
   kind: "avatar" | "banner",
   file: File,
-): Promise<{ url: string | null; error: Error | null }> {
+): Promise<string> {
   if (!ALLOWED_TYPES.has(file.type)) {
-    return {
-      url: null,
-      error: new Error("Invalid file type: profile images must be .png, .jpg, .jpeg, or .webp files."),
-    }
+    throw new Error(
+      "Invalid file type: profile images must be .png, .jpg, .jpeg, or .webp files.",
+    )
   }
 
   const sizeCheck = validateFileSize(file, MAX_LIMITS.FILE_SIZE_BYTES)
   if (!sizeCheck.valid) {
-    return { url: null, error: new Error(sizeCheck.error ?? "File is too large.") }
+    throw new Error(sizeCheck.error ?? "File is too large.")
   }
 
-  let compressed: File
-  try {
-    compressed = await compressProfileImage(file, kind)
-  } catch (err) {
-    return {
-      url: null,
-      error: err instanceof Error ? err : new Error("Couldn't compress image."),
-    }
-  }
+  const compressed = await compressProfileImage(file, kind)
 
   const compressedCheck = validateFileSize(compressed, MAX_LIMITS.FILE_SIZE_BYTES)
   if (!compressedCheck.valid) {
-    return { url: null, error: new Error(compressedCheck.error ?? "Compressed file is too large.") }
+    throw new Error(compressedCheck.error ?? "Compressed file is too large.")
   }
 
   const ext = extensionFor(compressed)
@@ -50,13 +41,11 @@ export async function uploadProfileImage(
     upsert: true,
   })
 
-  if (uploadError) {
-    return { url: null, error: new Error(uploadError.message) }
-  }
+  if (uploadError) throw new Error(uploadError.message)
 
   const {
     data: { publicUrl },
   } = supabase.storage.from("profiles").getPublicUrl(storagePath)
 
-  return { url: publicUrl, error: null }
+  return publicUrl
 }

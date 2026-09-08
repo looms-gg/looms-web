@@ -33,27 +33,20 @@ export function sanitizeText(
 
   let text = String(input)
 
-  // Strip script and style blocks entirely (including contents)
   text = text.replace(/<\s*(?:script|style|iframe)[^>]*>[\s\S]*?<\s*\/\s*(?:script|style|iframe)\s*>/gi, "")
 
-  // Strip remaining HTML tags (<div ...>, <img ...>, etc.)
   text = text.replace(/<[^>]*>?/gm, "")
 
-  // Remove dangerous Unicode control and bidi override characters
   text = text.replace(DANGEROUS_CHARS_REGEX, "")
 
   if (options?.multiline) {
-    // Normalize newlines to \n and remove carriage returns
-    text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+      text = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
   } else {
-    // Flatten multiple newlines or tabs to spaces
-    text = text.replace(/[\r\n\t]+/g, " ")
+      text = text.replace(/[\r\n\t]+/g, " ")
   }
 
-  // Trim edge whitespace
   text = text.trim()
 
-  // Clamp to max length
   if (text.length > maxLength) {
     text = text.slice(0, maxLength).trimEnd()
   }
@@ -66,20 +59,17 @@ export function sanitizeText(
  */
 export function sanitizeUsername(input: string | null | undefined): string {
   if (!input) return ""
-  // Remove HTML first
   const clean = sanitizeText(input, MAX_LIMITS.USERNAME)
-  // Keep only alphanumeric, underscores, hyphens
   const allowed = clean.replace(/[^a-zA-Z0-9_-]/g, "")
   return allowed.slice(0, MAX_LIMITS.USERNAME)
 }
 
 /**
- * Sanitizes Minecraft Java username: alphanumeric and underscores only, 3-16 chars.
+ * Sanitizes Minecraft Java username: alphanumeric and underscores only, up to 16 chars.
  */
 export function sanitizeMinecraftUsername(input: string | null | undefined): string {
   if (!input) return ""
   const clean = sanitizeText(input, MAX_LIMITS.MINECRAFT_USERNAME)
-  // Keep only alphanumeric and underscores
   const allowed = clean.replace(/[^a-zA-Z0-9_]/g, "")
   return allowed.slice(0, MAX_LIMITS.MINECRAFT_USERNAME)
 }

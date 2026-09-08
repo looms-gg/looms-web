@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link, useParams, useSearchParams } from "react-router-dom"
+import { formatErrorMessage } from "../lib/errorFormat"
 import type { GarmentRow, LookRow, ProfileRow } from "../lib/supabase"
 import { useAuthOptional } from "../state/auth"
 import { parseProfileTab, type ProfileTab } from "./profileTab"
@@ -66,7 +67,7 @@ export function ProfilePage() {
       setLooks(nextLooks)
       setLiked(nextLiked)
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Couldn't load this profile.")
+      setErrorMsg(formatErrorMessage(err))
     } finally {
       setLoading(false)
     }

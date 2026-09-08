@@ -4,7 +4,10 @@ import {
   asLookDescription,
   asLookVisibility,
   committedLookName,
+  lookPersistFields,
+  lookRowToLook,
 } from "./lookMeta"
+import type { LookRow } from "../lib/supabase"
 
 const base = {
   id: "look-1",
@@ -13,6 +16,20 @@ const base = {
   savedAt: 1,
   description: "Old blurb",
   visibility: "private" as const,
+}
+
+const row: LookRow = {
+  id: "look-2",
+  user_id: "u1",
+  name: "Cloud look",
+  description: "Soft",
+  visibility: "public",
+  stack: ["ash-crop"],
+  body_id: "body-1",
+  body_hue: 12,
+  model: "slim",
+  created_at: "2026-01-02T00:00:00.000Z",
+  updated_at: "2026-01-02T00:00:00.000Z",
 }
 
 describe("lookMeta", () => {
@@ -55,5 +72,19 @@ describe("lookMeta", () => {
     })
     expect(next.name).toBe("Styling")
     expect(next.description).toBe("Awesome vibe")
+  })
+
+  it("maps LookRow to Look and back to persist fields", () => {
+    const look = lookRowToLook(row)
+    expect(look.bodyId).toBe("body-1")
+    expect(look.bodyHue).toBe(12)
+    expect(look.equipped.hair).toBe("ash-crop")
+    expect(lookPersistFields(look)).toMatchObject({
+      name: "Cloud look",
+      body_id: "body-1",
+      body_hue: 12,
+      model: "slim",
+      visibility: "public",
+    })
   })
 })

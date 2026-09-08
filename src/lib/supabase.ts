@@ -1,6 +1,9 @@
+/** App-owned Supabase schema types. Do not parallel this with a generated Database file. */
 import { createClient } from "@supabase/supabase-js"
-import type { Group, Slot } from "../data/catalog"
 import type { SkinModel } from "../skin/convert"
+import type { LikeTargetType } from "./likeTarget"
+
+export type { LikeTargetType } from "./likeTarget"
 
 export type ProfileRow = {
   id: string
@@ -16,8 +19,6 @@ export type ProfileRow = {
   created_at: string
   updated_at: string
 }
-
-export type LikeTargetType = "garment" | "look"
 
 export type LikeRow = {
   id: string
@@ -46,8 +47,8 @@ export type GarmentRow = {
   user_id: string
   name: string
   description: string | null
-  slot: Slot
-  body_group: Group
+  slot: string
+  body_group: string
   saved_count: number
   like_count: number
   added: number
@@ -217,16 +218,50 @@ export type Database = {
   }
 }
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL || "https://pcybqblxszemklcxunuz.supabase.co"
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "sb_publishable_YE4VMXE9TrbnFruV1NwnEQ_NIUrCwAS"
+function resolveSupabaseConfig() {
+  const url = import.meta.env.VITE_SUPABASE_URL
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+  if (!url || !anonKey) {
+    throw new Error(
+      "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Copy .env.example to .env.local.",
+    )
+  }
+  return { url, anonKey }
+}
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+let supabaseClient: ReturnType<typeof createClient<Database>> | null = null
+
+export function getSupabase() {
+  if (!supabaseClient) {
+    const { url, anonKey } = resolveSupabaseConfig()
+    supabaseClient = createClient<Database>(url, anonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
+  }
+  return supabaseClient
+}
+
+type Client = ReturnType<typeof createClient<Database>>
+
+/**
+ * Lazy facade: importing this module does not construct the client.
+ * Own `from`/`auth`/`storage`/`rpc` so vitest can spyOn them.
+ */
+export const supabase = {
+  get auth() {
+    return getSupabase().auth
   },
-})
+  get storage() {
+    return getSupabase().storage
+  },
+  from(...args: Parameters<Client["from"]>) {
+    return getSupabase().from(...args)
+  },
+  rpc(...args: Parameters<Client["rpc"]>) {
+    return getSupabase().rpc(...args)
+  },
+} as Client

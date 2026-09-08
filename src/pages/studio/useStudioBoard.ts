@@ -10,11 +10,13 @@ import { bodies, bodyOrDefault } from "../../data/bodies"
 import { parseEyeId, formatEyeId, clampEyeOffset } from "../../data/eyes"
 import { tryDownloadSkinFile } from "../../skin/compose"
 import { shiftHex } from "../../skin/hue"
-import { useSession, type Look } from "../../state/closet"
+import { useCloset, type Look } from "../../state/closet"
 import { useCatalog } from "../../state/catalog"
-import { emptyOwnedBySlot } from "./StudioRack"
+import { emptyOwnedBySlot, type StudioRackTab } from "./studioOwned"
 import type { SkinModel } from "../../skin/convert"
 import { MAX_LIMITS, sanitizeText } from "../../lib/sanitize"
+
+export type { StudioRackTab }
 
 export function ownedBySlotMap(owned: string[], catalog: Piece[] = []) {
   const byId = new Map(catalog.map((piece) => [piece.id, piece]))
@@ -62,10 +64,8 @@ export async function exportLook(
   if (!ok) notify("Couldn't export that skin.")
 }
 
-export type StudioRackTab = "all" | "appearance" | Slot
-
 export function useStudioBoard() {
-  const session = useSession()
+  const session = useCloset()
   const { pieces: catalogPieces } = useCatalog()
   const matchingSavedLook =
     session.activeLook ??

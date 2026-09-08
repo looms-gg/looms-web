@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { buyAndWearPiece, buyPiece, wearOwned } from "./closetShop"
+import { addAndWearPiece, addPiece, setBodyPersist, wearOwned } from "./closetActions"
 import { bodyOrDefault } from "../data/bodies"
 import { equippedFromStack, findMatchingLook, mergeStack, moveStackId } from "../data/outfit"
 import { getPiece, type Slot } from "../data/catalog"
@@ -25,8 +25,8 @@ import { MAX_LIMITS, sanitizeText } from "../lib/sanitize"
 import { formatErrorMessage } from "../lib/errorFormat"
 import {
   applyLookMeta,
-  asLookDescription,
-  asLookVisibility,
+  lookPersistFields,
+  lookRowToLook,
   type LookMetaPatch,
 } from "./lookMeta"
 
@@ -36,13 +36,11 @@ type ClosetContextValue = Persist & {
   notice: string | null
   activeLook: Look | null
   setActiveLook: (look: Look | null) => void
-  addToWardrobe: (pieceId: string) => Promise<boolean>
-  buy: (pieceId: string) => Promise<boolean>
+  addToWardrobe: (pieceId: string) => Promise<{ inserted: boolean }>
   wear: (pieceId: string) => void
-  addAndWear: (pieceId: string) => Promise<boolean>
-  buyAndWear: (pieceId: string) => Promise<boolean>
+  addAndWear: (pieceId: string) => Promise<{ inserted: boolean }>
   clearSlot: (slot: Slot) => void
-  moveLayer: (pieceId: string, steps: number) => void
+  moveStack: (pieceId: string, steps: number) => void
   setBody: (bodyId: string) => void
   setBodyHue: (hue: number) => void
   setModel: (model: SkinModel) => void
@@ -60,7 +58,14 @@ type ClosetContextValue = Persist & {
 
 const ClosetContext = createContext<ClosetContextValue | null>(null)
 
-export function SessionProvider({ children }: { children: ReactNode }) {
+type PatchResult = {
+  next: Persist
+  message?: string
+  activeLook?: Look
+  cloudOp?: () => void
+}
+
+export function ClosetProvider({ children }: { children: ReactNode }) {
   const auth = useContext(AuthContext)
   const user = auth?.user ?? null
   const userId = user?.id ?? null
@@ -71,10 +76,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [noticeTick, setNoticeTick] = useState(0)
   const looksLoadedFor = useRef<string | null>(null)
+  const stateRef = useRef(state)
+  stateRef.current = state
 
   if (owner !== sessionOwner) {
     setOwner(sessionOwner)
     setState(persistDefaults)
+    stateRef.current = persistDefaults
     setActiveLook(null)
     looksLoadedFor.current = null
   }
@@ -88,19 +96,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
-        if (!active || error || !data) return
-        const cloudLooks: Look[] = data.map((row) => ({
-          id: row.id,
-          name: row.name,
-          stack: row.stack,
-          equipped: equippedFromStack(row.stack ?? []),
-          bodyId: row.body_id,
-          bodyHue: row.body_hue,
-          model: row.model,
-          savedAt: new Date(row.created_at).getTime(),
-          description: asLookDescription(row.description),
-          visibility: asLookVisibility(row.visibility),
-        }))
+        if (!active) return
+        if (error) {
+          console.error("Error loading looks:", error)
+          setNotice(formatErrorMessage(error))
+          setNoticeTick((tick) => tick + 1)
+          return
+        }
+        if (!data) return
+        const cloudLooks: Look[] = data.map(lookRowToLook)
         // Only hydrate once per signed-in user so a late fetch cannot wipe
         // looks saved after mount but before this response landed.
         if (looksLoadedFor.current === userId) return
@@ -108,7 +112,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setState((prev) => {
           const cloudIds = new Set(cloudLooks.map((look) => look.id))
           const pendingLocal = prev.looks.filter((look) => !cloudIds.has(look.id))
-          return { ...prev, looks: [...pendingLocal, ...cloudLooks] }
+          const next = { ...prev, looks: [...pendingLocal, ...cloudLooks] }
+          stateRef.current = next
+          return next
         })
         setActiveLook((curr) => {
           if (curr) {
@@ -141,10 +147,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             return
           }
           if (!data) return
-          setState((prev) => ({
-            ...prev,
-            owned: data.map((row) => row.garment_id),
-          }))
+          setState((prev) => {
+            const next = {
+              ...prev,
+              owned: data.map((row) => row.garment_id),
+            }
+            stateRef.current = next
+            return next
+          })
         }),
     ).catch(() => {})
 
@@ -166,21 +176,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const patch = useCallback(
-    (updater: (prev: Persist) => { next: Persist; message?: string }) => {
-      setState((prev) => {
-        const { next, message } = updater(prev)
-        if (message) queueMicrotask(() => flash(message))
-        return next
-      })
+    (updater: (prev: Persist) => PatchResult) => {
+      // Apply outside setState: keeps the transition pure and runs effects after.
+      const result = updater(stateRef.current)
+      stateRef.current = result.next
+      setState(result.next)
+      if (result.activeLook) setActiveLook(result.activeLook)
+      if (result.message) flash(result.message)
+      result.cloudOp?.()
     },
     [flash],
   )
 
   const addToWardrobe = useCallback(
-    async (pieceId: string): Promise<boolean> => {
-      if (!userId) return false
+    async (pieceId: string): Promise<{ inserted: boolean }> => {
+      if (!userId) return { inserted: false }
       const piece = getPiece(pieceId)
-      if (!piece || piece.slot === "eyes") return false
+      if (!piece || piece.slot === "eyes") return { inserted: false }
 
       const { error } = await supabase
         .from("wardrobe_items")
@@ -189,19 +201,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (error) {
         const code = (error as { code?: string }).code
         if (code === "23505") {
-          patch((prev) => buyPiece(prev, pieceId))
-          return false
+          patch((prev) => addPiece(prev, pieceId))
+          return { inserted: false }
         }
         flash(formatErrorMessage(error))
-        return false
+        return { inserted: false }
       }
-      patch((prev) => buyPiece(prev, pieceId))
-      return true
+      patch((prev) => addPiece(prev, pieceId))
+      return { inserted: true }
     },
     [flash, patch, userId],
   )
 
-  const buy = addToWardrobe
 
   const wear = useCallback(
     (pieceId: string) => {
@@ -211,17 +222,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   )
 
   const addAndWear = useCallback(
-    async (pieceId: string): Promise<boolean> => {
+    async (pieceId: string): Promise<{ inserted: boolean }> => {
       const piece = getPiece(pieceId)
-      if (!piece) return false
+      if (!piece) return { inserted: false }
       if (piece.slot === "eyes") {
         patch((prev) => wearOwned(prev, pieceId))
-        return false
+        return { inserted: false }
       }
-      if (!userId) return false
+      if (!userId) return { inserted: false }
       if (state.owned.includes(pieceId)) {
         patch((prev) => wearOwned(prev, pieceId))
-        return false
+        return { inserted: false }
       }
       const { error } = await supabase
         .from("wardrobe_items")
@@ -230,19 +241,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (error) {
         const code = (error as { code?: string }).code
         if (code === "23505") {
-          patch((prev) => buyAndWearPiece(prev, pieceId))
-          return false
+          patch((prev) => addAndWearPiece(prev, pieceId))
+          return { inserted: false }
         }
         flash(formatErrorMessage(error))
-        return false
+        return { inserted: false }
       }
-      patch((prev) => buyAndWearPiece(prev, pieceId))
-      return true
+      patch((prev) => addAndWearPiece(prev, pieceId))
+      return { inserted: true }
     },
     [flash, patch, state.owned, userId],
   )
 
-  const buyAndWear = addAndWear
 
   const clearSlot = useCallback(
     (slot: Slot) => {
@@ -255,7 +265,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [patch],
   )
 
-  const moveLayer = useCallback(
+  const moveStack = useCallback(
     (pieceId: string, steps: number) => {
       patch((prev) => ({
         next: { ...prev, stack: moveStackId(prev.stack, pieceId, steps) },
@@ -266,16 +276,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const setBody = useCallback(
     (bodyId: string) => {
-      patch((prev) => {
-        const id = bodyOrDefault(bodyId).id
-        return {
-          next: {
-            ...prev,
-            bodyId: id,
-            bodyHue: id === prev.bodyId ? prev.bodyHue : 0,
-          },
-        }
-      })
+      patch((prev) => setBodyPersist(prev, bodyId))
     },
     [patch],
   )
@@ -318,6 +319,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (!user) return
       const lookName = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
       const lookId = crypto.randomUUID()
+      const ownerId = user.id
       patch((prev) => {
         const look: Look = {
           id: lookId,
@@ -331,29 +333,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           description: "",
           visibility: "private",
         }
-        setActiveLook(look)
-        supabase
-          .from("looks")
-          .insert({
-            id: lookId,
-            user_id: user.id,
-            name: lookName,
-            description: "",
-            visibility: "private",
-            stack: prev.stack,
-            body_id: prev.bodyId,
-            body_hue: prev.bodyHue,
-            model: prev.model,
-          })
-          .then(({ error }) => {
-            if (error) {
-              console.error("Error saving look to Supabase:", error)
-              flash(formatErrorMessage(error))
-            }
-          })
         return {
           next: { ...prev, activeLookId: lookId, looks: [look, ...prev.looks] },
           message: `Saved ${look.name}.`,
+          activeLook: look,
+          cloudOp: () => {
+            supabase
+              .from("looks")
+              .insert({
+                id: lookId,
+                user_id: ownerId,
+                ...lookPersistFields(look),
+              })
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Error saving look to Supabase:", error)
+                  flash(formatErrorMessage(error))
+                }
+              })
+          },
         }
       })
     },
@@ -364,6 +362,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (id: string, name: string) => {
       if (!user) return
       const targetName = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
+      const ownerId = user.id
       patch((prev) => {
         const nextLooks = prev.looks.map((l) =>
           l.id === id
@@ -380,30 +379,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             : l,
         )
         const updated = nextLooks.find((l) => l.id === id)
-        if (updated) {
-          setActiveLook(updated)
+        if (!updated) {
+          return { next: { ...prev, activeLookId: id, looks: nextLooks } }
         }
-        supabase
-          .from("looks")
-          .update({
-            name: targetName,
-            stack: prev.stack,
-            body_id: prev.bodyId,
-            body_hue: prev.bodyHue,
-            model: prev.model,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", id)
-          .eq("user_id", user.id)
-          .then(({ error }) => {
-            if (error) {
-              console.error("Error updating look in Supabase:", error)
-              flash(formatErrorMessage(error))
-            }
-          })
         return {
           next: { ...prev, activeLookId: id, looks: nextLooks },
           message: `Overwrote ${targetName}.`,
+          activeLook: updated,
+          cloudOp: () => {
+            supabase
+              .from("looks")
+              .update({
+                ...lookPersistFields(updated),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", id)
+              .eq("user_id", ownerId)
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Error updating look in Supabase:", error)
+                  flash(formatErrorMessage(error))
+                }
+              })
+          },
         }
       })
     },
@@ -413,30 +411,33 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const updateLookMeta = useCallback(
     (id: string, meta: LookMetaPatch) => {
       if (!user) return
+      const ownerId = user.id
       patch((prev) => {
         const current = prev.looks.find((look) => look.id === id)
         if (!current) return { next: prev }
         const updated = applyLookMeta(current, meta)
-        supabase
-          .from("looks")
-          .update({
-            name: updated.name,
-            description: updated.description,
-            visibility: updated.visibility,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", id)
-          .eq("user_id", user.id)
-          .then(({ error }) => {
-            if (error) {
-              console.error("Error updating look meta in Supabase:", error)
-              flash(formatErrorMessage(error))
-            }
-          })
         return {
           next: {
             ...prev,
             looks: prev.looks.map((look) => (look.id === id ? updated : look)),
+          },
+          cloudOp: () => {
+            supabase
+              .from("looks")
+              .update({
+                name: updated.name,
+                description: updated.description,
+                visibility: updated.visibility,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", id)
+              .eq("user_id", ownerId)
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Error updating look meta in Supabase:", error)
+                  flash(formatErrorMessage(error))
+                }
+              })
           },
         }
       })
@@ -480,12 +481,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       activeLook,
       setActiveLook,
       addToWardrobe,
-      buy,
       wear,
       addAndWear,
-      buyAndWear,
       clearSlot,
-      moveLayer,
+      moveStack,
       setBody,
       setBodyHue,
       setModel,
@@ -504,13 +503,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       activeLook,
       addAndWear,
       addToWardrobe,
-      buy,
-      buyAndWear,
       clearPlayerName,
       clearSlot,
       flash,
       loadLook,
-      moveLayer,
+      moveStack,
       notice,
       overwriteLook,
       owns,
@@ -529,8 +526,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   return <ClosetContext value={value}>{children}</ClosetContext>
 }
 
-export function useSession() {
+export function useCloset() {
   const ctx = useContext(ClosetContext)
-  if (!ctx) throw new Error("useSession must be used in SessionProvider")
+  if (!ctx) throw new Error("useCloset must be used in ClosetProvider")
   return ctx
 }

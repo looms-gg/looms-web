@@ -1,22 +1,22 @@
-import { useState, useEffect, useRef, type KeyboardEvent, type ChangeEvent } from "react"
+import { useState, useEffect, useRef, type ChangeEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   faCloudArrowUp,
-  faPen,
   faShirt,
   faTrash,
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/FaIcon"
-import { IsoThumb } from "../../components/IsoThumb"
+import { FaIcon } from "../../components/ui/FaIcon"
+import { IsoThumb } from "../../components/iso/IsoThumb"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
-import { validateDimensions } from "../../components/UploadPieceModal"
+import { validateDimensions } from "../../components/piece/UploadPieceModal"
 import { MAX_LIMITS, sanitizeText, validateFileSize } from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
-import { useSession } from "../../state/closet"
+import { useCloset } from "../../state/closet"
 import { useCatalog } from "../../state/catalog"
 import { useAuthOptional } from "../../state/auth"
 import { supabase } from "../../lib/supabase"
+import { InlineEditableText } from "./InlineEditableText"
 
 export function UploadInspector({
   piece,
@@ -29,14 +29,10 @@ export function UploadInspector({
 }) {
   const auth = useAuthOptional()
   const user = auth?.user ?? null
-  const { wear, notify } = useSession()
+  const { wear, notify } = useCloset()
   const { upsert, reload } = useCatalog()
   const navigate = useNavigate()
 
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [draftName, setDraftName] = useState(piece.name)
-  const [isEditingDesc, setIsEditingDesc] = useState(false)
-  const [draftDesc, setDraftDesc] = useState(piece.blurb ?? "")
   const [isPublic, setIsPublic] = useState(piece.isPublic ?? true)
   const [replacing, setReplacing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -44,89 +40,86 @@ export function UploadInspector({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    setDraftName(piece.name)
-    setIsEditingName(false)
-    setDraftDesc(piece.blurb ?? "")
-    setIsEditingDesc(false)
     setIsPublic(piece.isPublic ?? true)
     setConfirmDelete(false)
     setErrorMsg(null)
-  }, [piece.id, piece.name, piece.blurb, piece.isPublic])
+  }, [piece.id, piece.isPublic])
 
-  async function handleNameSubmit() {
-    const cleanName = sanitizeText(draftName, MAX_LIMITS.PIECE_NAME)
+  function requireOwner(): string | null {
+    if (!user) {
+      setErrorMsg("Must be signed in to edit this piece.")
+      return null
+    }
+    if (!piece.userId || piece.userId !== user.id) {
+      setErrorMsg("You can only edit pieces you uploaded.")
+      return null
+    }
+    return user.id
+  }
+
+  function commitName(draft: string): boolean {
+    const ownerId = requireOwner()
+    if (!ownerId) return false
+    const cleanName = sanitizeText(draft, MAX_LIMITS.PIECE_NAME)
     const next = cleanName || piece.name
-    setIsEditingName(false)
-    if (next === piece.name) return
+    if (next === piece.name) return true
 
-    setDraftName(next)
-    try {
-      const { error } = await supabase
-        .from("garments")
-        .update({ name: next })
-        .eq("id", piece.id)
+    void (async () => {
+      try {
+        const { error } = await supabase
+          .from("garments")
+          .update({ name: next })
+          .eq("id", piece.id)
+          .eq("user_id", ownerId)
 
-      if (error) throw error
+        if (error) throw error
 
-      upsert({ ...piece, name: next })
-      notify(`Renamed garment to "${next}".`)
-    } catch (err) {
-      setErrorMsg(formatErrorMessage(err))
-      setDraftName(piece.name)
-    }
+        upsert({ ...piece, name: next })
+        notify(`Renamed garment to "${next}".`)
+      } catch (err) {
+        setErrorMsg(formatErrorMessage(err))
+      }
+    })()
+
+    return true
   }
 
-  function handleNameKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault()
-      void handleNameSubmit()
-    } else if (e.key === "Escape") {
-      e.preventDefault()
-      setDraftName(piece.name)
-      setIsEditingName(false)
-    }
-  }
+  function commitDescription(draft: string): boolean {
+    const ownerId = requireOwner()
+    if (!ownerId) return false
+    const next = sanitizeText(draft, MAX_LIMITS.PIECE_DESCRIPTION, { multiline: true })
+    if (next === (piece.blurb ?? "")) return true
 
-  async function handleDescSubmit() {
-    const next = sanitizeText(draftDesc, MAX_LIMITS.PIECE_DESCRIPTION, { multiline: true })
-    setIsEditingDesc(false)
-    if (next === (piece.blurb ?? "")) return
+    void (async () => {
+      try {
+        const { error } = await supabase
+          .from("garments")
+          .update({ description: next || null })
+          .eq("id", piece.id)
+          .eq("user_id", ownerId)
 
-    setDraftDesc(next)
-    try {
-      const { error } = await supabase
-        .from("garments")
-        .update({ description: next || null })
-        .eq("id", piece.id)
+        if (error) throw error
 
-      if (error) throw error
+        upsert({ ...piece, blurb: next })
+        notify("Updated garment description.")
+      } catch (err) {
+        setErrorMsg(formatErrorMessage(err))
+      }
+    })()
 
-      upsert({ ...piece, blurb: next })
-      notify("Updated garment description.")
-    } catch (err) {
-      setErrorMsg(formatErrorMessage(err))
-      setDraftDesc(piece.blurb ?? "")
-    }
-  }
-
-  function handleDescKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      void handleDescSubmit()
-    } else if (e.key === "Escape") {
-      e.preventDefault()
-      setDraftDesc(piece.blurb ?? "")
-      setIsEditingDesc(false)
-    }
+    return true
   }
 
   async function handleTogglePublic(nextPublic: boolean) {
+    const ownerId = requireOwner()
+    if (!ownerId) return
     setIsPublic(nextPublic)
     try {
       const { error } = await supabase
         .from("garments")
         .update({ is_public: nextPublic })
         .eq("id", piece.id)
+        .eq("user_id", ownerId)
 
       if (error) throw error
 
@@ -146,10 +139,8 @@ export function UploadInspector({
   async function handleReplaceTexture(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!user) {
-      setErrorMsg("Must be signed in to replace texture.")
-      return
-    }
+    const ownerId = requireOwner()
+    if (!ownerId) return
 
     if (file.type !== "image/png") {
       setErrorMsg("Only PNG files are supported for Minecraft garment textures.")
@@ -176,7 +167,7 @@ export function UploadInspector({
       setReplacing(true)
       setErrorMsg(null)
       try {
-        const storagePath = `${user.id}/${piece.id}.png`
+        const storagePath = `${ownerId}/${piece.id}.png`
         const { error: uploadError } = await supabase.storage
           .from("garments")
           .upload(storagePath, file, {
@@ -202,6 +193,7 @@ export function UploadInspector({
             added: now,
           })
           .eq("id", piece.id)
+          .eq("user_id", ownerId)
 
         if (dbError) {
           throw new Error(`Database update failed: ${dbError.message}`)
@@ -233,16 +225,22 @@ export function UploadInspector({
       setConfirmDelete(true)
       return
     }
+    const ownerId = requireOwner()
+    if (!ownerId) return
 
     try {
-      const { error } = await supabase.from("garments").delete().eq("id", piece.id)
+      const { error } = await supabase
+        .from("garments")
+        .delete()
+        .eq("id", piece.id)
+        .eq("user_id", ownerId)
       if (error) throw error
 
       notify(`Deleted "${piece.name}".`)
       await reload()
       onDeleted?.()
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Failed to delete garment.")
+      setErrorMsg(formatErrorMessage(err))
       setConfirmDelete(false)
     }
   }
@@ -265,76 +263,29 @@ export function UploadInspector({
         )}
 
         <div>
-          <div className="flex items-center gap-2">
-            {isEditingName ? (
-              <input
-                type="text"
-                maxLength={MAX_LIMITS.PIECE_NAME}
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                onBlur={() => void handleNameSubmit()}
-                onKeyDown={handleNameKeyDown}
-                className="input input-bordered input-sm h-9 w-full font-extrabold text-lg"
-                aria-label="Garment name"
-                autoFocus
-              />
-            ) : (
-              <>
-                <h2 className="text-xl font-extrabold truncate" title={piece.name}>
-                  {piece.name}
-                </h2>
-                <button
-                  type="button"
-                  aria-label="Edit garment name"
-                  onClick={() => setIsEditingName(true)}
-                  className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-base-content"
-                >
-                  <FaIcon icon={faPen} className="size-3" />
-                </button>
-              </>
-            )}
-          </div>
+          <InlineEditableText
+            value={piece.name}
+            maxLength={MAX_LIMITS.PIECE_NAME}
+            onCommit={commitName}
+            ariaLabel="Garment name"
+            editAriaLabel="Edit garment name"
+            title={piece.name}
+          />
           <p className="mt-1 text-xs font-semibold text-base-content/60">
             Added {new Date(piece.added).toLocaleDateString()}
           </p>
         </div>
 
         <div>
-          <div className="flex items-start gap-2">
-            {isEditingDesc ? (
-              <textarea
-                value={draftDesc}
-                maxLength={MAX_LIMITS.PIECE_DESCRIPTION}
-                onChange={(e) => setDraftDesc(e.target.value)}
-                onBlur={() => void handleDescSubmit()}
-                onKeyDown={handleDescKeyDown}
-                className="textarea textarea-bordered textarea-sm w-full text-xs"
-                placeholder="Add a description"
-                aria-label="Garment description"
-                autoFocus
-                rows={2}
-              />
-            ) : (
-              <div className="group flex w-full items-start justify-between gap-2">
-                <p
-                  onClick={() => setIsEditingDesc(true)}
-                  className={`text-xs cursor-pointer ${
-                    piece.blurb ? "text-base-content/80" : "text-base-content/40 italic"
-                  }`}
-                >
-                  {piece.blurb || "Add a description"}
-                </p>
-                <button
-                  type="button"
-                  aria-label="Edit garment description"
-                  onClick={() => setIsEditingDesc(true)}
-                  className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-base-content"
-                >
-                  <FaIcon icon={faPen} className="size-2.5" />
-                </button>
-              </div>
-            )}
-          </div>
+          <InlineEditableText
+            value={piece.blurb ?? ""}
+            maxLength={MAX_LIMITS.PIECE_DESCRIPTION}
+            multiline
+            onCommit={commitDescription}
+            ariaLabel="Garment description"
+            editAriaLabel="Edit garment description"
+            placeholder="Add a description"
+          />
         </div>
 
         <div className="flex items-center justify-between border-t border-base-content/10 pt-3">

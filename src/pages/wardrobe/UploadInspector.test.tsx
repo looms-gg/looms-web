@@ -4,12 +4,13 @@ import { flushSync } from "react-dom"
 import { MemoryRouter, useLocation } from "react-router-dom"
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { type Piece } from "../../data/catalog"
-import { SessionProvider } from "../../state/closet"
+import { ClosetProvider } from "../../state/closet"
+import { CatalogProvider } from "../../state/catalog"
 import { AuthContext, type AuthContextValue } from "../../state/auth"
 import { UploadInspector } from "./UploadInspector"
 import { supabase } from "../../lib/supabase"
 
-vi.mock("../../components/IsoThumb", () => ({
+vi.mock("../../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
 }))
 
@@ -47,6 +48,8 @@ function stubAuth(userId = "user-123"): AuthContextValue {
     signOut: vi.fn(),
     updateProfile: vi.fn(),
     refreshProfile: vi.fn(),
+    profileError: null,
+    dismissProfileError: vi.fn(),
   }
 }
 
@@ -76,9 +79,11 @@ describe("UploadInspector", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
-            <SessionProvider>
+            <CatalogProvider>
+            <ClosetProvider>
               <UploadInspector piece={mockPiece} />
-            </SessionProvider>
+            </ClosetProvider>
+            </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -113,9 +118,11 @@ describe("UploadInspector", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
-            <SessionProvider>
+            <CatalogProvider>
+            <ClosetProvider>
               <UploadInspector piece={mockPiece} />
-            </SessionProvider>
+            </ClosetProvider>
+            </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -163,9 +170,11 @@ describe("UploadInspector", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
-            <SessionProvider>
+            <CatalogProvider>
+            <ClosetProvider>
               <UploadInspector piece={mockPiece} />
-            </SessionProvider>
+            </ClosetProvider>
+            </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -190,10 +199,12 @@ describe("UploadInspector", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
-            <SessionProvider>
+            <CatalogProvider>
+            <ClosetProvider>
               <UploadInspector piece={mockPiece} />
               <PathPeek />
-            </SessionProvider>
+            </ClosetProvider>
+            </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -231,9 +242,11 @@ describe("UploadInspector", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
-            <SessionProvider>
+            <CatalogProvider>
+            <ClosetProvider>
               <UploadInspector piece={mockPiece} />
-            </SessionProvider>
+            </ClosetProvider>
+            </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -281,9 +294,11 @@ describe("UploadInspector", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
-            <SessionProvider>
+            <CatalogProvider>
+            <ClosetProvider>
               <UploadInspector piece={mockPiece} />
-            </SessionProvider>
+            </ClosetProvider>
+            </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )

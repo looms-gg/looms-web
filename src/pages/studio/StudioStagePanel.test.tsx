@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest"
 import { StudioStagePanel } from "./StudioStagePanel"
 import type { Look } from "../../state/closet"
 
-vi.mock("../../components/SkinStage", () => ({
+vi.mock("../../components/iso/SkinStage", () => ({
   SkinStage: () => <div data-testid="mock-skin-stage" />,
 }))
 

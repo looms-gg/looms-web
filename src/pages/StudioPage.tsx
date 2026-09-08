@@ -48,9 +48,8 @@ export function StudioPage() {
         bodyHue={board.bodyHue}
         model={board.model}
         stackTopFirst={board.stackTopFirst}
-        equippedEyes={board.equipped.eyes}
         onModel={board.setModel}
-        onMove={board.moveLayer}
+        onMove={board.moveStack}
         onClear={board.clearSlot}
         onOpenAppearance={() => board.setRack("appearance")}
       />

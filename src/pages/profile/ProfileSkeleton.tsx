@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react"
-import { RackGrid } from "../../components/RackGrid"
+import { RackGrid } from "../../components/piece/RackGrid"
 
 const TILE_COUNT = 8
 
