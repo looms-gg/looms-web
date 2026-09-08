@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react"
 import type { Session, User } from "@supabase/supabase-js"
-import { supabase, type ProfileRow } from "../lib/supabase"
+import { supabase, type Database, type ProfileRow } from "../lib/supabase"
 import { isEmailVerified, isUnconfirmedAuthError } from "./emailStatus"
 import {
   MAX_LIMITS,
@@ -286,7 +286,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.user) {
-        const profilePayload: Partial<ProfileRow> & { id: string; username: string } = {
+        const profilePayload: Database["public"]["Tables"]["profiles"]["Insert"] = {
           id: data.user.id,
           username: username.trim(),
           minecraft_username: minecraftUsername?.trim() || null,

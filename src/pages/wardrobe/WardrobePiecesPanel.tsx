@@ -1,17 +1,29 @@
 import { useMemo, useState, type CSSProperties } from "react"
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
-import { SLOTS, SLOT_LABEL, type Piece } from "../../data/catalog"
+import { getPiece, SLOTS, SLOT_LABEL } from "../../data/catalog"
 import { FaIcon } from "../../components/FaIcon"
 import { PieceTile } from "../../components/PieceTile"
 import { RackGrid } from "../../components/RackGrid"
 import type { LayerFilter } from "../../components/ClosetRail"
 import { MAX_LIMITS } from "../../lib/sanitize"
+import { useSession } from "../../state/closet"
+import { useCatalog } from "../../state/catalog"
 import { filterClosetPieces } from "../closetBrowse"
 import { WardrobeEmpty } from "./WardrobeEmpty"
 
-export function WardrobePiecesPanel({ ownedPieces }: { ownedPieces: Piece[] }) {
+export function WardrobePiecesPanel() {
+  const { owned } = useSession()
+  const { pieces } = useCatalog()
   const [query, setQuery] = useState("")
   const [layer, setLayer] = useState<LayerFilter>("all")
+
+  const ownedPieces = useMemo(
+    () =>
+      owned
+        .map((id) => pieces.find((piece) => piece.id === id) ?? getPiece(id))
+        .filter((piece) => piece != null),
+    [owned, pieces],
+  )
 
   const filteredOwned = useMemo(
     () => filterClosetPieces(ownedPieces, query, layer, "Newest"),

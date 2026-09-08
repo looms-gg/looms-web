@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useSearchParams } from "react-router-dom"
 import { faCloudArrowUp } from "@fortawesome/free-solid-svg-icons"
-import { getPiece } from "../data/catalog"
 import { FaIcon } from "../components/FaIcon"
 import { UploadPieceModal } from "../components/UploadPieceModal"
 import { AuthModal } from "../components/AuthModal"
@@ -9,18 +8,21 @@ import { useSession } from "../state/closet"
 import { useCatalog } from "../state/catalog"
 import { useAuthOptional } from "../state/auth"
 import { parseWardrobeTab, type WardrobeTab } from "./wardrobeTab"
-import { LookInspector } from "./wardrobe/LookInspector"
-import { InspectorModal } from "./wardrobe/InspectorModal"
 import { WardrobeLooksPanel } from "./wardrobe/WardrobeLooksPanel"
 import { WardrobePiecesPanel } from "./wardrobe/WardrobePiecesPanel"
 import { WardrobeUploadsPanel } from "./wardrobe/WardrobeUploadsPanel"
 
+const TABS: { id: WardrobeTab; label: string }[] = [
+  { id: "looks", label: "Looks" },
+  { id: "pieces", label: "Pieces" },
+  { id: "uploads", label: "My Uploads" },
+]
+
 export function WardrobePage() {
   const auth = useAuthOptional()
   const user = auth?.user ?? null
-  const { owned, looks, loadLook } = useSession()
+  const { looks } = useSession()
   const { pieces } = useCatalog()
-  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const urlTab = parseWardrobeTab(params.toString())
   const [optimisticTab, setOptimisticTab] = useState<WardrobeTab | null>(null)
@@ -31,16 +33,6 @@ export function WardrobePage() {
 
   const [uploadOpen, setUploadOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
-  const [inspectedLookId, setInspectedLookId] = useState<string | null>(null)
-  const inspectedLook = looks.find((look) => look.id === inspectedLookId) ?? null
-
-  const ownedPieces = useMemo(
-    () =>
-      owned
-        .map((id) => pieces.find((piece) => piece.id === id) ?? getPiece(id))
-        .filter((piece) => piece != null),
-    [owned, pieces],
-  )
 
   const myUploads = useMemo(() => {
     if (!user) return []
@@ -65,38 +57,23 @@ export function WardrobePage() {
           className="mt-4 flex flex-wrap items-center justify-between gap-2"
         >
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "looks"}
-              className={`btn btn-sm rounded-full font-extrabold ${tab === "looks" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => selectTab("looks")}
-            >
-              Looks
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "pieces"}
-              className={`btn btn-sm rounded-full font-extrabold ${tab === "pieces" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => selectTab("pieces")}
-            >
-              Pieces
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "uploads"}
-              className={`btn btn-sm rounded-full font-extrabold ${tab === "uploads" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => selectTab("uploads")}
-            >
-              My Uploads
-              {myUploads.length > 0 && (
-                <span className="badge badge-xs badge-neutral ml-1 tabular-nums">
-                  {myUploads.length}
-                </span>
-              )}
-            </button>
+            {TABS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                className={`btn btn-sm rounded-full font-extrabold ${tab === id ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => selectTab(id)}
+              >
+                {label}
+                {id === "uploads" && myUploads.length > 0 && (
+                  <span className="badge badge-xs badge-neutral ml-1 tabular-nums">
+                    {myUploads.length}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
           {user && (
             <button
@@ -111,16 +88,8 @@ export function WardrobePage() {
         </div>
       </section>
 
-      {tab === "looks" && (
-        <WardrobeLooksPanel
-          looks={looks}
-          inspectedLookId={inspectedLookId}
-          onInspectLook={setInspectedLookId}
-        />
-      )}
-
-      {tab === "pieces" && <WardrobePiecesPanel ownedPieces={ownedPieces} />}
-
+      {tab === "looks" && <WardrobeLooksPanel looks={looks} />}
+      {tab === "pieces" && <WardrobePiecesPanel />}
       {tab === "uploads" && (
         <WardrobeUploadsPanel
           user={user}
@@ -129,22 +98,6 @@ export function WardrobePage() {
           onUpload={() => setUploadOpen(true)}
         />
       )}
-
-      <InspectorModal
-        open={Boolean(inspectedLook)}
-        title={inspectedLook?.name ?? "Look"}
-        onClose={() => setInspectedLookId(null)}
-      >
-        {inspectedLook ? (
-          <LookInspector
-            look={inspectedLook}
-            onEditOutfit={() => {
-              loadLook(inspectedLook)
-              void navigate("/studio")
-            }}
-          />
-        ) : null}
-      </InspectorModal>
 
       <UploadPieceModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
