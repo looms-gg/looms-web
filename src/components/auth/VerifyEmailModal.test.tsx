@@ -19,6 +19,7 @@ function authValue(overrides: Partial<AuthContextValue> = {}): AuthContextValue 
     loading: false,
     profileError: null,
     dismissProfileError: vi.fn(),
+    deleteAccount: vi.fn(),
     emailVerified: false,
     pendingEmail: "weaver@looms.dev",
     emailVerifyOpen: true,

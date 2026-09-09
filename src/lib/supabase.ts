@@ -362,6 +362,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      delete_my_account: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
     }
   }
 }

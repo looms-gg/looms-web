@@ -27,6 +27,7 @@ describe("ProfilePrivacyModal", () => {
           onClose={onClose}
           onToggleLastSeen={onToggleLastSeen}
           onToggleLikes={onToggleLikes}
+          onDeleteAccount={() => {}}
         />,
       )
     })
@@ -67,6 +68,7 @@ describe("ProfilePrivacyModal", () => {
           onClose={() => {}}
           onToggleLastSeen={() => {}}
           onToggleLikes={() => {}}
+          onDeleteAccount={() => {}}
         />,
       )
     })

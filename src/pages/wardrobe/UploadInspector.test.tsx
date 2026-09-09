@@ -50,6 +50,7 @@ function stubAuth(userId = "user-123"): AuthContextValue {
     refreshProfile: vi.fn(),
     profileError: null,
     dismissProfileError: vi.fn(),
+    deleteAccount: vi.fn(),
   }
 }
 
