@@ -1,3 +1,4 @@
+import { logAdminAction } from "./adminAudit"
 import { MAX_LIMITS, sanitizeText } from "./sanitize"
 import { supabase, type ContentReportRow, type GarmentRow, type LookRow, type ProfileRow } from "./supabase"
 
@@ -109,6 +110,12 @@ export async function updateReportStatus({
     .single()
 
   if (error) throw error
+  await logAdminAction({
+    action: `report_${status}`,
+    targetTable: "content_reports",
+    targetId: reportId,
+    details: { actionTaken: actionTaken ?? "none" },
+  })
   return data as ContentReportRow
 }
 
@@ -127,16 +134,20 @@ export async function adminDeleteContent({
   if (targetType === "look") {
     const { error } = await supabase.from("looks").delete().eq("id", targetId)
     if (error) throw error
+    await logAdminAction({ action: "delete_look", targetTable: "looks", targetId })
   } else if (targetType === "piece") {
     const { error } = await supabase.from("garments").delete().eq("id", targetId)
     if (error) throw error
+    await logAdminAction({ action: "delete_garment", targetTable: "garments", targetId })
   } else if (targetType === "comment") {
     if (subType === "look_comment") {
       const { error } = await supabase.from("look_comments").delete().eq("id", targetId)
       if (error) throw error
+      await logAdminAction({ action: "delete_look_comment", targetTable: "look_comments", targetId })
     } else if (subType === "garment_comment") {
       const { error } = await supabase.from("garment_comments").delete().eq("id", targetId)
       if (error) throw error
+      await logAdminAction({ action: "delete_garment_comment", targetTable: "garment_comments", targetId })
     } else {
       // Try both
       const [garmentRes, lookRes] = await Promise.all([
@@ -145,6 +156,12 @@ export async function adminDeleteContent({
       ])
       if (garmentRes.error && lookRes.error) {
         throw garmentRes.error
+      }
+      if (!garmentRes.error) {
+        await logAdminAction({ action: "delete_garment_comment", targetTable: "garment_comments", targetId })
+      }
+      if (!lookRes.error) {
+        await logAdminAction({ action: "delete_look_comment", targetTable: "look_comments", targetId })
       }
     }
   }

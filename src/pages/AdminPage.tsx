@@ -1,6 +1,7 @@
 import { useState } from "react"
 import {
   faBullhorn,
+  faClipboardList,
   faClockRotateLeft,
   faFlag,
   faShieldHalved,
@@ -11,8 +12,9 @@ import { useAuth } from "../state/auth"
 import { ModerationQueue } from "./admin/ModerationQueue"
 import { LatestActivityFeed } from "./admin/LatestActivityFeed"
 import { BannerSettings } from "./admin/BannerSettings"
+import { AdminAuditLog } from "./admin/AdminAuditLog"
 
-type AdminTab = "moderation" | "activity" | "banner"
+type AdminTab = "moderation" | "activity" | "banner" | "audit"
 
 export function AdminPage() {
   const { user } = useAuth()
@@ -22,6 +24,7 @@ export function AdminPage() {
     { id: "moderation", label: "Moderation Queue", icon: faFlag },
     { id: "activity", label: "Latest Activity", icon: faClockRotateLeft },
     { id: "banner", label: "Site Banner", icon: faBullhorn },
+    { id: "audit", label: "Audit Log", icon: faClipboardList },
   ]
 
   return (
@@ -96,6 +99,7 @@ export function AdminPage() {
         {activeTab === "banner" && user ? (
           <BannerSettings adminId={user.id} />
         ) : null}
+        {activeTab === "audit" && user ? <AdminAuditLog /> : null}
       </div>
     </div>
   )

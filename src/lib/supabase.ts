@@ -120,6 +120,16 @@ export type AdminUserRow = {
   created_at: string
 }
 
+export type AdminAuditLogRow = {
+  id: string
+  admin_id: string
+  action: string
+  target_table: string
+  target_id: string | null
+  details: Record<string, unknown> | null
+  created_at: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -309,6 +319,23 @@ export type Database = {
         Update: Partial<AdminUserRow>
         Relationships: []
       }
+      admin_audit_log: {
+        Row: AdminAuditLogRow
+        Insert: Omit<AdminAuditLogRow, "id" | "created_at"> & {
+          id?: string
+          created_at?: string
+        }
+        Update: Partial<AdminAuditLogRow>
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -325,6 +352,15 @@ export type Database = {
             avatar_url: string | null
           }
         >
+      }
+      log_admin_action: {
+        Args: {
+          p_action: string
+          p_target_table: string
+          p_target_id?: string | null
+          p_details?: Record<string, unknown> | null
+        }
+        Returns: undefined
       }
     }
   }

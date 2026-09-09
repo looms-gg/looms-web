@@ -1,3 +1,4 @@
+import { logAdminAction } from "./adminAudit"
 import { MAX_LIMITS, sanitizeText, sanitizeUrl } from "./sanitize"
 import { supabase, type SiteBannerRow } from "./supabase"
 
@@ -82,6 +83,12 @@ export async function saveSiteBanner(input: SaveSiteBannerInput): Promise<SiteBa
       .single()
 
     if (error) throw error
+    await logAdminAction({
+      action: "update_banner",
+      targetTable: "site_banners",
+      targetId: data.id,
+      details: { isActive: input.isActive, style: input.style },
+    })
     return data as SiteBannerRow
   }
 
@@ -92,6 +99,12 @@ export async function saveSiteBanner(input: SaveSiteBannerInput): Promise<SiteBa
     .single()
 
   if (error) throw error
+  await logAdminAction({
+    action: "create_banner",
+    targetTable: "site_banners",
+    targetId: data.id,
+    details: { isActive: input.isActive, style: input.style },
+  })
   return data as SiteBannerRow
 }
 

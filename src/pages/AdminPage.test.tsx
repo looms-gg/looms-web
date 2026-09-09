@@ -8,6 +8,7 @@ import type { AuthContextValue } from "../state/auth"
 import { AdminPage } from "./AdminPage"
 import * as reportsApi from "../lib/reports"
 import * as bannerApi from "../lib/siteBanner"
+import * as adminAuditApi from "../lib/adminAudit"
 
 function stubAuth(userId: string): AuthContextValue {
   return {
@@ -130,6 +131,35 @@ describe("AdminPage", () => {
 
     expect(host.textContent).toMatch(/Site Announcement Active/i)
     expect(host.textContent).toMatch(/Current active announcement/i)
+  })
+
+  it("switches to Audit Log tab and renders entries", async () => {
+    vi.spyOn(adminAuditApi, "fetchAdminAuditLog").mockResolvedValue([
+      {
+        id: "a-1",
+        admin_id: "45e6be54",
+        action: "delete_garment",
+        target_table: "garments",
+        target_id: "g-99",
+        details: null,
+        created_at: new Date().toISOString(),
+      },
+    ])
+    const { host, root } = await renderAdminPage()
+    cleanupList.push({ host, root })
+
+    const auditTabBtn = Array.from(host.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("Audit Log"),
+    )
+    expect(auditTabBtn).not.toBeUndefined()
+
+    await act(async () => {
+      auditTabBtn?.click()
+      await Promise.resolve()
+    })
+
+    expect(host.textContent).toMatch(/delete garment/i)
+    expect(host.textContent).toMatch(/garments/)
   })
 
   it("switches to Latest Activity tab when clicked", async () => {
