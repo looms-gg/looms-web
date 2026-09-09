@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
+  fetchYesterdayTopLook,
   filterAndSortPublicLooks,
   type PublicLook,
   DEFAULT_FEATURED_LOOKS,
 } from "./publicLooks"
+import { supabase } from "../lib/supabase"
 
 function makeLook(overrides: Partial<PublicLook> & { id: string; name: string }): PublicLook {
   return {
@@ -77,9 +79,15 @@ describe("filterAndSortPublicLooks", () => {
     expect(sorted.map((l) => l.id)).toEqual(["l2", "l3", "l1"])
   })
 
-  it("sorts by Trending (recency and likes combined)", () => {
-    const sorted = filterAndSortPublicLooks(looks, "", "Trending", "all")
-    expect(sorted[0].id).toBe("l3") // high recency + solid likes
+  it("sorts by Trending — velocity-aware: recent likes dominate over old likes", () => {
+    // l4: many all-time likes but earned 3 days ago (no recent velocity)
+    // l5: fewer total likes but hot right now (high recentLikeCount)
+    const hotLooks: PublicLook[] = [
+      makeLook({ id: "l4", name: "Old Fame", likeCount: 200, recentLikeCount: 0,  createdAt: Date.now() - 1000 * 60 * 60 * 72 }),
+      makeLook({ id: "l5", name: "On Fire",  likeCount: 12,  recentLikeCount: 30, createdAt: Date.now() - 1000 * 60 * 60 * 2  }),
+    ]
+    const sorted = filterAndSortPublicLooks(hotLooks, "", "Trending", "all")
+    expect(sorted[0].id).toBe("l5") // recent velocity beats stale fame
   })
 })
 
@@ -87,5 +95,58 @@ describe("DEFAULT_FEATURED_LOOKS", () => {
   it("provides 3 distinct starter looks", () => {
     expect(DEFAULT_FEATURED_LOOKS.length).toBe(3)
     expect(new Set(DEFAULT_FEATURED_LOOKS.map((l) => l.id)).size).toBe(3)
+  })
+})
+
+describe("fetchYesterdayTopLook", () => {
+  const rpcRow = {
+    id: "look-yay",
+    user_id: "u-yay",
+    name: "Yesterday's Champion",
+    description: "The one everyone liked",
+    visibility: "public",
+    stack: ["winter-coat"],
+    body_id: "slate",
+    body_hue: 0,
+    model: "classic",
+    like_count: 42,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    username: "ChampMaker",
+    avatar_url: null,
+  }
+
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it("maps the RPC row to a PublicLook", async () => {
+    vi.spyOn(supabase, "rpc").mockResolvedValue({ data: [rpcRow], error: null })
+
+    const top = await fetchYesterdayTopLook()
+    expect(top?.id).toBe("look-yay")
+    expect(top?.name).toBe("Yesterday's Champion")
+    expect(top?.maker).toBe("ChampMaker")
+  })
+
+  it("returns null when the RPC returns no rows (thin day)", async () => {
+    vi.spyOn(supabase, "rpc").mockResolvedValue({ data: [], error: null })
+
+    expect(await fetchYesterdayTopLook()).toBeNull()
+  })
+
+  it("returns null when the RPC errors", async () => {
+    vi.spyOn(supabase, "rpc").mockResolvedValue({
+      data: null,
+      error: { message: "boom" },
+    })
+
+    expect(await fetchYesterdayTopLook()).toBeNull()
+  })
+
+  it("returns null when the RPC throws (offline etc.)", async () => {
+    vi.spyOn(supabase, "rpc").mockRejectedValue(new Error("offline"))
+
+    expect(await fetchYesterdayTopLook()).toBeNull()
   })
 })

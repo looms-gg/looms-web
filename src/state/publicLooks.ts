@@ -186,8 +186,13 @@ export function filterAndSortPublicLooks(
       return b.createdAt - a.createdAt
     }
     if (sort === "Trending") {
-      const scoreA = (a.likeCount + 1) * a.createdAt
-      const scoreB = (b.likeCount + 1) * b.createdAt
+      // Velocity-aware HN-style decay:
+      //   recent likes (past 24h) act as the velocity signal x 3
+      //   total likes decay by sqrt(age in hours) to penalise staleness
+      const ageHoursA = Math.max(2, (Date.now() - a.createdAt) / 3_600_000)
+      const ageHoursB = Math.max(2, (Date.now() - b.createdAt) / 3_600_000)
+      const scoreA = (a.recentLikeCount ?? 0) * 3 + a.likeCount / Math.sqrt(ageHoursA)
+      const scoreB = (b.recentLikeCount ?? 0) * 3 + b.likeCount / Math.sqrt(ageHoursB)
       return scoreB - scoreA
     }
     // Newest
@@ -255,6 +260,23 @@ export async function fetchTrendingLooksPastDay(limit = 3): Promise<PublicLook[]
     return DEFAULT_FEATURED_LOOKS.slice(0, limit)
   } catch {
     return DEFAULT_FEATURED_LOOKS.slice(0, limit)
+  }
+}
+
+/**
+ * The look that won yesterday (most likes in the 48h→24h window), or null
+ * when no look earned the crown or the lookup failed — the hero simply
+ * renders without a crown in that case.
+ */
+export async function fetchYesterdayTopLook(): Promise<PublicLook | null> {
+  try {
+    const { data, error } = await supabase.rpc("get_yesterday_top_look")
+    if (error) return null
+    const rows = Array.isArray(data) ? data : []
+    if (rows.length === 0) return null
+    return mapLookEmbedRow(rows[0] as Parameters<typeof mapLookEmbedRow>[0])
+  } catch {
+    return null
   }
 }
 
