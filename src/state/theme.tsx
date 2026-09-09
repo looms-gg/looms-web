@@ -41,13 +41,14 @@ export function parseTheme(stored: string | null): ThemeName {
 
 type ThemeContextValue = {
   theme: ThemeName
+  setTheme: (theme: ThemeName) => void
   toggleTheme: () => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<ThemeName>(readTheme)
+  const [theme, setThemeState] = useState<ThemeName>(readTheme)
 
   useEffect(() => {
     applyTheme(theme)
@@ -58,11 +59,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [theme])
 
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === "looms" ? "looms-light" : "looms"))
+  const setTheme = useCallback((next: ThemeName) => {
+    setThemeState(next)
   }, [])
 
-  const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme])
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => (prev === "looms" ? "looms-light" : "looms"))
+  }, [])
+
+  const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, setTheme, toggleTheme])
 
   return <ThemeContext value={value}>{children}</ThemeContext>
 }
