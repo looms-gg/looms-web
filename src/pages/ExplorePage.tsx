@@ -18,6 +18,7 @@ import {
   DEFAULT_FEATURED_LOOKS,
   fetchPublicLooksFeed,
   fetchTrendingLooksPastDay,
+  fetchYesterdayTopLook,
   filterAndSortPublicLooks,
   publicLookToLook,
   type LookModelFilter,
@@ -45,6 +46,7 @@ export function ExplorePage() {
   const [looksError, setLooksError] = useState<string | null>(null)
   const [trendingLooks, setTrendingLooks] = useState<PublicLook[]>([])
   const [trendingLoading, setTrendingLoading] = useState(true)
+  const [yesterdayTop, setYesterdayTop] = useState<PublicLook | null>(null)
 
   const [uploadOpen, setUploadOpen] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
@@ -86,6 +88,9 @@ export function ExplorePage() {
           setLooksLoading(false)
         }
       })
+    void fetchYesterdayTopLook().then((top) => {
+      if (active) setYesterdayTop(top)
+    })
     return () => {
       active = false
     }
@@ -130,6 +135,7 @@ export function ExplorePage() {
         <ExploreHero
           trendingLooks={trendingLooks}
           loading={trendingLoading}
+          yesterdayTop={yesterdayTop}
           onWearLook={handleWearLook}
         />
       ) : null}

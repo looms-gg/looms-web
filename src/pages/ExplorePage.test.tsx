@@ -74,4 +74,56 @@ describe("ExplorePage", () => {
 
     expect(host.textContent).toContain("Browse community looks")
   })
+  it("shows the yesterday's #1 crown badge in the hero when fetchYesterdayTopLook resolves", async () => {
+    const champion: publicLooksModule.PublicLook = {
+      id: "look-yay",
+      userId: "u-yay",
+      name: "Yesterday's Champion",
+      description: "Won the day",
+      visibility: "public",
+      stack: ["ink-fall"],
+      bodyId: "slate",
+      bodyHue: 0,
+      model: "classic",
+      likeCount: 120,
+      createdAt: Date.now() - 1000 * 60 * 60 * 36,
+      updatedAt: Date.now() - 1000 * 60 * 60 * 36,
+      maker: "ChampMaker",
+      makerAvatarUrl: null,
+    }
+
+    vi.spyOn(publicLooksModule, "fetchTrendingLooksPastDay").mockResolvedValue(
+      publicLooksModule.DEFAULT_FEATURED_LOOKS,
+    )
+    vi.spyOn(publicLooksModule, "fetchPublicLooksFeed").mockResolvedValue([])
+    vi.spyOn(publicLooksModule, "fetchYesterdayTopLook").mockResolvedValue(champion)
+
+    const host = document.createElement("div")
+    await act(async () => {
+      flushSync(() => {
+        createRoot(host).render(
+          <AuthProvider>
+            <LikesProvider>
+              <CatalogProvider>
+                <ClosetProvider>
+                  <MemoryRouter initialEntries={["/"]}>
+                    <ExplorePage />
+                  </MemoryRouter>
+                </ClosetProvider>
+              </CatalogProvider>
+            </LikesProvider>
+          </AuthProvider>,
+        )
+      })
+      // flush async fetches
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    const badge = Array.from(host.querySelectorAll("a")).find((a) =>
+      a.textContent?.includes("Yesterday's #1"),
+    )
+    expect(badge).toBeTruthy()
+    expect(badge?.textContent).toContain("Yesterday's Champion")
+  })
 })
