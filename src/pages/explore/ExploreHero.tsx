@@ -170,7 +170,7 @@ export function ExploreHero({
             look={looks[0]}
             pose="center"
             loading={loading}
-            className="z-10 scale-105 hover:z-30 -ml-16 sm:-ml-20 lg:-ml-26"
+            className="z-10 scale-105 hover:z-30 -ml-20 sm:-ml-26 lg:-ml-32"
           />
 
           {/* Friend 3 (Right, leaning in close) */}
@@ -178,7 +178,7 @@ export function ExploreHero({
             look={looks[2]}
             pose="right"
             loading={loading}
-            className="z-10 hover:z-30 -ml-14 sm:-ml-18 lg:-ml-24"
+            className="z-10 hover:z-30 -ml-16 sm:-ml-20 lg:-ml-24"
           />
         </div>
       </div>

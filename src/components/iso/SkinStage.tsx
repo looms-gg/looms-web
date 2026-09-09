@@ -43,7 +43,7 @@ export function SkinStage({
   const fxRefs = useRef<(HTMLCanvasElement | null)[]>([])
   const viewerRef = useRef<SkinViewer | null>(null)
   const replayRef = useRef<(() => void) | null>(null)
-  const paintFxRef = useRef<(immediate?: boolean) => void>(() => {})
+  const paintFxRef = useRef<() => void>(() => {})
   const [ready, setReady] = useState(false)
   const outfitRef = useRef(outfit)
   outfitRef.current = outfit
@@ -67,13 +67,11 @@ export function SkinStage({
     viewer.renderPaused = true
 
     const scratch = document.createElement("canvas")
-    let fxFrame: number | null = null
 
+    // Copy the last rendered WebGL frame into the fx overlays. Runs inside the
+    // shared rAF callback right after viewer.render(), so the figure and its
+    // shadow/rim always show the same frame.
     const paintFx = () => {
-      if (fxFrame !== null) {
-        cancelAnimationFrame(fxFrame)
-        fxFrame = null
-      }
       const src = canvasRef.current
       if (src && src.width > 0) {
         if (scratch.width !== src.width || scratch.height !== src.height) {
@@ -93,31 +91,43 @@ export function SkinStage({
       }
     }
 
-    const schedulePaintFx = () => {
-      if (fxFrame !== null) return
-      fxFrame = requestAnimationFrame(paintFx)
-    }
-    paintFxRef.current = paintFx
-
-    const onControlsChange = () => {
+    // OrbitControls fires one change event per input event, which during a
+    // drag can be several per display frame. Coalesce render + fx copy into a
+    // single rAF so each frame costs one WebGL render + one fx pass — and the
+    // overlays land on the same frame as the canvas instead of trailing it.
+    let frame: number | null = null
+    const frameFx = () => {
+      frame = null
       viewer.render()
       paintFx()
     }
-    viewer.controls.addEventListener("change", onControlsChange)
+    const scheduleFrame = () => {
+      if (frame === null) frame = requestAnimationFrame(frameFx)
+    }
+    const renderNow = () => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame)
+        frame = null
+      }
+      frameFx()
+    }
+    paintFxRef.current = renderNow
+
+    viewer.controls.addEventListener("change", scheduleFrame)
+    scheduleFrame()
 
     const ro = new ResizeObserver(() => {
       const w = parent?.clientWidth || 360
       const h = parent?.clientHeight || 420
       viewer.setSize(w, h)
       replayRef.current?.()
-      viewer.render()
-      paintFx()
+      scheduleFrame()
     })
     if (parent) ro.observe(parent)
 
     return () => {
-      if (fxFrame !== null) cancelAnimationFrame(fxFrame)
-      viewer.controls.removeEventListener("change", onControlsChange)
+      if (frame !== null) cancelAnimationFrame(frame)
+      viewer.controls.removeEventListener("change", scheduleFrame)
       ro.disconnect()
       viewer.dispose()
       viewerRef.current = null
@@ -125,6 +135,7 @@ export function SkinStage({
     }
   }, [])
 
+  // Re-paint fx once the overlay canvases have mounted (first ready flip).
   useEffect(() => {
     if (!ready) return
     const frame = requestAnimationFrame(() => {
@@ -159,7 +170,7 @@ export function SkinStage({
         }
         replayRef.current = focus
         focus()
-        viewer.render()
+        // Renders the new frame and repaints the fx overlays from it.
         paintFxRef.current()
         setReady(true)
       })

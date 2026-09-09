@@ -41,6 +41,15 @@ export function HeroPosedFigure({
   loading?: boolean
   className?: string
 }) {
+  // Labels sit outside the side figures at head height: left friend's text
+  // floats to the LEFT of the figure (right-aligned against it), right
+  // friend's to the RIGHT (left-aligned), middle friend's centered above.
+  const labelPos =
+    pose === "left"
+      ? "top-20 sm:top-24 lg:top-28 right-full translate-x-5 sm:translate-x-7 lg:translate-x-9 items-end text-right w-24 sm:w-28 lg:w-32"
+      : pose === "right"
+        ? "top-20 sm:top-24 lg:top-28 left-full -translate-x-5 sm:-translate-x-7 lg:-translate-x-9 items-start text-left w-24 sm:w-28 lg:w-32"
+        : "top-5 sm:top-6 lg:top-7 left-1/2 -translate-x-[38%] items-center text-center w-full max-w-[165px]"
   const [imgUrl, setImgUrl] = useState<string | null>(null)
 
   useEffect(() => {
@@ -76,22 +85,27 @@ export function HeroPosedFigure({
       }
     : {}
 
+  // The figure box is wider than the bust art, and the trio overlaps
+  // heavily. Let the container's empty gutters pass clicks through to the
+  // figures stacked underneath (e.g. the middle friend), and re-enable
+  // pointer events only on the actual interactive elements.
   return (
     <div
-      className={`group relative flex flex-col items-center select-none shrink-0 w-[160px] sm:w-[190px] lg:w-[210px] ${className}`}
+      className={`group relative flex flex-col items-center select-none shrink-0 pointer-events-none pt-9 sm:pt-10 lg:pt-12 w-[176px] sm:w-[209px] lg:w-[231px] ${className}`}
     >
-      {/* Name and Author above the head — pulled close to the head with negative margin */}
-      <div className="relative z-20 -mb-2 sm:-mb-3 lg:-mb-4 flex flex-col items-center text-center w-full max-w-[150px] px-1 transition-transform duration-200 group-hover:-translate-y-1">
+      {/* Name and Author: beside the side figures (head height), above the
+          middle one — absolutely positioned off the figure box */}
+      <div className={`absolute z-20 flex flex-col ${labelPos} px-1 transition-transform duration-200 group-hover:-translate-y-1 pointer-events-auto`}>
         {imgUrl ? (
           <>
             <Link
               to={`/look/${look.id}`}
-              className="truncate whitespace-nowrap overflow-hidden text-ellipsis text-xs sm:text-sm font-black tracking-tight text-base-content hover:text-primary transition-colors duration-150 w-full"
+              className="truncate whitespace-nowrap overflow-hidden text-ellipsis text-[13px] sm:text-[15px] font-black tracking-tight text-base-content hover:text-primary transition-colors duration-150 w-full"
               title={look.name}
             >
               {look.name}
             </Link>
-            <p className="truncate whitespace-nowrap overflow-hidden text-ellipsis text-[10px] sm:text-xs font-bold text-primary/90 w-full">
+            <p className="truncate whitespace-nowrap overflow-hidden text-ellipsis text-[11px] sm:text-[13px] font-bold text-primary/90 w-full">
               <MakerLink username={look.maker} prefix="by @" />
             </p>
           </>
@@ -106,10 +120,13 @@ export function HeroPosedFigure({
         )}
       </div>
 
-      {/* Large Bust Character Pose: Close-up friends portrait with signature looms shadow & rim highlight */}
+      {/* Large Bust Character Pose: Close-up friends portrait with signature looms shadow & rim highlight.
+          The link stays full-size so the art renders at full scale, but pointer events are limited to an
+          inner hit column matching the bust — the side figures' empty gutters would otherwise swallow
+          hover/clicks aimed at the middle character. */}
       <Link
         to={`/look/${look.id}`}
-        className="relative w-full max-w-[210px] sm:max-w-[250px] lg:max-w-[280px] aspect-[9/10] flex items-end justify-center transition-transform duration-300 group-hover:scale-105 active:scale-[0.98]"
+        className="pointer-events-none relative w-full max-w-[231px] sm:max-w-[275px] lg:max-w-[308px] aspect-[9/10] flex items-end justify-center transition-transform duration-300 group-hover:scale-105 active:scale-[0.98]"
         title={`View ${look.name} by ${look.maker}`}
       >
         {imgUrl ? (
@@ -125,6 +142,11 @@ export function HeroPosedFigure({
         ) : (
           <div className="skin-bone w-28 sm:w-32 lg:w-36 h-36 sm:h-40 lg:h-44 rounded-2xl opacity-40 mb-2" aria-hidden="true" />
         )}
+        {/* Invisible hit column over the bust: the only pointer-catchable area of this figure */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-auto absolute inset-y-0 left-1/2 -translate-x-1/2 w-[70%] max-w-[176px] sm:max-w-[204px] lg:max-w-[226px]"
+        />
       </Link>
     </div>
   )

@@ -4,6 +4,10 @@ What's new, in plain words. Newest first.
 
 ## September 8, 2026: a faster, smoother looms
 
+### The 3D stage keeps up with you
+
+On the studio, piece pages, and look pages, the hard shadow and rim highlight now move with the character instead of catching up a beat later. The overlays are repainted on the same frame as the 3D render, so spinning or zooming the figure stays crisp from the first pixel.
+
 ### Explore scrolls like it should
 
 The catalogue got a big tune-up under the hood. The signature tiles, your character with the hard shadow and the soft rim light, are now baked right into each picture instead of stacked from separate layers as you scroll. That means the Explore grid glides, even in Firefox, even on a busy phone.
