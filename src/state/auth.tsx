@@ -78,6 +78,7 @@ export interface AuthContextValue {
     email: string
   }) => Promise<{ error: Error | null }>
   signOut: () => Promise<{ error: Error | null }>
+  deleteAccount: () => Promise<{ error: Error | null }>
   updateProfile: (updates: {
     username?: string
     minecraft_username?: string | null
@@ -368,6 +369,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? new Error(error.message) : null }
   }, [])
 
+  // Self-serve GDPR deletion: the RPC removes the profile row (cascades clear
+  // all user content); sign-out runs unconditionally afterwards so local state
+  // never outlives the account, even if the auth call errors.
+  const deleteAccount = useCallback(async () => {
+    const { error: rpcError } = await supabase.rpc("delete_my_account")
+    const { error: signOutError } = await supabase.auth.signOut()
+    setUser(null)
+    setSession(null)
+    setProfile(null)
+    setPendingEmail(null)
+    setEmailVerifyOpen(false)
+    pendingUnlockRef.current = null
+    openedForUserId.current = null
+    if (rpcError) return { error: new Error(formatErrorMessage(rpcError)) }
+    return { error: signOutError ? new Error(signOutError.message) : null }
+  }, [])
+
   const updateProfile = useCallback(
     async (updates: {
       username?: string
@@ -480,6 +498,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUpWithPassword,
     signInWithOtp,
     signOut,
+    deleteAccount,
     updateProfile,
     refreshProfile,
   }

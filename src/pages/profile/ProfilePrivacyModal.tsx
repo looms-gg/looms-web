@@ -1,6 +1,8 @@
-import { faXmark } from "@fortawesome/free-solid-svg-icons"
+import { useState } from "react"
+import { faTriangleExclamation, faXmark } from "@fortawesome/free-solid-svg-icons"
 import { FaIcon } from "../../components/ui/FaIcon"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
+import { DangerZoneModal } from "./DangerZoneModal"
 
 export function ProfilePrivacyModal({
   open = true,
@@ -10,6 +12,7 @@ export function ProfilePrivacyModal({
   onClose,
   onToggleLastSeen,
   onToggleLikes,
+  onDeleteAccount,
 }: {
   open?: boolean
   showLastSeen: boolean
@@ -18,7 +21,9 @@ export function ProfilePrivacyModal({
   onClose: () => void
   onToggleLastSeen: (next: boolean) => void
   onToggleLikes: (next: boolean) => void
+  onDeleteAccount: () => void | Promise<void>
 }) {
+  const [dangerOpen, setDangerOpen] = useState(false)
   return (
     <ModalOverlay
       open={open}
@@ -71,6 +76,35 @@ export function ProfilePrivacyModal({
           />
         </li>
       </ul>
+
+      <div className="mt-4 border-t border-base-content/10 pt-3">
+        <p className="text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/50">
+          Danger zone
+        </p>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm mt-2 h-auto min-h-0 w-full justify-between rounded-xl px-3 py-2 text-error hover:bg-error/10"
+          disabled={busy}
+          onClick={() => setDangerOpen(true)}
+        >
+          <span className="flex items-center gap-2">
+            <FaIcon icon={faTriangleExclamation} className="size-3.5" />
+            Delete account
+          </span>
+          <span className="text-xs font-normal text-base-content/50">→</span>
+        </button>
+      </div>
+
+      <DangerZoneModal
+        open={dangerOpen}
+        busy={busy ?? false}
+        onClose={() => setDangerOpen(false)}
+        onDone={async () => {
+          setDangerOpen(false)
+          onClose()
+          await onDeleteAccount()
+        }}
+      />
     </ModalOverlay>
   )
 }

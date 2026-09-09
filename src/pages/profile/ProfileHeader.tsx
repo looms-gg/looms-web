@@ -26,7 +26,7 @@ export function ProfileHeader({
   isOwner: boolean
   onSaved: () => void | Promise<void>
 }) {
-  const { user, updateProfile } = useAuth()
+  const { user, updateProfile, signOut } = useAuth()
   const bannerInputId = useId()
   const avatarInputId = useId()
   const bannerRef = useRef<HTMLInputElement>(null)
@@ -340,6 +340,11 @@ export function ProfileHeader({
         }}
         onToggleLikes={(next) => {
           void applyUpdate({ show_likes: next })
+        }}
+        onDeleteAccount={async () => {
+          // DangerZoneModal already ran the deletion RPC; sign-out just clears
+          // the session so the router reacts to the account being gone.
+          await signOut()
         }}
       />
 

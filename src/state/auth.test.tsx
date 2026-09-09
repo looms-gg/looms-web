@@ -253,4 +253,32 @@ describe("auth module", () => {
 
     expect(error?.message).toContain("Too many attempts in a short time")
   })
+
+  it("deleteAccount calls the RPC, signs out, and clears local state", async () => {
+    const rpc = vi.spyOn(supabase, "rpc").mockResolvedValue({ data: null, error: null } as never)
+    const signOut = vi.spyOn(supabase.auth, "signOut").mockResolvedValue({ error: null } as never)
+
+    const { getAuth } = mountAuth()
+    const { error } = await getAuth().deleteAccount()
+
+    expect(error).toBeNull()
+    expect(rpc).toHaveBeenCalledWith("delete_my_account")
+    expect(signOut).toHaveBeenCalled()
+    expect(getAuth().user).toBeNull()
+    expect(getAuth().profile).toBeNull()
+  })
+
+  it("deleteAccount surfaces RPC errors but still signs out", async () => {
+    vi.spyOn(supabase, "rpc").mockResolvedValue({
+      data: null,
+      error: { message: "delete_my_account: not authenticated" },
+    } as never)
+    vi.spyOn(supabase.auth, "signOut").mockResolvedValue({ error: null } as never)
+
+    const { getAuth } = mountAuth()
+    const { error } = await getAuth().deleteAccount()
+
+    expect(error?.message).toMatch(/not authenticated/i)
+    expect(getAuth().user).toBeNull()
+  })
 })
