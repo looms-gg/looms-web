@@ -68,10 +68,12 @@ export function SkinStage({
 
     const scratch = document.createElement("canvas")
     let fxFrame: number | null = null
-    let fxTimer: ReturnType<typeof setTimeout> | null = null
 
     const paintFx = () => {
-      fxFrame = null
+      if (fxFrame !== null) {
+        cancelAnimationFrame(fxFrame)
+        fxFrame = null
+      }
       const src = canvasRef.current
       if (src && src.width > 0) {
         if (scratch.width !== src.width || scratch.height !== src.height) {
@@ -91,35 +93,17 @@ export function SkinStage({
       }
     }
 
-    const schedulePaintFx = (immediate = true) => {
-      if (fxTimer !== null) {
-        clearTimeout(fxTimer)
-        fxTimer = null
-      }
-      if (immediate) {
-        if (fxFrame === null) {
-          fxFrame = requestAnimationFrame(paintFx)
-        }
-        return
-      }
-      fxTimer = setTimeout(() => {
-        fxTimer = null
-        if (fxFrame === null) {
-          fxFrame = requestAnimationFrame(paintFx)
-        }
-      }, 80)
+    const schedulePaintFx = () => {
+      if (fxFrame !== null) return
+      fxFrame = requestAnimationFrame(paintFx)
     }
-    paintFxRef.current = schedulePaintFx
+    paintFxRef.current = paintFx
 
     const onControlsChange = () => {
       viewer.render()
-      schedulePaintFx(false)
-    }
-    const onControlsEnd = () => {
-      schedulePaintFx(true)
+      paintFx()
     }
     viewer.controls.addEventListener("change", onControlsChange)
-    viewer.controls.addEventListener("end", onControlsEnd)
 
     const ro = new ResizeObserver(() => {
       const w = parent?.clientWidth || 360
@@ -127,15 +111,13 @@ export function SkinStage({
       viewer.setSize(w, h)
       replayRef.current?.()
       viewer.render()
-      schedulePaintFx(true)
+      paintFx()
     })
     if (parent) ro.observe(parent)
 
     return () => {
-      if (fxTimer !== null) clearTimeout(fxTimer)
       if (fxFrame !== null) cancelAnimationFrame(fxFrame)
       viewer.controls.removeEventListener("change", onControlsChange)
-      viewer.controls.removeEventListener("end", onControlsEnd)
       ro.disconnect()
       viewer.dispose()
       viewerRef.current = null
