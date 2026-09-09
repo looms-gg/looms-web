@@ -4,7 +4,8 @@ import { DEFAULT_BODY_ID } from "../data/bodies"
 import { piecesFromEquipped, equippedFromStack } from "../data/outfit"
 import type { PublicLook } from "../state/publicLooks"
 import { composeSkin } from "./compose"
-import { crispSkinTexture, lightSkinViewer, skinviewModel } from "./focus"
+import { crispSkinTexture, lightSkinViewer, pauseViewerLoop, skinviewModel } from "./focus"
+import { compositeIsoThumbFx } from "./thumbFx"
 import { washFromCanvas } from "./wash"
 
 export type HeroPose = "center" | "left" | "right"
@@ -17,6 +18,59 @@ export type HeroPoseThumbResult = {
 const memCache = new Map<string, HeroPoseThumbResult>()
 const inflight = new Map<string, Promise<HeroPoseThumbResult>>()
 let viewer: SkinViewer | null = null
+
+const DB_NAME = "looms_iso_cache_v1"
+const STORE_NAME = "thumbnails"
+let dbPromise: Promise<IDBDatabase | null> | null = null
+
+function getDb(): Promise<IDBDatabase | null> {
+  if (typeof indexedDB === "undefined") return Promise.resolve(null)
+  if (!dbPromise) {
+    dbPromise = new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(DB_NAME, 1)
+        req.onupgradeneeded = () => {
+          const db = req.result
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME)
+          }
+        }
+        req.onsuccess = () => resolve(req.result)
+        req.onerror = () => resolve(null)
+      } catch {
+        resolve(null)
+      }
+    })
+  }
+  return dbPromise
+}
+
+async function getStoredThumb(key: string): Promise<HeroPoseThumbResult | null> {
+  const db = await getDb()
+  if (!db) return null
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE_NAME, "readonly")
+      const req = tx.objectStore(STORE_NAME).get(key)
+      req.onsuccess = () => resolve((req.result as HeroPoseThumbResult) || null)
+      req.onerror = () => resolve(null)
+    } catch {
+      resolve(null)
+    }
+  })
+}
+
+function setStoredThumb(key: string, data: HeroPoseThumbResult) {
+  void getDb().then((db) => {
+    if (!db) return
+    try {
+      const tx = db.transaction(STORE_NAME, "readwrite")
+      tx.objectStore(STORE_NAME).put(data, key)
+    } catch {
+      // ignore
+    }
+  })
+}
 
 const fitBox = new Box3()
 const meshBox = new Box3()
@@ -106,27 +160,18 @@ export function frameHeroCamera(viewer: SkinViewer, pose: HeroPose) {
 
 function getHeroViewer(): SkinViewer {
   if (viewer) return viewer
-  const host = document.createElement("div")
-  host.style.position = "fixed"
-  host.style.left = "-9999px"
-  host.style.top = "-9999px"
-  host.style.width = "280px"
-  host.style.height = "310px"
-  host.style.visibility = "hidden"
   try {
     const next = new SkinViewer({
       canvas: document.createElement("canvas"),
       width: 280,
       height: 310,
+      renderPaused: true,
     })
-    host.appendChild(next.canvas)
-    document.body.appendChild(host)
     lightSkinViewer(next)
     crispSkinTexture(next)
     viewer = next
     return next
   } catch (err) {
-    host.remove()
     viewer = null
     throw err
   }
@@ -137,7 +182,7 @@ export async function heroPosedLookThumb(
   pose: HeroPose,
 ): Promise<HeroPoseThumbResult> {
   const stackKey = look.stack.join("|") || "empty"
-  const key = `hero-bust:v9:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
+  const key = `hero-bust:v10:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
 
   const hit = memCache.get(key)
   if (hit) return hit
@@ -146,6 +191,12 @@ export async function heroPosedLookThumb(
   if (pending) return pending
 
   const work = (async () => {
+    const stored = await getStoredThumb(key)
+    if (stored) {
+      memCache.set(key, stored)
+      return stored
+    }
+
     const pieces = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
     const skin = await composeSkin(
       pieces,
@@ -162,15 +213,24 @@ export async function heroPosedLookThumb(
       return { url: "", wash }
     }
 
+    // Hidden viewer: draw on demand only (RAF loop paused).
+    pauseViewerLoop(v)
     v.loadSkin(skin, { model: skinviewModel(look.model ?? "classic") })
     applyHeroCameraPose(v.playerObject, pose)
     frameHeroCamera(v, pose)
     crispSkinTexture(v)
     v.render()
 
-    const url = v.canvas.toDataURL("image/png")
+    // Bake shadow+rim fx into the capture (v9→v10: baked thumbs in cache).
+    let url: string
+    try {
+      url = compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height)
+    } catch {
+      url = v.canvas.toDataURL("image/png")
+    }
     const res: HeroPoseThumbResult = { url, wash }
     memCache.set(key, res)
+    setStoredThumb(key, res)
     return res
   })()
 

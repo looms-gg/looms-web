@@ -66,6 +66,28 @@ describe("outfit stack", () => {
     ])
   })
 
+  it("heals a partial equipped snapshot once missing pieces resolve in the catalog", () => {
+    const otherShirt = pieces.find((piece) => piece.slot === "shirt" && piece.id !== shirt.id)!
+    // Simulates the look/catalog hydration race: equipped was snapshotted when
+    // only the coat had loaded, so the shirt slot went missing.
+    const partial: Equipped = { coat: coat.id }
+    expect(piecesFromEquipped(partial, [coat.id, shirt.id]).map((piece) => piece.id)).toEqual([
+      coat.id,
+      shirt.id,
+    ])
+    // Healing must not clobber explicit slot swaps recorded after the snapshot.
+    const swapped: Equipped = { coat: coat.id, shirt: otherShirt.id }
+    expect(piecesFromEquipped(swapped, [coat.id, otherShirt.id]).map((piece) => piece.id)).toEqual([
+      coat.id,
+      otherShirt.id,
+    ])
+  })
+
+  it("keeps a look truly empty when its stack is empty", () => {
+    expect(piecesFromEquipped({}, [])).toEqual([])
+    expect(piecesFromEquipped({}, ["gone-forever"]).map((piece) => piece.id)).toEqual([])
+  })
+
   it("compares equipped sets correctly with isSameEquipped", () => {
     expect(isSameEquipped({ shirt: shirt.id }, { shirt: shirt.id })).toBe(true)
     expect(isSameEquipped({ shirt: shirt.id }, { shirt: shirt.id, hat: hat.id })).toBe(false)

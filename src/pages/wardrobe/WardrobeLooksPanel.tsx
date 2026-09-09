@@ -1,7 +1,6 @@
 import { useMemo, useState, type CSSProperties } from "react"
 import { useNavigate } from "react-router-dom"
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
-import { SLOTS } from "../../data/catalog"
 import { piecesFromEquipped } from "../../data/outfit"
 import { FaIcon } from "../../components/ui/FaIcon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
@@ -11,6 +10,11 @@ import { useCloset, type Look } from "../../state/closet"
 import { LookInspector } from "./LookInspector"
 import { InspectorModal } from "./InspectorModal"
 import { WardrobeEmpty } from "./WardrobeEmpty"
+
+/** Resolve a look's layers fresh each render so late-loading catalog pieces appear. */
+function outfitOf(look: Look) {
+  return piecesFromEquipped(look.equipped, look.stack)
+}
 
 export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
   const { loadLook } = useCloset()
@@ -94,7 +98,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
                       onClick={() => setInspectedLookId(look.id)}
                     >
                       <IsoThumb
-                        outfit={piecesFromEquipped(look.equipped, look.stack)}
+                        outfit={outfitOf(look)}
                         bodyId={look.bodyId}
                         bodyHue={look.bodyHue}
                         model={look.model}
@@ -108,9 +112,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
                           {look.name}
                         </h3>
                         <p className="text-sm font-semibold text-primary">
-                          <span className="tabular-nums">
-                            {SLOTS.filter((slot) => look.equipped[slot]).length}
-                          </span>{" "}
+                          <span className="tabular-nums">{outfitOf(look).length}</span>{" "}
                           layers
                         </p>
                       </div>

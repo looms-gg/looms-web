@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react"
 import { useNavigate, useLocation, Link } from "react-router-dom"
 import { equippedFromStack, piecesFromEquipped } from "../../data/outfit"
 import { IsoThumb } from "../iso/IsoThumb"
@@ -5,7 +6,7 @@ import { MakerLink } from "../piece/MakerLink"
 import { LikeButton } from "../piece/LikeButton"
 import type { PublicLook } from "../../state/publicLooks"
 
-export function LookTile({
+export const LookTile = memo(function LookTile({
   look,
   onLikeCountChange,
 }: {
@@ -15,7 +16,10 @@ export function LookTile({
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.pathname + location.search
-  const outfit = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
+  const outfit = useMemo(
+    () => piecesFromEquipped(equippedFromStack(look.stack), look.stack),
+    [look.stack],
+  )
   const layerCount = look.stack.length
 
   function handleTileClick(e: React.MouseEvent) {
@@ -68,4 +72,4 @@ export function LookTile({
       </div>
     </div>
   )
-}
+})

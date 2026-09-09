@@ -1,5 +1,10 @@
 import { useState, type FormEvent } from "react"
-import { faCheckCircle, faFlag, faXmark } from "@fortawesome/free-solid-svg-icons"
+import {
+  faCheckCircle,
+  faFlag,
+  faTriangleExclamation,
+  faXmark,
+} from "@fortawesome/free-solid-svg-icons"
 import { FaIcon } from "../ui/FaIcon"
 import { ModalOverlay } from "../ui/ModalOverlay"
 import { formatErrorMessage } from "../../lib/errorFormat"
@@ -92,19 +97,20 @@ export function ReportModal({
       onClose={handleClose}
       portal
       label={`Report ${formatTargetType(targetType)}`}
-      panelClassName="w-full max-w-md rounded-2xl bg-base-100 p-6 shadow-2xl border border-base-content/10"
+      scrimClassName="auth-scrim auth-scrim--inline"
+      panelClassName="auth-scrim-panel relative w-full max-w-md rounded-[18px] border border-base-content/10 bg-base-200 p-6"
     >
-      <div className="flex items-center justify-between border-b border-base-content/10 pb-3">
-        <div className="flex items-center gap-2.5">
-          <span className="grid size-8 place-items-center rounded-lg bg-error/15 text-error">
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-error/15 text-error">
             <FaIcon icon={faFlag} className="size-4" />
           </span>
           <div>
-            <h2 className="text-lg font-black tracking-tight">
+            <h2 className="text-xl font-extrabold tracking-tight text-base-content">
               Report {formatTargetType(targetType)}
             </h2>
             {targetLabel ? (
-              <p className="max-w-[280px] truncate text-xs font-semibold text-base-content/60">
+              <p className="mt-0.5 max-w-[300px] truncate text-xs font-semibold text-base-content/60">
                 {targetLabel}
               </p>
             ) : null}
@@ -113,7 +119,7 @@ export function ReportModal({
         <button
           type="button"
           onClick={handleClose}
-          className="btn btn-ghost btn-circle btn-sm"
+          className="btn btn-ghost btn-sm btn-circle -mr-1 -mt-1 text-base-content/55 hover:text-base-content"
           aria-label="Close report modal"
         >
           <FaIcon icon={faXmark} className="size-4" />
@@ -121,40 +127,39 @@ export function ReportModal({
       </div>
 
       {success ? (
-        <div className="py-8 text-center space-y-4">
-          <div className="mx-auto grid size-12 place-items-center rounded-full bg-success/20 text-success">
+        <div className="py-8 text-center">
+          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success/15 text-success">
             <FaIcon icon={faCheckCircle} className="size-6" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-base font-extrabold">Report Submitted</h3>
-            <p className="text-xs text-base-content/70">
-              Thank you for helping keep looms safe and creative. Our team will review this promptly.
-            </p>
-          </div>
+          </span>
+          <h3 className="mt-4 text-2xl font-black tracking-tight">Report Submitted</h3>
+          <p className="mx-auto mt-2 max-w-[300px] text-sm leading-relaxed text-base-content/65">
+            Thank you for helping keep looms safe and creative. Our team will review this
+            promptly.
+          </p>
           <button
             type="button"
-            className="btn btn-primary btn-sm rounded-full px-6 font-extrabold"
+            className="btn btn-primary mt-6 min-h-11 w-full rounded-full font-extrabold"
             onClick={handleClose}
           >
             Done
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
+            <span className="block text-xs font-bold text-base-content/70">
               Reason for report
-            </label>
+            </span>
             <div className="space-y-1.5">
               {REPORT_REASONS.map((r) => {
                 const selected = reason === r.id
                 return (
                   <label
                     key={r.id}
-                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-2.5 transition-colors ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-[10px] border p-2.5 transition-colors ${
                       selected
                         ? "border-error/40 bg-error/5 text-base-content"
-                        : "border-base-content/10 hover:bg-base-200/50"
+                        : "border-base-content/10 hover:bg-base-content/5"
                     }`}
                   >
                     <input
@@ -167,7 +172,7 @@ export function ReportModal({
                     />
                     <div className="space-y-0.5">
                       <div className="text-sm font-bold leading-none">{r.label}</div>
-                      <div className="text-[11px] text-base-content/60 leading-tight">
+                      <div className="text-[11px] leading-tight text-base-content/60">
                         {r.description}
                       </div>
                     </div>
@@ -177,16 +182,22 @@ export function ReportModal({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-base-content/60">
-              <label htmlFor="report-details">Additional details (optional)</label>
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label
+                htmlFor="report-details"
+                className="text-xs font-bold text-base-content/70"
+              >
+                Additional details
+                <span className="ml-1 font-semibold text-base-content/45">optional</span>
+              </label>
               <span className="text-[11px] font-medium tabular-nums text-base-content/40">
                 {details.length} / {MAX_LIMITS.REPORT_DETAILS}
               </span>
             </div>
             <textarea
               id="report-details"
-              className="textarea textarea-bordered w-full text-sm leading-relaxed"
+              className="textarea w-full rounded-[10px] border-base-content/10 bg-base-100 text-sm leading-relaxed"
               rows={3}
               placeholder="Provide context or timestamp to help our moderation team..."
               maxLength={MAX_LIMITS.REPORT_DETAILS}
@@ -196,15 +207,19 @@ export function ReportModal({
           </div>
 
           {error ? (
-            <div className="alert alert-error text-xs font-bold py-2" role="alert">
-              {error}
-            </div>
+            <p
+              role="alert"
+              className="flex items-start gap-2 text-sm font-semibold text-error"
+            >
+              <FaIcon icon={faTriangleExclamation} className="mt-0.5 size-3.5 shrink-0" />
+              <span>{error}</span>
+            </p>
           ) : null}
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
-              className="btn btn-ghost btn-sm rounded-full font-bold"
+              className="btn btn-ghost btn-sm rounded-full font-bold text-base-content/70 hover:text-base-content"
               onClick={handleClose}
               disabled={submitting}
             >
@@ -213,9 +228,13 @@ export function ReportModal({
             <button
               type="submit"
               disabled={submitting}
-              className="btn btn-error btn-sm rounded-full font-extrabold px-5"
+              className="btn btn-error btn-sm min-h-11 rounded-full px-6 font-extrabold"
             >
-              {submitting ? "Submitting..." : "Submit Report"}
+              {submitting ? (
+                <span className="loading loading-spinner loading-sm" />
+              ) : (
+                "Submit Report"
+              )}
             </button>
           </div>
         </form>

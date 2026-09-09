@@ -60,3 +60,9 @@ PRODUCT.md
 docs/design.md
 docs/superpowers/
 docs/THREAT_MODELING_AND_ABUSE_PREVENTION.md
+
+# Profiler & diagnostic dumps
+*profile.json*
+*.cpuprofile
+*.heapprofile
+*.trace

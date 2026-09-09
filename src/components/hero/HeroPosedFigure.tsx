@@ -2,9 +2,11 @@ import { useEffect, useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
 import { MakerLink } from "../piece/MakerLink"
 import type { PublicLook } from "../../state/publicLooks"
-import { heroPosedLookThumb, type HeroPose } from "../../skin/heroPose"
+import type { HeroPose } from "../../skin/heroPose"
 
-const RIM_DIRS = ["ne", "e", "se"] as const
+// Loaded on demand: skin/heroPose pulls in three.js + skinview3d (~large async
+// chunk). The hero shows skeletons until the module is ready. Shadow+rim fx
+// are baked into the hero PNG (skin/thumbFx) — no per-figure CSS filters.
 
 export function HeroPosedFigureSkeleton({ className = "" }: { className?: string }) {
   return (
@@ -44,7 +46,8 @@ export function HeroPosedFigure({
   useEffect(() => {
     if (!look) return
     let alive = true
-    heroPosedLookThumb(look, pose)
+    import("../../skin/heroPose")
+      .then(({ heroPosedLookThumb }) => heroPosedLookThumb(look, pose))
       .then((res) => {
         if (alive) {
           setImgUrl(res.url)
@@ -59,6 +62,7 @@ export function HeroPosedFigure({
       alive = false
     }
   }, [look, pose])
+
 
   if (externalLoading || !look) {
     return <HeroPosedFigureSkeleton className={className} />
@@ -110,26 +114,7 @@ export function HeroPosedFigure({
       >
         {imgUrl ? (
           <div className="relative w-full h-full animate-fade-in">
-            {/* Signature Looms Hard Punch Shadow */}
-            <div
-              className="iso-thumb-fill iso-thumb-shadow"
-              style={fillStyle}
-              aria-hidden="true"
-            />
-
-            {/* Signature Looms Multi-directional Rim Highlight */}
-            <div className="iso-thumb-rim" aria-hidden="true">
-              {RIM_DIRS.map((dir) => (
-                <div
-                  key={dir}
-                  className="iso-thumb-fill iso-thumb-rim-copy"
-                  data-rim={dir}
-                  style={fillStyle}
-                />
-              ))}
-            </div>
-
-            {/* Main Posed Figure Silhouette */}
+            {/* Figure with baked punch shadow + rim highlight (skin/thumbFx) */}
             <div
               role="img"
               aria-label={`${look.name} by ${look.maker}`}

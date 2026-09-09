@@ -40,7 +40,9 @@
 
           console.log(`[ISO] Rendering (${i + 1}/${catalogSeed.length}): ${piece.id}`)
           try {
-            const res = await isoPieceThumb(piece, "classic", true)
+            // bakeFx=false: the server stores fx-less PNGs; the app bakes
+            // shadow+rim at runtime (skin/thumbFx) so tiles stay one image.
+            const res = await isoPieceThumb(piece, "classic", true, false)
             results[piece.id] = { url: res.url, wash: res.wash }
 
             const img = document.createElement("img")
@@ -80,7 +82,7 @@
             }))
 
           const { isoOutfitThumb } = await import("/src/skin/iso.ts")
-          const res = await isoOutfitThumb(featuredLookPieces, "body-4", 0, "classic", true)
+          const res = await isoOutfitThumb(featuredLookPieces, "body-4", 0, "classic", true, false)
           results["__featured_outfit"] = { url: res.url, wash: res.wash }
         } catch (e) {
           console.error("[ISO] Error rendering featured outfit:", e)

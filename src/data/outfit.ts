@@ -45,10 +45,16 @@ export function resolveLookLayers(look: {
   stack?: string[]
 }) {
   const stack = look.stack ?? []
-  const equipped =
-    equippedIds(look.equipped ?? {}).length > 0
-      ? look.equipped ?? {}
-      : equippedFromStack(stack)
+  // Stored `equipped` maps are snapshots taken when the look hydrated. If the
+  // catalog registry was still loading (or a private upload had not joined it
+  // yet), slots go missing and stay missing — the look renders partially naked
+  // until a lucky refresh. The persisted stack is the source of truth, so fill
+  // any slot the snapshot lacks as soon as its piece resolves.
+  const equipped: Equipped = { ...(look.equipped ?? {}) }
+  for (const id of stack) {
+    const piece = getPiece(id)
+    if (piece && !equipped[piece.slot]) equipped[piece.slot] = id
+  }
   return {
     equipped,
     stack: mergeStack(stack, equipped),

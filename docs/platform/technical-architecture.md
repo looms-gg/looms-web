@@ -1,4 +1,4 @@
-# looms — Technical Architecture Reference
+# looms. Technical Architecture Reference
 
 Deep-dive companion to [master-briefing.md](master-briefing.md). Covers the stack, the skin engine, the data layer, backend enforcement, and deployment. Written so a technical reader (or AI) understands how looms actually works without reading the code.
 
@@ -21,20 +21,20 @@ Deep-dive companion to [master-briefing.md](master-briefing.md). Covers the stac
 | Language | TypeScript everywhere; Python for asset scripts | OG generation, eye-whites scan, garment seeding |
 
 **Monorepo layout (conceptual):**
-- `src/data` — domain model: pieces, slots, bodies, eyes, outfit/stack logic, seed catalog JSON
-- `src/skin` — the rendering engine: compositing, UV maps, model conversion, hue/wash, 3D camera & posing
-- `src/state` — React contexts: auth, closet (wardrobe/looks), catalog, likes, comments, theme, cookie consent
-- `src/pages` + `src/components` — routes and UI, grouped per surface (explore, wardrobe, studio, profile, piece, look, admin, moderation, auth, shell, ui, iso)
-- `supabase/migrations` — 17 ordered SQL migrations; the DB is the security boundary
-- `scripts` — asset pipeline (OG prerender is a build step; iso-saver is a dev-server plugin)
-- `docs` — this pack, brand assets, threat modeling handbook, historical design specs/plans
+- `src/data`: domain model. Pieces, slots, bodies, eyes, outfit/stack logic, seed catalog JSON
+- `src/skin`: the rendering engine. Compositing, UV maps, model conversion, hue/wash, 3D camera & posing
+- `src/state`: React contexts. Auth, closet (wardrobe/looks), catalog, likes, comments, theme, cookie consent
+- `src/pages` + `src/components`: routes and UI, grouped per surface (explore, wardrobe, studio, profile, piece, look, admin, moderation, auth, shell, ui, iso)
+- `supabase/migrations`: 17 ordered SQL migrations; the DB is the security boundary
+- `scripts`: asset pipeline (OG prerender is a build step; iso-saver is a dev-server plugin)
+- `docs`: this pack, brand assets, threat modeling handbook, historical design specs/plans
 
 ## 2. The skin engine (the interesting part)
 
 ### 2.1 Domain model
 - **Slot** (`eyes, hair, hat, face, shirt, coat, pants, shoes`) → belongs to a **body group** (`head, torso, legs`).
 - **Stack order** is canonical: bottom→top = eyes, shirt, coat, pants, shoes, hair, face, hat. Users can reorder within rules; the DB `stack` array is the persisted z-order.
-- A **Piece** carries optional `covers: Group[]` — a long-hair piece may paint head *and* torso; previews honor the actual paint.
+- A **Piece** carries optional `covers: Group[]`, a long-hair piece may paint head *and* torso; previews honor the actual paint.
 - **Bodies** are 8 real base skins (Fair→Deepest) bundled as PNGs; default is `body-4` ("Tan").
 - **Eyes** are system pieces (`eye-01`…`eye-71`) with a numeric offset suffix (`eye-42@-1`) shifting eye pixels vertically, clamped −3…+1.
 
@@ -50,10 +50,10 @@ Deep-dive companion to [master-briefing.md](master-briefing.md). Covers the stac
 - `classicToSlim` drops the innermost arm column; `slimToClassic` edge-stretches 3px→4px. Conversion happens transparently during compositing, so **any garment works with either model**, and a look saved as one model renders correctly in the other.
 
 ### 2.4 Previews & thumbnails (`src/skin/iso.ts`, `focus.ts`, `heroPose.ts`)
-- **IsoThumb pipeline**: compose skin → derive a "wash" (dominant-color analysis in OKLCH → complementary pastel background) → render in an offscreen 180×210 `SkinViewer` with a custom 3-light rig (warm key, cool fill, warm rim), nearest-neighbor filtering, no tonemapping, transparent background → auto-framed per content (hat → head close-up; pants → leg crop; long coat → torso crop; otherwise full figure) with posed limbs for depth → PNG data-URL.
-- Jobs run through a **priority queue** (one render at a time), deduplicated by cache key (`piece:v57:…`, versioned so fixes invalidate), cached in memory and **IndexedDB** (`looms_iso_cache_v1`) for instant repeat visits.
-- **Live stage** (Studio/piece pages): interactive turntable via `mountLiveViewer` — drag to spin, vertical angle locked, silhouette canvases copied each frame for the hard shadow + rim-light "punch" effect.
-- **Hero poses**: three looks rendered as posed busts (center/left/right) with joint rotations and camera fitting that frames head+torso+arms; the Explore hero composites them leaning together.
+- **IsoThumb pipeline**: compose skin → derive a "wash" (dominant-color analysis in OKLCH → complementary pastel background) → render in an offscreen 180×210 `SkinViewer` with a custom 3-light rig (warm key, cool fill, warm rim), nearest-neighbor filtering, no tonemapping, transparent background → auto-framed per content (hat → head close-up; pants → leg crop; long coat → torso crop; otherwise full figure) with posed limbs for depth → **bake the hard punch shadow + rim highlight into the PNG** (`src/skin/thumbFx.ts`) → PNG data-URL. Baking keeps every tile a single image: the old markup stacked 4 filtered copies of the figure per tile, and Firefox rendered each through WebRender SVG filter passes, making scroll composites average ~27ms.
+- Jobs run through a **priority queue** (one render at a time), deduplicated by cache key (`piece:v58:…`, versioned so fixes invalidate), cached in memory and **IndexedDB** (`looms_iso_cache_v1`) for instant repeat visits.
+- **Live stage** (Studio/piece pages): interactive turntable via `mountLiveViewer`, drag to spin, vertical angle locked, silhouette canvases copied each frame for the hard shadow + rim-light "punch" effect.
+- **Hero poses**: three looks rendered as posed busts (center/left/right) with joint rotations and camera fitting that frames head+torso+arms; the shadow+rim fx are baked into each bust; the Explore hero composites them leaning together.
 
 ### 2.5 The "wash"
 `washFromPixels` buckets visible pixels by hue (24 buckets, chroma-weighted, alpha-aware), picks the dominant hue, and returns a **complementary pastel** in OKLCH (fixed lightness 0.91). Near-neutral outfits fall back to warm/cool pastels by lightness. This is why every tile's background subtly complements its outfit.
@@ -78,14 +78,14 @@ Deep-dive companion to [master-briefing.md](master-briefing.md). Covers the stac
 
 ### 3.2 Client access
 - `src/lib/supabase.ts` is the **single schema owner** (hand-written types, deliberately not generated; `npm run db:types` regenerates to /tmp for manual diffing).
-- Lazy client facade — importing the module never constructs the client (tests can spy).
+- Lazy client facade, importing the module never constructs the client (tests can spy).
 - Catalog loads public garments joined to maker usernames; private ones appear for their owner. Wardrobe/looks/comments/likes are straight CRUD guarded by RLS.
-- Trending looks: `get_trending_looks_past_day(p_limit)` SQL RPC (security definer, granted to anon+authenticated) — likes in past 24h desc, then all-time likes, then recency.
+- Trending looks: `get_trending_looks_past_day(p_limit)` SQL RPC (security definer, granted to anon+authenticated), likes in past 24h desc, then all-time likes, then recency.
 
 ### 3.3 Server-side enforcement (the security story)
 Everything sensitive happens in **Postgres triggers + RLS**, never client-side:
-- `check_rate_limit(action, max, window)` — sliding-window limiter on `rate_limit_events`, raises `P0001` when exceeded; opportunistic pruning.
-- `check_user_quota(table, max)` — hard per-account ceilings.
+- `check_rate_limit(action, max, window)`, sliding-window limiter on `rate_limit_events`, raises `P0001` when exceeded; opportunistic pruning.
+- `check_user_quota(table, max)`, hard per-account ceilings.
 - Counters (`like_count`, `saved_count`, `added`, `user_id`) are **client-immutable** via trigger guards; only triggers (using `set_config` flags) may change them.
 - Storage triggers: 2MB cap, extension/MIME allowlists, upload rate limits, path must start with the uploader's own `auth.uid()`.
 - Least-privilege: `SECURITY DEFINER` functions have locked `search_path`; RPCs revoked from public except the intended ones; `rate_limit_events` has zero client grants; TRUNCATE revoked everywhere.
@@ -101,14 +101,14 @@ Everything sensitive happens in **Postgres triggers + RLS**, never client-side:
 - **Auth flows**: unconfirmed sign-ins open a listening modal that polls `getUser()` every 4s and auto-unlocks; magic links; resend with 45s cooldown; `absoluteAppUrl()` bakes the Pages base path into every email redirect.
 - **Routing**: basename derived from Vite `BASE_URL` so the same build works at `/` (dev) and `/looms-web/` (Pages); canonical/share URLs re-add the origin + base.
 - **Testing**: colocated `*.test.ts(x)`; `happy-dom` environment; a shared setup seeds the catalog registry; pure domain logic (stack math, sanitizers, error formatting, quotas mapping) is heavily unit-tested; contexts and pages are component-tested.
-- **The dev "iso-saver"**: a Vite middleware that accepts batched PNG renders and writes them to `public/iso/pieces/` — how the pre-baked isometric tiles shipped in `public/` were generated. `scripts/generate-og-assets.py` similarly builds per-piece OG images; `scripts/prerender-embeds.mjs` runs after `vite build` to emit SEO-ready static HTML per piece/look.
+- **The dev "iso-saver"**: a Vite middleware that accepts batched PNG renders and writes them to `public/iso/pieces/`, how the pre-baked isometric tiles shipped in `public/` were generated. `scripts/generate-og-assets.py` similarly builds per-piece OG images; `scripts/prerender-embeds.mjs` runs after `vite build` to emit SEO-ready static HTML per piece/look.
 
 ## 5. Deployment & operations
 
 - **`deploy.command`** (one-click, human-owned): refuses if `.env` files would be committed; auto-commits on the current branch (attributing to the logged-in `gh` user, never AI tools); fast-forwards to `main`; pushes source; applies Supabase migrations via access token; `npm ci` + `npm run build`; copies `index.html` → `404.html` for SPA deep links; publishes `dist/` to the `gh-pages` branch via `gh-pages`; verifies Pages source config and triggers a rebuild.
-- **Build pipeline**: `tsc -b && vite build && node scripts/prerender-embeds.mjs` — typecheck, bundle, then inject per-piece/per-look OG meta into static HTML copies.
+- **Build pipeline**: `tsc -b && vite build && node scripts/prerender-embeds.mjs`, typecheck, bundle, then inject per-piece/per-look OG meta into static HTML copies.
 - **Envs**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (browser-safe anon key only), `VITE_BASE` (custom-domain future = `/`), `SUPABASE_ACCESS_TOKEN` (CLI only, never shipped). Real secrets never enter the repo; the anon key is safe by design because RLS enforces everything.
-- **Agent policy**: AI agents never commit — commits and deploys belong to the human.
+- **Agent policy**: AI agents never commit, commits and deploys belong to the human.
 
 ## 6. Performance & scale characteristics
 

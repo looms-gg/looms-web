@@ -1,24 +1,36 @@
-# looms — Brand, Voice & Content Guide
+# looms. Brand, Voice & Content Guide
 
 Deep-dive companion to [master-briefing.md](master-briefing.md). The voice, visual system, copy patterns, and worked examples for AI-generated social posts, blog posts, and announcements. If an AI is writing *words* for looms, this is the doc it needs.
 
 ---
 
-## 1. Brand identity
+## 1. Brand identity & voice
 
 - **Name:** looms (lowercase always, except sentence start). Not LOOMS, not Looms.
-- **Category:** "Free modular wardrobe for Minecraft skins" — the canonical one-liner.
-- **Personality:** playful, collectible, **plaza-bright**. Social, closet-centric energy: characters are "residents of a closet."
-- **Voice:** short, inviting, concrete. Real nouns (piece names, layer slots, wear, export), never marketplace hype. Dry humor is welcome — the catalog blurbs are genuinely funny.
+- **Category:** "Free modular wardrobe for Minecraft skins", the canonical one-liner.
+- **Personality:** warm, playful, collectible, **plaza-bright**: Nintendo-adjacent charm. The visual grammar borrows Mii-plaza energy (via ShareMii.net), and the voice follows: friendly console-era delight, rounded tiles, pill buttons, everyone's-invited optimism. Charming and polished, never snarky, edgy, or hype-y.
+- **Voice:** short, inviting, concrete, and kind. Real nouns (piece names, layer slots, wear, export), simple sentences, gentle encouragement, small celebrations. looms copy should feel like a cheerful friend showing you their closet, not a brand selling something, not a meme account.
 - **Values:** free forever, community-shaped (Discord-first), creativity without art skills, safety without bureaucracy.
 
-**The tone in practice** (real examples from the product):
-> "Huge charcoal baggies. Your shoes are in there somewhere. Probably."
-> "Pine sweater with a little red tree on it. Wear it in July. Start arguments."
-> "Mud-brown crop. Short enough that your forehead can still participate."
-> "You are a ginger bear now. Ears and everything. Mouth still works for snacks."
+### Platform voice vs. UGC voice (important)
 
-Pattern: state a visual fact, then land a dry punchline. Second person, casual contractions, deliberately un-cool phrasing that's cool *because* of it.
+looms is a **UGC platform**. Piece names and blurbs are written by makers and carry each creator's own personality, quirky, dry, meme-y humor and all. That's *their* voice, and it's welcome.
+
+**Official platform copy never imitates UGC humor.** No sarcasm, no dark jokes, no slang-of-the-week, no punchlines at anyone's expense. The brand is the warm, polished host; the community supplies the spice.
+
+**Real platform-voice examples from the product** (the register to emulate):
+
+> "Wardrobe's still empty."
+> "Add a hat, a coat, or an accessory in Explore to build your wardrobe."
+> "You're in."
+> "The closet is yours."
+> "Wear a few layers in Studio and save the combo. It lands here."
+> "This screen watches on its own, you can keep browsing while it waits."
+> "Thank you for helping keep looms safe and creative."
+
+**The pattern:** name the thing → say what happens next → celebrate the small win → invite the next step. Sentence case, contractions welcome, exclamation points rare and earned.
+
+**One hard line:** "Nintendo-sorta" means tone only. Never imply Nintendo affiliation and never use Nintendo characters, assets, or trademarks, the same care the terms give Mojang applies here.
 
 ## 2. Taglines & copy hooks (canon)
 
@@ -28,7 +40,7 @@ Pattern: state a visual fact, then land a dry punchline. Second person, casual c
 | Hero sub | "Mix and match layered clothing, hair, and accessories into custom Minecraft skins. Free to style, export, and wear." |
 | README | "Free modular wardrobe for Minecraft skins. Browse clothing layers, stack outfits in Studio, export a vanilla PNG." |
 | Wardrobe tagline | "Saved characters and pieces you own." |
-| Email confirmed | "You're in — the closet is yours." |
+| Email confirmed | "You're in, the closet is yours." |
 | Footer | "Free to style, export, and wear. Unofficial Minecraft fan project." |
 | Community invite | "Got an idea? Join the Discord and tell us what you want to wear, browse, or fix!" |
 
@@ -37,7 +49,7 @@ Verbs that don't: buy, unlock, purchase, earn, spend, claim, win, limited, drop-
 
 ## 3. Visual system (as shipped)
 
-**The shipped UI uses a dark charcoal base with a neon-pink/magenta primary** (the design-source docs describe an earlier cyan system — the live CSS moved to pink; when in doubt, follow the shipped palette below).
+**The shipped UI uses a dark charcoal base with a neon-pink/magenta primary** (the design-source docs describe an earlier cyan system, the live CSS moved to pink; when in doubt, follow the shipped palette below).
 
 ### Colors (dark theme `looms`)
 | Token | Value | Use |
@@ -58,7 +70,7 @@ Light theme `looms-light`: base `#f3f1f8`/`#e8e6f0`/`#dddce8`, ink `#1c1c24`, pr
 ### Shape & type
 - **Pills everywhere** for actions and selected filters (999px radius); **18px tiles** for content cards; 10px inputs/fields; 12px buttons.
 - One font: **Nunito** (400/600/700/800). Weight-first hierarchy; headlines 800 with tight tracking; never swap for Inter/Roboto/pixel fonts.
-- Signature tile: 4:3 isometric 3D character render on a **computed complementary pastel background**, hard offset shadow, right rim light. Character preview is the product — never lead with text over art.
+- Signature tile: 4:3 isometric 3D character render on a **computed complementary pastel background**, hard offset shadow, right rim light. Character preview is the product, never lead with text over art.
 - Motion: 150–250ms, `cubic-bezier(0.22, 1, 0.36, 1)`; hover lifts one step (`translateY(-3px)` tiles); reduced-motion fully respected.
 - Buttons: min-height 44px, 800-weight labels, `scale(0.96)` on press.
 
@@ -83,39 +95,49 @@ When generating posts about looms, use these mappings:
 
 Facts to lean on: free forever, no ads, no account needed to browse, works on phone or laptop, export = upload to Java/Bedrock, remix layers instead of redrawing, hair/coat/shoes swap independently, 70+ built-in eyes with adjustable height, skin-tone bodies with a hue slider, community likes/comments/wear-this.
 
-Hard rules for any generated content: never imply cost, scarcity, or buying; never promise a mobile app or offline mode; keep the "unofficial fan project, not affiliated with Mojang" caveat on anything press-like; Discord link is `https://discord.gg/UNTRgHBBPb`; site is `https://looms-gg.github.io/looms-web/`.
+Hard rules for any generated content: stay in **platform voice** (warm, wholesome, playful, no snark, no dark humor) even when quoting UGC, which may be quirkier; never imply cost, scarcity, or buying; never promise a mobile app or offline mode; keep the "unofficial fan project, not affiliated with Mojang" caveat on anything press-like, and never imply Nintendo affiliation either (tone, not branding); Discord link is `https://discord.gg/UNTRgHBBPb`; site is `https://looms-gg.github.io/looms-web/`.
+
+**Tone dial by context:**
+
+| Context | Register |
+| --- | --- |
+| Hero, CTAs, onboarding | bright, welcoming, a little celebratory |
+| Empty states & helper text | gentle nudges, zero guilt |
+| Errors & rate limits | kind, specific, no blame ("Please wait a moment…") |
+| Moderation & safety copy | plain, calm, honest |
+| UGC spaces (piece blurbs, comments) | makers' own voice, the platform stays a friendly host, not a co-author |
 
 ## 5. Worked examples
 
 ### Example social posts (X/Twitter-shaped, ≤280 chars)
 
-> Your Minecraft skin doesn't have to be a compromise between "artist" and "default Steve."
+> Dressing up your Minecraft skin shouldn't require art skills.
 >
-> looms lets you stack real clothing layers — hair, coats, sneakers — and export a vanilla PNG. Free, no ads, no account needed to browse.
+> looms lets you stack clothing layers, hair, coats, sneakers, and export a vanilla PNG in minutes. Free to style, export, and wear.
 >
 > https://looms-gg.github.io/looms-web/
 
-> new on looms: wear this.
+> New on looms: Wear This ✨
 >
-> see an outfit you like in Explore → hit Wear This → it loads straight into your Studio with every layer. swap the shoes, keep the coat, export.
+> See an outfit you like in Explore? One tap loads it into your Studio with every layer ready. Swap the shoes, keep the coat, export your look.
 >
-> it's giving hand-me-downs, but digital. and free.
+> Your next favorite outfit might be hanging in someone else's closet.
 
-> 22 pieces of starter clothing. 70+ eye styles with height sliders. 8 skin tones with a hue dial.
+> 22 starter clothing pieces. 70+ eye styles with a height slider. 8 skin tones with a hue dial.
 >
-> zero dollars. zero ads. zero "buy 400 Minecoins for this hat."
+> Everything free, no ads, and your export is a vanilla PNG that works in Minecraft right away.
 >
-> looms.gg — the modular closet for Minecraft skins.
+> looms, the modular closet for Minecraft skins.
 
 ### Example Discord announcement
 
-> **🧥 Wardrobe sync is live**
+> **🧥 Your wardrobe follows you now**
 >
-> Your closet follows you now. Save a look on your laptop, wear it from your phone — pieces and looks are stored on your account, not your browser.
+> Save a look on your laptop, wear it from your phone, pieces and looks live on your account, so your closet is always with you.
 >
-> Also in this update: public looks + trending on the home page, profile pages at `/u/yourname`, and the light theme for daytime dressers.
+> Also new: public looks and trending on the home page, profile pages at /u/yourname, and a light theme for daytime dressing.
 >
-> As always: free, no ads, and ideas go right here in #ideas.
+> As always, looms is free, and your ideas shape what we build next. Tell us in #ideas!
 
 ### Example blog-post outline (SEO-friendly)
 
@@ -128,14 +150,14 @@ Title: *How to get custom clothes on your Minecraft skin without learning pixel 
 6. Note: unofficial fan project, free forever, Discord link.
 
 ### Emoji & formatting conventions
-- Emoji: sparing, warm, thematic (🧥 👕 🧢 👟 ✨ 🎨 🧍). No 🤑 💰 💎 (money/economy associations — the gems concept was removed deliberately).
+- Emoji: sparing, warm, thematic (🧥 👕 🧢 👟 ✨ 🎨 🧍). No 🤑 💰 💎 (money/economy associations, the gems concept was removed deliberately).
 - Headers in announcements use short bold lines, not ALL CAPS.
 - Feature names capitalized exactly: **Explore, Wardrobe, Studio, Looks, My Uploads**.
 - Numbers: use `tabular-nums` styling in product; in prose, spell small numbers, numerals for stats ("22 pieces", "70+ eyes").
 
 ## 6. Channel notes
 
-- **Discord** is the town square — feature ideas, piece requests, UX feedback, bug chatter. Announcements can be casual and frequent.
+- **Discord** is the town square, feature ideas, piece requests, UX feedback, bug chatter. Announcements can be casual and frequent.
 - **GitHub** is developer-facing: PRs, code review, reproducible bugs. Keep marketing out.
 - **Social (X/Twitter etc.)**: lead with the visual (tiles/renders are the brand), one idea per post, always the free hook. The isometric renders and the three-friend hero are the highest-signal images.
-- **In-app** copy: sentence case, plain verbs, friendly but never cutesy-corporate; errors are humans ("Couldn't export that skin." → with a retry, never a stack trace).
+- **In-app** copy: sentence case, plain verbs, warm and encouraging, celebrate the small wins ("You're in." "The closet is yours.") and keep errors kind and specific ("Couldn't export that skin.", with a retry, never a stack trace). The platform is the cheerful host; UGC carries its own personality.

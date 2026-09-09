@@ -82,6 +82,24 @@ echo "✅ Git author: $GIT_AUTHOR_NAME <$GIT_AUTHOR_EMAIL>"
 # Auto-commit on the *current* branch first. Checkout to main fails when the
 # working tree is dirty (diverging tracked files), so commit before switching.
 auto_commit_deploy() {
+  local default_msg="deploy: $(date '+%Y-%m-%d %H:%M')"
+  local commit_msg="${DEPLOY_COMMIT_MSG:-${1:-}}"
+
+  if [[ -z "$commit_msg" ]]; then
+    echo ""
+    if [[ -t 0 ]]; then
+      read -r -p "💬 Enter commit message (or press Enter to skip): " commit_msg || true
+    elif [[ -r /dev/tty && -w /dev/tty ]] && { exec 3</dev/tty; } 2>/dev/null; then
+      read -r -u 3 -p "💬 Enter commit message (or press Enter to skip): " commit_msg || true
+      exec 3<&-
+    elif read -r commit_msg 2>/dev/null; then
+      :
+    fi
+  fi
+  commit_msg="$(echo "$commit_msg" | sed -e 's/^[[:blank:]]*//' -e 's/[[:blank:]]*$//')"
+
+  DEPLOY_FINAL_MSG="${commit_msg:-$default_msg}"
+
   if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
     echo "📦 Auto-committing changes on $(git rev-parse --abbrev-ref HEAD)..."
     git add -A
@@ -93,21 +111,21 @@ auto_commit_deploy() {
       abort "Refusing to commit: a .env file is still staged. Fix .gitignore / untrack it."
     fi
     if [[ -n "$(git diff --cached --name-only 2>/dev/null)" ]]; then
-      git commit -m "deploy: $(date '+%Y-%m-%d %H:%M')"
-      echo "✅ Committed."
+      git commit -m "$DEPLOY_FINAL_MSG"
+      echo "✅ Committed: $DEPLOY_FINAL_MSG"
     else
       echo "ℹ️  Nothing to commit after excluding secrets; creating deploy trigger..."
-      git commit --allow-empty -m "deploy: $(date '+%Y-%m-%d %H:%M')"
-      echo "✅ Deploy trigger created."
+      git commit --allow-empty -m "$DEPLOY_FINAL_MSG"
+      echo "✅ Deploy trigger created: $DEPLOY_FINAL_MSG"
     fi
   else
     echo "📦 Creating deploy trigger commit (no code changes)..."
-    git commit --allow-empty -m "deploy: $(date '+%Y-%m-%d %H:%M')"
-    echo "✅ Deploy trigger created."
+    git commit --allow-empty -m "$DEPLOY_FINAL_MSG"
+    echo "✅ Deploy trigger created: $DEPLOY_FINAL_MSG"
   fi
 }
 
-auto_commit_deploy
+auto_commit_deploy "${1:-}"
 
 # Land on main (fast-forward only).
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')
@@ -233,7 +251,7 @@ echo ""
 echo "☁️  Publishing dist/ to gh-pages..."
 (
   cd "$SCRIPT_DIR"
-  npx --yes gh-pages@latest -d dist -b gh-pages -m "deploy: $(date '+%Y-%m-%d %H:%M')"
+  npx --yes gh-pages@latest -d dist -b gh-pages -m "${DEPLOY_FINAL_MSG:-deploy: $(date '+%Y-%m-%d %H:%M')}"
 )
 
 # Ensure Pages is enabled on gh-pages / root.

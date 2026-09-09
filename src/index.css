@@ -93,11 +93,9 @@
   --prussian-blue: #131418;
   --iso-punch-x: 10px;
   --iso-punch-y: 5px;
-  --iso-punch-ink: rgb(10 11 15 / 0.55);
   --iso-rim-x: 3px;
   --iso-rim-y: 3px;
   --iso-figure-size: 78%;
-  --iso-punch-ink: rgb(0 0 0 / 0.82);
   --plaza-home: #181a22;
   --plaza-chin: #1e202a;
   --plaza-line: rgb(255 255 255 / 0.08);
@@ -269,6 +267,9 @@ label input.grow:focus-visible,
   max-width: 100%;
   overflow: hidden;
   isolation: isolate;
+  contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: 200px 240px;
   border-radius: 18px;
   background: var(--plaza-chin);
 }
@@ -299,6 +300,7 @@ label input.grow:focus-visible,
   aspect-ratio: 4 / 3;
   overflow: hidden;
   isolation: isolate;
+  contain: layout paint;
   background: color-mix(
     in oklab,
     var(--iso-wash, var(--plaza-home)) var(--iso-wash-mix, 13%),
@@ -342,7 +344,8 @@ label input.grow:focus-visible,
 }
 
 .iso-thumb-shadow {
-  filter: url("#iso-hard-black");
+  /* SkinStage live view only: IsoThumb/Hero thumbs bake the shadow into the
+     PNG (skin/thumbFx) instead of stacking filtered copies per tile. */
   opacity: 0.35;
   transform: translate(calc(-1 * var(--iso-punch-x)), var(--iso-punch-y));
   pointer-events: none;
@@ -369,7 +372,7 @@ label input.grow:focus-visible,
 }
 
 .iso-thumb-rim-copy {
-  filter: url("#iso-hard-white");
+  /* SkinStage live view only; see .iso-thumb-shadow note above. */
 }
 
 .iso-thumb-rim-copy[data-rim="ne"] {
@@ -522,11 +525,31 @@ label input.grow:focus-visible,
   }
 }
 
-body:has(.auth-scrim) header {
+body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   background: transparent;
   border-color: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+/* Report and other in-page dialogs reuse the auth scrim look without
+   stripping the site header chrome the way the auth flow does. */
+.auth-scrim--inline {
+  background: rgb(0 0 0 / 0.6);
+}
+
+[data-theme="looms-light"] .auth-scrim--inline {
+  background: rgb(243 241 248 / 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-scrim--inline {
+    background: rgb(0 0 0 / 0.72);
+  }
+
+  [data-theme="looms-light"] .auth-scrim--inline {
+    background: rgb(243 241 248 / 0.92);
+  }
 }
 
 [data-theme="looms-light"] .auth-scrim {
@@ -807,6 +830,10 @@ body:has(.auth-scrim) header {
 
 .tile-lift {
   transition: transform 180ms var(--ease-out-quint);
+}
+
+.is-scrolling .tile-lift {
+  pointer-events: none;
 }
 
 .tile-lift:hover {
@@ -1176,13 +1203,6 @@ html.studio-lock #root {
 .skin-stage-fx.iso-thumb-shadow,
 .skin-stage-fx.iso-thumb-rim-copy {
   filter: none;
-}
-
-.iso-fx {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
 }
 
 .studio-piece {

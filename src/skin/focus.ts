@@ -238,6 +238,19 @@ function frameVisible(viewer: SkinViewer, shot: IsoStillShot) {
   viewer.zoom = Math.min(1.28, Math.max(0.74, 20 / span))
 }
 
+/**
+ * Hidden offscreen viewers render stills only — pause their RAF loops so the
+ * main page doesn't burn CPU/GPU on frames nobody sees.
+ */
+export function pauseViewerLoop(viewer: SkinViewer) {
+  viewer.renderPaused = true
+}
+
+/** Resume rendering (used by live viewers after still captures). */
+export function resumeViewerLoop(viewer: SkinViewer) {
+  viewer.renderPaused = false
+}
+
 /** Live previews (studio + piece pages). Stills keep a separate iso tilt. */
 export const LIVE_VIEW = {
   fov: 38,

@@ -17,6 +17,7 @@ afterEach(() => {
 
 describe("ExplorePage", () => {
   it("renders with Pieces active by default and switches to Looks on tab click", async () => {
+    vi.spyOn(publicLooksModule, "fetchTrendingLooksPastDay").mockResolvedValue([])
     vi.spyOn(publicLooksModule, "fetchPublicLooksFeed").mockResolvedValue([
       {
         id: "look-test-1",

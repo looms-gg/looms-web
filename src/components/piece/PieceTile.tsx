@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { memo, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { faBookmark, faCheck, faPlus } from "@fortawesome/free-solid-svg-icons"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
@@ -10,7 +10,7 @@ import { FaIcon } from "../ui/FaIcon"
 import { IsoThumb } from "../iso/IsoThumb"
 import { MakerLink } from "./MakerLink"
 
-export function PieceTile({
+export const PieceTile = memo(function PieceTile({
   piece,
   action = "catalog",
 }: {
@@ -110,4 +110,4 @@ export function PieceTile({
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   )
-}
+})

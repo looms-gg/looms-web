@@ -1,9 +1,18 @@
 import { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../data/bodies"
+import { isoPieceStaticThumb } from "../data/isoThumbs"
 import { preparePreview, type Group, type Piece } from "../data/catalog"
+import { bakeIsoThumbFx } from "./thumbFx"
 import { composePieceSkin, composeSkin, groupsFromAtlas } from "./compose"
-import { applyGroupFocus, crispSkinTexture, lightSkinViewer, skinviewModel } from "./focus"
+import {
+  applyGroupFocus,
+  crispSkinTexture,
+  lightSkinViewer,
+  pauseViewerLoop,
+  skinviewModel,
+} from "./focus"
 import { ensureModel, type SkinModel } from "./convert"
+import { compositeIsoThumbFx } from "./thumbFx"
 import { washFromCanvas } from "./wash"
 
 export type IsoThumbResult = {
@@ -18,6 +27,7 @@ type Prepared = {
   covers: Group[]
   outfit: Piece[]
   model: "slim" | "default"
+  bakeFx: boolean
 }
 
 type Job = {
@@ -92,27 +102,18 @@ function setStoredThumb(key: string, data: IsoThumbResult) {
 
 function getIsoViewer() {
   if (viewer) return viewer
-  const host = document.createElement("div")
-  host.style.position = "fixed"
-  host.style.left = "-9999px"
-  host.style.top = "-9999px"
-  host.style.width = "180px"
-  host.style.height = "210px"
-  host.style.visibility = "hidden"
   try {
     const next = new SkinViewer({
       canvas: document.createElement("canvas"),
       width: 180,
       height: 210,
+      renderPaused: true,
     })
-    host.appendChild(next.canvas)
-    document.body.appendChild(host)
     lightSkinViewer(next)
     crispSkinTexture(next)
     viewer = next
     return next
   } catch (err) {
-    host.remove()
     viewer = null
     throw err
   }
@@ -144,6 +145,16 @@ function enqueue(key: string, prepare: () => Promise<Prepared>, priority = false
   return jobPromise
 }
 
+/** Bake shadow+rim into a freshly rendered viewer canvas (same-task read). */
+function bakeViewerCanvas(v: SkinViewer, bakeFx: boolean): string {
+  if (!bakeFx) return v.canvas.toDataURL("image/png")
+  try {
+    return compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height)
+  } catch {
+    return v.canvas.toDataURL("image/png")
+  }
+}
+
 function captureJob(job: Job, prepared: Prepared) {
   let v: SkinViewer
   try {
@@ -154,31 +165,30 @@ function captureJob(job: Job, prepared: Prepared) {
     if (queue.length) schedulePump()
     return
   }
+  // Hidden viewer: draw on demand only. The RAF loop stays paused so Explore
+  // doesn't run three render loops behind everyone's back.
+  pauseViewerLoop(v)
   v.loadSkin(prepared.skin, { model: prepared.model })
   applyGroupFocus(v, prepared.group, prepared.outfit, prepared.covers, false)
   crispSkinTexture(v)
   v.render()
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      try {
-        v.render()
-        const result: IsoThumbResult = {
-          url: v.canvas.toDataURL("image/png"),
-          wash: prepared.wash,
-        }
-        memCache.set(job.key, result)
-        setStoredThumb(job.key, result)
-        job.resolve(result)
-      } catch (err) {
-        job.reject(err)
-      } finally {
-        pumping = false
-        if (queue.length) {
-          window.setTimeout(() => pump(), 0)
-        }
-      }
-    })
-  })
+
+  try {
+    const result: IsoThumbResult = {
+      url: bakeViewerCanvas(v, prepared.bakeFx),
+      wash: prepared.wash,
+    }
+    memCache.set(job.key, result)
+    setStoredThumb(job.key, result)
+    job.resolve(result)
+  } catch (err) {
+    job.reject(err)
+  } finally {
+    pumping = false
+    if (queue.length) {
+      window.setTimeout(() => pump(), 0)
+    }
+  }
 }
 
 function pump() {
@@ -209,12 +219,26 @@ export async function isoPieceThumb(
   piece: Piece,
   model: SkinModel = "classic",
   priority = false,
+  bakeFx = true,
 ): Promise<IsoThumbResult> {
-  const key = `piece:v57:${model}:${piece.id}`
+  // v58: thumbs bake the shadow+rim fx into the PNG (no per-tile CSS filters).
+  const key = `piece:v58:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)
   if (pending) return pending
+
+  // Pre-rendered PNG shipped with the site beats re-rendering in WebGL.
+  // Static thumbs ship fx-less; bake the shadow+rim once and cache the result.
+  const staticThumb = isoPieceStaticThumb(piece.id)
+  if (staticThumb) {
+    const res: IsoThumbResult = {
+      url: bakeFx ? await bakeIsoThumbFx(staticThumb.url) : staticThumb.url,
+      wash: staticThumb.wash,
+    }
+    memCache.set(key, res)
+    return res
+  }
 
   const work = (async () => {
     const stored = await getStoredThumb(key)
@@ -236,6 +260,7 @@ export async function isoPieceThumb(
           covers: covers ?? ["head", "torso", "legs"],
           outfit: [piece],
           model: skinviewModel(model),
+          bakeFx,
         }
       },
       priority,
@@ -256,9 +281,10 @@ export async function isoOutfitThumb(
   bodyHue = 0,
   model: SkinModel = "classic",
   priority = false,
+  bakeFx = true,
 ): Promise<IsoThumbResult> {
   const outfitKey = pieces.map((piece) => piece.id).join("|") || "empty"
-  const key = `outfit:v57:${bodyId}:${bodyHue}:${model}:${outfitKey}`
+  const key = `outfit:v58:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)
@@ -282,6 +308,7 @@ export async function isoOutfitThumb(
           covers: ["head", "torso", "legs"] satisfies Group[],
           outfit: pieces,
           model: skinviewModel(model),
+          bakeFx,
         }
       },
       priority,

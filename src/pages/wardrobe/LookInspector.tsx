@@ -2,7 +2,6 @@ import { useState } from "react"
 import { faDownload, faLink, faCheck } from "@fortawesome/free-solid-svg-icons"
 import { FaIcon } from "../../components/ui/FaIcon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
-import { SLOTS } from "../../data/catalog"
 import { piecesFromEquipped } from "../../data/outfit"
 import { tryDownloadSkinFile } from "../../skin/compose"
 import { useCloset, type Look } from "../../state/closet"
@@ -24,7 +23,7 @@ export function LookInspector({
   const [copied, setCopied] = useState(false)
 
   const outfit = piecesFromEquipped(look.equipped, look.stack)
-  const layerCount = SLOTS.filter((slot) => look.equipped[slot]).length
+  const layerCount = outfit.length
 
   function commitName(draft: string) {
     const next = committedLookName(look.name, draft)

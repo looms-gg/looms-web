@@ -83,6 +83,8 @@ export async function loadGarments(userId?: string | null): Promise<Piece[]> {
   )
 }
 
+const RELOAD_BACKOFF_MS = [0, 1500, 4000] as const
+
 export function CatalogProvider({ children }: { children: ReactNode }) {
   const auth = useContext(AuthContext)
   const userId = auth?.user?.id ?? null
@@ -108,8 +110,27 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     }
   }, [apply, userId])
 
+  // Bounded retry with backoff: a single failed fetch must not leave the
+  // registry empty (looks render naked) until the user manually refreshes.
   useEffect(() => {
-    void reload()
+    let active = true
+    let timer: number | null = null
+    const run = async (attempt: number) => {
+      if (!active) return
+      await reload()
+      if (!active) return
+      // Read the module registry (kept current by apply) instead of state from
+      // this closure, so a successful load never re-arms the retry loop.
+      if (registryPieces.length > 0) return
+      const delay = RELOAD_BACKOFF_MS[attempt + 1]
+      if (delay === undefined) return
+      timer = window.setTimeout(() => void run(attempt + 1), delay)
+    }
+    void run(0)
+    return () => {
+      active = false
+      if (timer != null) window.clearTimeout(timer)
+    }
   }, [reload])
 
   const upsert = useCallback((piece: Piece) => {

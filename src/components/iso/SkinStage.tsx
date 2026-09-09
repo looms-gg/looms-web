@@ -5,7 +5,7 @@ import { preparePreview, type Piece } from "../../data/catalog"
 import { composeSkin, groupsFromAtlas } from "../../skin/compose"
 import { applyGroupFocus, crispSkinTexture, isoPoseAnimation, mountLiveViewer, poseGroupForParts, skinviewModel } from "../../skin/focus"
 import type { SkinModel } from "../../skin/convert"
-import { ISO_RIM_FILL } from "./IsoFigureFx"
+import { ISO_RIM_FILL } from "../../skin/thumbFx"
 
 const RIM_DIRS = ["ne", "e", "se"] as const
 
@@ -43,7 +43,7 @@ export function SkinStage({
   const fxRefs = useRef<(HTMLCanvasElement | null)[]>([])
   const viewerRef = useRef<SkinViewer | null>(null)
   const replayRef = useRef<(() => void) | null>(null)
-  const paintFxRef = useRef<() => void>(() => {})
+  const paintFxRef = useRef<(immediate?: boolean) => void>(() => {})
   const [ready, setReady] = useState(false)
   const outfitRef = useRef(outfit)
   outfitRef.current = outfit
@@ -66,31 +66,60 @@ export function SkinStage({
     viewerRef.current = viewer
     viewer.renderPaused = true
 
+    const scratch = document.createElement("canvas")
     let fxFrame: number | null = null
+    let fxTimer: ReturnType<typeof setTimeout> | null = null
 
     const paintFx = () => {
       fxFrame = null
       const src = canvasRef.current
       if (src && src.width > 0) {
+        if (scratch.width !== src.width || scratch.height !== src.height) {
+          scratch.width = src.width
+          scratch.height = src.height
+        }
+        const sCtx = scratch.getContext("2d")
+        if (!sCtx) return
+        sCtx.clearRect(0, 0, scratch.width, scratch.height)
+        sCtx.drawImage(src, 0, 0)
+
         const [shadow, ...rims] = fxRefs.current
-        if (shadow) copySilhouette(src, shadow, "#000")
+        if (shadow) copySilhouette(scratch, shadow, "#000")
         for (const dest of rims) {
-          if (dest) copySilhouette(src, dest, ISO_RIM_FILL)
+          if (dest) copySilhouette(scratch, dest, ISO_RIM_FILL)
         }
       }
     }
 
-    const schedulePaintFx = () => {
-      if (fxFrame !== null) return
-      fxFrame = requestAnimationFrame(paintFx)
+    const schedulePaintFx = (immediate = true) => {
+      if (fxTimer !== null) {
+        clearTimeout(fxTimer)
+        fxTimer = null
+      }
+      if (immediate) {
+        if (fxFrame === null) {
+          fxFrame = requestAnimationFrame(paintFx)
+        }
+        return
+      }
+      fxTimer = setTimeout(() => {
+        fxTimer = null
+        if (fxFrame === null) {
+          fxFrame = requestAnimationFrame(paintFx)
+        }
+      }, 80)
     }
     paintFxRef.current = schedulePaintFx
 
     const onControlsChange = () => {
       viewer.render()
-      schedulePaintFx()
+      schedulePaintFx(false)
+    }
+    const onControlsEnd = () => {
+      schedulePaintFx(true)
     }
     viewer.controls.addEventListener("change", onControlsChange)
+    viewer.controls.addEventListener("end", onControlsEnd)
 
     const ro = new ResizeObserver(() => {
       const w = parent?.clientWidth || 360
@@ -98,13 +127,15 @@ export function SkinStage({
       viewer.setSize(w, h)
       replayRef.current?.()
       viewer.render()
-      schedulePaintFx()
+      schedulePaintFx(true)
     })
     if (parent) ro.observe(parent)
 
     return () => {
+      if (fxTimer !== null) clearTimeout(fxTimer)
       if (fxFrame !== null) cancelAnimationFrame(fxFrame)
       viewer.controls.removeEventListener("change", onControlsChange)
+      viewer.controls.removeEventListener("end", onControlsEnd)
       ro.disconnect()
       viewer.dispose()
       viewerRef.current = null

@@ -10,7 +10,7 @@ import {
 } from "react"
 import { addAndWearPiece, addPiece, setBodyPersist, wearOwned } from "./closetActions"
 import { bodyOrDefault } from "../data/bodies"
-import { findMatchingLook, mergeStack, moveStackId } from "../data/outfit"
+import { findMatchingLook, mergeStack, moveStackId, resolveLookLayers } from "../data/outfit"
 import { getPiece, type Slot } from "../data/catalog"
 import type { SkinModel } from "../skin/convert"
 import {
@@ -316,12 +316,16 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   const loadLook = useCallback(
     (look: Look) => {
       setActiveLook(look)
+      // Resolve layers (healing any equipped slots the snapshot lost during
+      // the catalog hydration race) before touching the live session, so
+      // "Edit outfit" never drops layers the snapshot forgot about.
+      const layers = resolveLookLayers(look)
       patch((prev) => ({
         next: {
           ...prev,
           activeLookId: look.id,
-          equipped: look.equipped,
-          stack: mergeStack(look.stack, look.equipped),
+          equipped: layers.equipped,
+          stack: layers.stack,
           bodyId: bodyOrDefault(look.bodyId).id,
           bodyHue: clampHue(look.bodyHue),
           model: look.model,

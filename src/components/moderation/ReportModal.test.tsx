@@ -45,6 +45,13 @@ describe("ReportModal", () => {
     expect(body.textContent).toMatch(/Inappropriate \/ NSFW/i)
     expect(body.textContent).toMatch(/Spam \/ Advertising/i)
     expect(body.querySelector('textarea#report-details')).not.toBeNull()
+
+    // Uses the auth-modal scrim family so the report flow matches the
+    // login look and feel, without stripping the site header chrome.
+    const scrim = body.querySelector(".auth-scrim")
+    expect(scrim).not.toBeNull()
+    expect(scrim?.classList.contains("auth-scrim--inline")).toBe(true)
+    expect(body.querySelector(".auth-scrim-panel")).not.toBeNull()
   })
 
   it("submits report and shows success confirmation", async () => {

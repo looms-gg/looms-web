@@ -1,4 +1,4 @@
-# looms — Fact Sheet, Glossary & FAQ
+# looms. Fact Sheet, Glossary & FAQ
 
 Quick-reference companion to [master-briefing.md](master-briefing.md). Hard facts for checking AI output, plus a glossary and honest FAQ including known gaps. If an AI says something about looms, verify it here.
 
@@ -26,7 +26,7 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 | Clothing slots | hair, hat, face, shirt, coat, pants, shoes (+ system-only eyes) |
 | Body groups | head, torso, legs |
 | Skin models | Classic (4px arms) & Slim (3px arms); garments auto-convert between them |
-| Base bodies | 8 tones (Fair, Light, Warm, Tan*, Medium, Deep, Dark, Deepest) — *Tan is the default |
+| Base bodies | 8 tones (Fair, Light, Warm, Tan*, Medium, Deep, Dark, Deepest). *Tan is the default |
 | Body hue shift | ±120° OKLCH rotation |
 | Bundled eyes | 70+ styles, adjustable vertical offset (−3…+1 px) |
 | Seed catalog | 22 named pieces |
@@ -71,7 +71,7 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 | **Piece** | A single clothing layer (a hair, a coat…) in the catalog; the upload unit |
 | **Garment** | The database/backend name for a piece |
 | **Slot** | Where a piece goes: hair, hat, face, shirt, coat, pants, shoes (eyes are system) |
-| **Body group** | head / torso / legs — which region a piece paints |
+| **Body group** | head / torso / legs, which region a piece paints |
 | **Covers** | The groups a piece's texture actually paints (long hair covers head+torso) |
 | **Wardrobe** | Your account's collection of owned pieces + saved looks |
 | **Studio** | The creator: pick a body, stack layers, adjust tone, save/export |
@@ -89,9 +89,9 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 
 ## 3. FAQ
 
-**Is looms really free?** Yes — every piece, every feature, every export. No ads, no accounts tier, no cosmetics paywall. The terms describe it as a free hobby project provided as-is.
+**Is looms really free?** Yes, every piece, every feature, every export. No ads, no accounts tier, no cosmetics paywall. The terms describe it as a free hobby project provided as-is.
 
-**Do I need an account?** To browse, no. To own a wardrobe, save looks, like, comment, or upload — yes (email + password or magic link).
+**Do I need an account?** To browse, no. To own a wardrobe, save looks, like, comment, or upload, yes (email + password or magic link).
 
 **Does the exported skin work in Minecraft?** It's a vanilla 64×64 PNG, so it uploads like any other custom skin on Java and Bedrock. No mods, no custom clients.
 
@@ -99,17 +99,17 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 
 **Who owns what I upload?** You keep your rights; looms gets a non-exclusive license to host/display/process the content so the service works. Details in `/terms`.
 
-**Is it affiliated with Mojang?** No — explicitly an unofficial fan project, not endorsed by or affiliated with Mojang Studios or Microsoft.
+**Is it affiliated with Mojang?** No, explicitly an unofficial fan project, not endorsed by or affiliated with Mojang Studios or Microsoft.
 
 **How is content moderated?** User reports (5 reasons) flow to an admin-only queue with resolve/dismiss/takedown actions; takedown powers are enforced at the database level. Community Guidelines are public in-app.
 
 **What data does looms collect?** Email, username, optional Minecraft username, and the content you create. No ads, no analytics, no third-party trackers. Cookie policy in-app; consent banner included.
 
-**Is there a mobile app?** No — but the web app is designed mobile-first with a bottom navigation dock.
+**Is there a mobile app?** No, but the web app is designed mobile-first with a bottom navigation dock.
 
 **Can kids use it?** The privacy policy says looms is not directed at children under 13 (or the regional minimum), and requests contact to remove underage accounts.
 
-**Why "looms"?** The name frames the closet/weaving metaphor — layers woven into a look. (The docs don't state an origin story; don't invent one in public copy.)
+**Why "looms"?** The name frames the closet/weaving metaphor, layers woven into a look. (The docs don't state an origin story; don't invent one in public copy.)
 
 ## 4. Honest gaps & known caveats (so AI output stays truthful)
 
@@ -126,4 +126,4 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 
 ## 5. One-paragraph boilerplate (press-ready, safe)
 
-> looms is a free, open-source wardrobe for Minecraft skins: browse community-made clothing layers, save any piece to your wardrobe, stack outfits on a 3D character in Studio, and export a vanilla 64×64 PNG that works instantly on Minecraft Java and Bedrock. No art skills, no ads, no paid unlocks — just dress up, remix, and wear. An unofficial fan project, unaffiliated with Mojang. https://looms-gg.github.io/looms-web/ · Discord: https://discord.gg/UNTRgHBBPb
+> looms is a free, open-source wardrobe for Minecraft skins: browse community-made clothing layers, save any piece to your wardrobe, stack outfits on a 3D character in Studio, and export a vanilla 64×64 PNG that works instantly on Minecraft Java and Bedrock. No art skills, no ads, no paid unlocks, just dress up, remix, and wear. An unofficial fan project, unaffiliated with Mojang. https://looms-gg.github.io/looms-web/ · Discord: https://discord.gg/UNTRgHBBPb
