@@ -19,6 +19,12 @@ dist-ssr
 # Supabase CLI local cache (never commit)
 supabase/.temp/
 
+# Key material & credentials (defense in depth — never commit these)
+*.pem
+*.key
+credentials.json
+service-account*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
