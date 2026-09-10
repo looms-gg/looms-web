@@ -9,7 +9,12 @@ import {
 } from "../state/publicLooks"
 import { equippedFromStack, piecesFromEquipped } from "../data/outfit"
 import { HeadMeta } from "../components/shell/HeadMeta"
-import { getLookShareUrl } from "../lib/share"
+import {
+  creativeWorkJsonLd,
+  lookCanonicalUrl,
+  lookSeoDescription,
+  lookSeoTitle,
+} from "../lib/seo"
 import { tryDownloadSkinFile } from "../skin/compose"
 import { CommentsSection } from "../components/comments/CommentsSection"
 import { AuthModal } from "../components/auth/AuthModal"
@@ -95,9 +100,8 @@ export function LookPage() {
   }
 
   const outfit = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
-  const shareUrl = getLookShareUrl(look.id)
-  const metaDesc =
-    look.description || `${look.name} — community Minecraft outfit on looms. Preview in 3D and export the skin free.`
+  const shareUrl = lookCanonicalUrl(look.id)
+  const metaDesc = lookSeoDescription(look)
 
   const handleWear = () => {
     if (!user) {
@@ -124,23 +128,19 @@ export function LookPage() {
   return (
     <div className="space-y-6">
       <HeadMeta
-        title={`${look.name} — Minecraft outfit`}
+        title={lookSeoTitle(look)}
         description={metaDesc}
         url={shareUrl}
         image={`https://looms.gg/og/outfit-default.png`}
         // Indexation quality gate: only public looks may be indexed; private
         // or unlisted outfits stay crawlable for the owner but out of search.
         index={look.visibility === "public"}
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "CreativeWork",
+        jsonLd={creativeWorkJsonLd({
           name: look.name,
           description: metaDesc,
           url: shareUrl,
           image: `https://looms.gg/og/outfit-default.png`,
-          isAccessibleForFree: true,
-          inLanguage: "en",
-        }}
+        })}
       />
       <Link
         to={backTo}

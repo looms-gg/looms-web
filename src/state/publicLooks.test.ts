@@ -121,7 +121,10 @@ describe("fetchYesterdayTopLook", () => {
   })
 
   it("maps the RPC row to a PublicLook", async () => {
-    vi.spyOn(supabase, "rpc").mockResolvedValue({ data: [rpcRow], error: null })
+    vi.spyOn(supabase, "rpc").mockResolvedValue({
+      data: [rpcRow] as never,
+      error: null,
+    } as never)
 
     const top = await fetchYesterdayTopLook()
     expect(top?.id).toBe("look-yay")
@@ -130,7 +133,7 @@ describe("fetchYesterdayTopLook", () => {
   })
 
   it("returns null when the RPC returns no rows (thin day)", async () => {
-    vi.spyOn(supabase, "rpc").mockResolvedValue({ data: [], error: null })
+    vi.spyOn(supabase, "rpc").mockResolvedValue({ data: [], error: null } as never)
 
     expect(await fetchYesterdayTopLook()).toBeNull()
   })
@@ -139,7 +142,7 @@ describe("fetchYesterdayTopLook", () => {
     vi.spyOn(supabase, "rpc").mockResolvedValue({
       data: null,
       error: { message: "boom" },
-    })
+    } as never)
 
     expect(await fetchYesterdayTopLook()).toBeNull()
   })

@@ -7,7 +7,13 @@ import { useCloset } from "../state/closet"
 import { useCatalog } from "../state/catalog"
 import { useAuthOptional } from "../state/auth"
 import { HeadMeta } from "../components/shell/HeadMeta"
-import { getPieceShareUrl } from "../lib/share"
+import {
+  creativeWorkJsonLd,
+  isThinPieceSeo,
+  pieceSeoDescription,
+  pieceSeoTitle,
+  pieceCanonicalUrl,
+} from "../lib/seo"
 import { setPendingAction } from "../lib/pendingAction"
 import { PieceSheet } from "./piece/PieceSheet"
 import { PieceSkeleton } from "./piece/PieceSkeleton"
@@ -89,33 +95,27 @@ export function PiecePage() {
     action()
   }
 
-  const shareUrl = getPieceShareUrl(currentPiece.id)
-  const metaDesc = currentPiece.blurb
-    ? `${currentPiece.blurb} · ${currentPiece.slot.toUpperCase()} · Minecraft clothing on looms`
-    : `${currentPiece.name} — modular Minecraft clothing piece on looms.`
+  const shareUrl = pieceCanonicalUrl(currentPiece.id)
+  const metaDesc = pieceSeoDescription(currentPiece)
   // Indexation quality gate: uploads without a description are thin content —
   // keep them crawlable for link discovery but out of the index.
-  const isThin = !currentPiece.blurb || currentPiece.blurb.length < 40
+  const isThin = isThinPieceSeo(currentPiece)
 
   return (
     <div className="space-y-4">
       <HeadMeta
-        title={`${currentPiece.name} — ${currentPiece.slot.toUpperCase()} Minecraft clothing piece`}
+        title={pieceSeoTitle(currentPiece)}
         description={metaDesc}
         url={shareUrl}
         image={`https://looms.gg/og/pieces/${currentPiece.id}.png`}
         index={!isThin}
-        jsonLd={{
-          "@context": "https://schema.org",
-          "@type": "CreativeWork",
+        jsonLd={creativeWorkJsonLd({
           name: currentPiece.name,
           description: metaDesc,
           url: shareUrl,
           image: `https://looms.gg/og/pieces/${currentPiece.id}.png`,
-          isAccessibleForFree: true,
           genre: `Minecraft ${currentPiece.slot} layer`,
-          inLanguage: "en",
-        }}
+        })}
       />
 
       <Link

@@ -51,6 +51,9 @@ export function PieceSheet({
         <div
           className="piece-reveal piece-preview relative min-h-[320px] bg-base-300 md:min-h-[440px]"
           style={revealStyle(1)}
+          role="img"
+          aria-label={`${piece.name}, a ${SLOT_LABEL[piece.slot]} piece for Minecraft skins, shown on a 3D Minecraft character`}
+          title={`${piece.name} — ${SLOT_LABEL[piece.slot]} piece preview`}
         >
           <SkinStage
             outfit={[piece]}

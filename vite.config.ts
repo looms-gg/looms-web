@@ -51,7 +51,8 @@ export default defineConfig(() => ({
   plugins: [tailwindcss(), react(), isoSaverPlugin()],
   test: {
     environment: "happy-dom",
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    // scripts/ holds the prerender-contract test guarding the built HTML.
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "scripts/**/*.test.ts"],
     setupFiles: ["src/test/setupCatalog.ts"],
   },
 }))

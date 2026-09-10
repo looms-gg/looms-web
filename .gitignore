@@ -72,3 +72,6 @@ docs/THREAT_MODELING_AND_ABUSE_PREVENTION.md
 *.cpuprofile
 *.heapprofile
 *.trace
+
+# Local deploy script
+deploy.command

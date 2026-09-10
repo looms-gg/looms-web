@@ -87,6 +87,13 @@ function injectMeta(template, { title, description, url, image, type = "website"
 
   let html = template
 
+  // Idempotency: strip this script's own previous injections (the run may
+  // repeat against the same dist output) before adding fresh elements.
+  html = html
+    .replace(/<link rel="canonical"[^>]*>\s*/g, "")
+    .replace(/<meta name="robots" content="[^"]*"\s*\/?>\s*/g, "")
+    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>\s*/g, "")
+
   // The SPA template has no per-page canonical/robots — add ours before </head>.
   const pageHead = [
     `  <link rel="canonical" href="${safeUrl}" />`,
@@ -227,6 +234,22 @@ ${linksHtml}
 `
 }
 
+/**
+ * Strips any previously injected static copy + removal script so the script is
+ * idempotent (a stray second run on the same build output cannot stack pages).
+ */
+function resetTemplate(html) {
+  return html
+    .replace(
+      /<div id="seo-prerendered">[\s\S]*?<\/div>\s*<div id="root"><\/div>/,
+      '<div id="root"></div>',
+    )
+    .replace(
+      /<script>\s*;\(function \(\) \{[\s\S]*?seo-prerendered[\s\S]*?<\/script>\s*/,
+      "",
+    )
+}
+
 function injectBody(html, bodyHtml) {
   // The SPA shell body is `<div id="root"></div>` + module script. The static
   // copy mounts BEFORE the root div and a tiny inline script removes it as
@@ -275,7 +298,7 @@ async function main() {
     process.exit(1)
   }
 
-  const template = fs.readFileSync(INDEX_HTML, "utf8")
+  const template = resetTemplate(fs.readFileSync(INDEX_HTML, "utf8"))
   if (!template.includes('<div id="root"></div>')) {
     console.error("❌ dist/index.html does not contain the SPA mount point — aborting to avoid clobbering the template.")
     process.exit(1)
@@ -316,6 +339,7 @@ async function main() {
 
     // Related pieces: same slot first, then same body group — internal links
     // that give crawlers a path from every piece page to the rest of catalog.
+    // The look landing rides along on every page so /look is never orphaned.
     const related = catalog
       .filter((p) => p.id !== piece.id)
       .sort((a, b) => {
@@ -325,6 +349,7 @@ async function main() {
       })
       .slice(0, 4)
       .map((p) => ({ label: `${p.name} (${slotLabel(p.slot)})`, href: `${BASE_URL}/piece/${p.id}` }))
+    related.push({ label: "Browse all Minecraft outfits", href: `${BASE_URL}/look` })
 
     const jsonLd = {
       "@context": "https://schema.org",

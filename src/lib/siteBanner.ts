@@ -10,7 +10,7 @@ const LAST_BANNER_STORAGE_KEY = "looms_last_site_banner"
  * Lets the SiteBanner render synchronously on mount so the page never shifts
  * when the fetch resolves.
  */
-export function getCachedActiveBanner(): CachedBanner | null {
+export function getCachedActiveBanner(): SiteBannerRow | null {
   try {
     const stored = localStorage.getItem(LAST_BANNER_STORAGE_KEY)
     if (!stored) return null

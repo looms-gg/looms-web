@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import {
   CloudArrowUp,
   MagnifyingGlass,
@@ -7,6 +7,7 @@ import {
 } from "@phosphor-icons/react"
 import { SLOT_LABEL } from "../data/catalog"
 import { ExploreRail } from "../components/explore/ExploreRail"
+import { HeadMeta } from "../components/shell/HeadMeta"
 import { Icon } from "../components/ui/Icon"
 import { useCloset } from "../state/closet"
 import { useAuth } from "../state/auth"
@@ -32,8 +33,13 @@ import { formatErrorMessage } from "../lib/errorFormat"
 
 export function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
   const tabParam = searchParams.get("tab")
-  const mode: "pieces" | "looks" = tabParam === "looks" ? "looks" : "pieces"
+  // /look is a prerendered landing page; the SPA route aliases it to the
+  // Explore page in looks mode so crawlers and users see the same content.
+  const isLookLanding = location.pathname === "/look"
+  const mode: "pieces" | "looks" =
+    tabParam === "looks" || isLookLanding ? "looks" : "pieces"
 
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<Sort>("Newest")
@@ -106,6 +112,10 @@ export function ExplorePage() {
   }, [])
 
   function setMode(nextMode: "pieces" | "looks") {
+    if (isLookLanding && nextMode === "pieces") {
+      navigate("/", { replace: true })
+      return
+    }
     const next = new URLSearchParams(searchParams)
     if (nextMode === "looks") {
       next.set("tab", "looks")
@@ -127,6 +137,26 @@ export function ExplorePage() {
 
   const showHero = !query.trim()
 
+  // Canonical: the clean URL for the active mode. Faceted variants
+  // (/?tab=looks) canonicalize to /look so param URLs never split equity.
+  const canonicalPath = mode === "looks" ? "/look" : "/"
+  const siteJsonLd = useMemo(
+    () =>
+      mode === "pieces"
+        ? ({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "looms",
+            alternateName: "looms.gg",
+            url: "https://looms.gg/",
+            description:
+              "Free modular wardrobe for Minecraft skins: browse community clothing layers, stack outfits in Studio, export a vanilla 64×64 PNG.",
+            isAccessibleForFree: true,
+          } as const)
+        : null,
+    [mode],
+  )
+
   function handleWearLook(look: PublicLook) {
     loadLook(publicLookToLook(look))
     void navigate("/studio")
@@ -140,6 +170,16 @@ export function ExplorePage() {
 
   return (
     <div className="space-y-6">
+      <HeadMeta
+        title={mode === "looks" ? "Minecraft Outfits & Community Looks" : undefined}
+        description={
+          mode === "looks"
+            ? "Browse modular layered Minecraft outfits by the looms community. Preview looks in 3D, wear them in Studio, and export a vanilla 64×64 skin PNG — free."
+            : undefined
+        }
+        url={canonicalPath}
+        jsonLd={siteJsonLd}
+      />
       {showHero ? (
         <ExploreHero
           trendingLooks={trendingLooks}

@@ -65,6 +65,9 @@ export function LookSheet({
         <div
           className="piece-reveal piece-preview relative min-h-[340px] bg-base-300 md:min-h-[480px]"
           style={revealStyle(1)}
+          role="img"
+          aria-label={`${look.name}, a layered Minecraft outfit by ${look.maker}, shown on a 3D Minecraft character`}
+          title={`${look.name} — Minecraft outfit preview`}
         >
           <SkinStage
             outfit={outfit}

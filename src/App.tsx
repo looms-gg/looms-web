@@ -64,6 +64,8 @@ export default function App() {
                 <Routes>
                   <Route element={<Shell />}>
                     <Route index element={<ExplorePage />} />
+                    {/* Prerendered landing page; the SPA aliases it to Explore in looks mode. */}
+                    <Route path="look" element={<ExplorePage />} />
                     <Route
                       path="piece/:id"
                       element={

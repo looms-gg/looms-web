@@ -366,6 +366,16 @@ export type Database = {
         Args: Record<string, never>
         Returns: undefined
       }
+      get_yesterday_top_look: {
+        Args: Record<string, never>
+        Returns: Array<
+          LookRow & {
+            recent_like_count: number
+            username: string
+            avatar_url: string | null
+          }
+        >
+      }
     }
   }
 }

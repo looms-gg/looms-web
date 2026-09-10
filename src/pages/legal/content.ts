@@ -107,6 +107,14 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         ],
       },
       {
+        heading: "Copyright / DMCA",
+        paragraphs: [
+          `If you believe content on looms infringes your copyright, send a notice to ${CONTACT} with: (1) identification of the copyrighted work, (2) the URL or ID of the allegedly infringing content on looms, (3) your contact information, (4) a statement that you have a good-faith belief the use is not authorized, (5) a statement, under penalty of perjury, that the information is accurate and you are the rights holder or authorized to act for them, and (6) your physical or electronic signature.`,
+          `Valid notices are processed promptly: reported items can be hidden from public view while under review, and materially infringing content is removed and the uploading account notified. If your content was removed and you believe it was a mistake or misidentification, you may submit a counter-notice to ${CONTACT} with the same detail requirements; we will restore the content if the matter is resolved or the complainant does not pursue it.`,
+          "Repeat infringers lose upload access. Abuse of the DMCA process (knowingly false notices or counter-notices) may result in loss of platform access as well; damages and costs for misrepresentation may be recoverable by the affected party under 17 U.S.C. § 512(f).",
+        ],
+      },
+      {
         heading: "Exports and Minecraft use",
         paragraphs: [
           "Exported skins are for personal Minecraft use subject to Mojang’s terms and applicable law. You are responsible for how you use downloads outside looms.",
@@ -196,7 +204,8 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
       {
         heading: "Reporting",
         paragraphs: [
-          `Report issues via Discord (${DISCORD}) or email ${CONTACT}. Include links or IDs when you can.`,
+          `Report issues via the flag button on any look or piece, in Discord (${DISCORD}), or by email to ${CONTACT}. Include links or IDs when you can. Reports with enough detail hide the content from public view automatically while a moderator reviews it.`,
+          `Copyright / DMCA notices follow the process in our Terms of Service: email ${CONTACT} with the work, the URL, and a good-faith statement.`,
         ],
       },
     ],
