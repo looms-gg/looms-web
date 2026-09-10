@@ -67,15 +67,18 @@ export interface AuthContextValue {
   signInWithPassword: (credentials: {
     email: string
     password: string
+    captchaToken?: string
   }) => Promise<{ error: Error | null }>
   signUpWithPassword: (data: {
     email: string
     password: string
     username: string
     minecraftUsername?: string
+    captchaToken?: string
   }) => Promise<{ error: Error | null }>
   signInWithOtp: (params: {
     email: string
+    captchaToken?: string
   }) => Promise<{ error: Error | null }>
   signOut: () => Promise<{ error: Error | null }>
   deleteAccount: () => Promise<{ error: Error | null }>
@@ -284,10 +287,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, user, emailVerified, pendingEmail])
 
   const signInWithPassword = useCallback(
-    async ({ email, password }: { email: string; password: string }) => {
+    async ({
+      email,
+      password,
+      captchaToken,
+    }: {
+      email: string
+      password: string
+      captchaToken?: string
+    }) => {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        ...(captchaToken ? { options: { captchaToken } } : {}),
       })
       if (error && isUnconfirmedAuthError(error.message)) {
         watchUnconfirmed(email, password)
@@ -304,11 +316,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       username,
       minecraftUsername,
+      captchaToken,
     }: {
       email: string
       password: string
       username: string
       minecraftUsername?: string
+      captchaToken?: string
     }) => {
       const cleanUsername = sanitizeUsername(username) || "user"
       const cleanMc = minecraftUsername ? sanitizeMinecraftUsername(minecraftUsername) : null
@@ -316,6 +330,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: email.trim(),
         password,
         options: {
+          captchaToken,
           // Include the Vite base path so confirmation lands on the deployed
           // app (…/looms-web/), not the bare origin.
           emailRedirectTo: absoluteAppUrl(),
@@ -347,15 +362,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [fetchProfile, watchUnconfirmed],
   )
 
-  const signInWithOtp = useCallback(async ({ email }: { email: string }) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: absoluteAppUrl(),
-      },
-    })
-    return { error: error ? new Error(error.message) : null }
-  }, [])
+  const signInWithOtp = useCallback(
+    async ({ email, captchaToken }: { email: string; captchaToken?: string }) => {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          captchaToken,
+          emailRedirectTo: absoluteAppUrl(),
+        },
+      })
+      return { error: error ? new Error(error.message) : null }
+    },
+    [],
+  )
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()

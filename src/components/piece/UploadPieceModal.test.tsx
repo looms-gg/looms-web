@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 import { AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
 import { ClosetProvider } from "../../state/closet"
-import { coversForSlot, UploadPieceModal, validateDimensions } from "./UploadPieceModal"
+import { coversForSlot, uploadCovers, UploadPieceModal, validateDimensions } from "./UploadPieceModal"
 
 describe("UploadPieceModal and garment validation", () => {
   it("validates 64x64 dimensions", () => {
@@ -91,6 +91,14 @@ describe("UploadPieceModal and garment validation", () => {
     expect(coversForSlot("set")).toEqual(["torso", "legs"])
     expect(coversForSlot("shirt")).toEqual(["torso"])
     expect(coversForSlot("pants")).toEqual(["legs"])
+  })
+
+  it("persists painted regions alongside the slot covers", () => {
+    expect(uploadCovers("hair", [])).toEqual(["head"])
+    expect(uploadCovers("hair", ["head"])).toEqual(["head"])
+    expect(uploadCovers("hair", ["head", "torso"])).toEqual(["head", "torso"])
+    expect(uploadCovers("shirt", ["head", "torso", "legs"])).toEqual(["head", "torso", "legs"])
+    expect(uploadCovers("set", ["torso"])).toEqual(["torso", "legs"])
   })
 })
 

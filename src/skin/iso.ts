@@ -221,8 +221,9 @@ export async function isoPieceThumb(
   priority = false,
   bakeFx = true,
 ): Promise<IsoThumbResult> {
-  // v58: thumbs bake the shadow+rim fx into the PNG (no per-tile CSS filters).
-  const key = `piece:v58:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
+  // v59: head pieces keep torso-overlay paint (long hair), so cached head-only
+  // thumbs from v58 must regenerate. Thumbs still bake the shadow+rim fx.
+  const key = `piece:v59:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)

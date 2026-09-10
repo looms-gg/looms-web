@@ -82,7 +82,18 @@ export function pieceCovers(piece: Piece): Group[] {
 export function visibleCovers(piece: Piece, painted: Group[]): Group[] {
   const declared = pieceCovers(piece)
   const covers = painted.filter((group) => declared.includes(group))
-  return covers.length ? covers : declared
+  if (covers.length) {
+    // Long hair paints its back strands on the torso overlay; never clip that
+    // paint off a head piece or the render loses the fall of the hair.
+    if (SLOT_GROUP[piece.slot] === "head") {
+      if (painted.includes("torso") && !covers.includes("torso")) {
+        return [...covers, "torso"]
+      }
+      return covers
+    }
+    return covers
+  }
+  return declared
 }
 
 /**

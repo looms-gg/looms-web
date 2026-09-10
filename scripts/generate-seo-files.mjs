@@ -80,9 +80,10 @@ async function fetchPublicLookIds() {
     // Server-side safety gate: only rows the database itself exposes as public
     // and unreported are listed. The column set is defensive — the flag may
     // not exist yet on a given environment, and a missing column must never
-    // break the build.
+    // break the build. Maker usernames ride along so qualifying profile pages
+    // can join the sitemap.
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/looks?visibility=eq.public&moderation_state=neq.hidden&select=id,updated_at,moderation_state`,
+      `${supabaseUrl}/rest/v1/looks?visibility=eq.public&moderation_state=neq.hidden&select=id,updated_at,user_id,moderation_state`,
       {
         headers: {
           apikey: supabaseAnonKey,
@@ -94,7 +95,21 @@ async function fetchPublicLookIds() {
       console.warn(`⚠️  looks query returned ${res.status}; sitemap will list catalog pieces only.`)
       return []
     }
-    return await res.json()
+    const looks = await res.json()
+    const userIds = [...new Set(looks.map((l) => l.user_id).filter(Boolean))]
+    if (!userIds.length) return looks
+    try {
+      const pres = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?id=in.(${userIds.join(",")})&select=id,username`,
+        { headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` } },
+      )
+      if (!pres.ok) return looks
+      const profiles = new Map((await pres.json()).map((p) => [p.id, p.username]))
+      for (const look of looks) look.username = profiles.get(look.user_id) ?? null
+    } catch {
+      // profiles optional
+    }
+    return looks
   } catch (err) {
     console.warn(`⚠️  looks query failed (${err?.message ?? err}); sitemap will list catalog pieces only.`)
     return []
@@ -154,6 +169,7 @@ async function main() {
   }
 
   const looks = await fetchPublicLookIds()
+  const usernames = new Set()
   for (const look of looks) {
     if (!look || typeof look.id !== "string") continue
     urls.push({
@@ -162,12 +178,24 @@ async function main() {
       changefreq: "weekly",
       priority: "0.6",
     })
+    if (look.username) usernames.add(look.username)
+  }
+
+  // Maker profiles: only accounts with public looks (same indexation gate as
+  // the prerendered profile pages).
+  for (const username of usernames) {
+    urls.push({
+      path: `${BASE_URL}/u/${encodeURIComponent(username)}`,
+      lastmod: now,
+      changefreq: "weekly",
+      priority: "0.5",
+    })
   }
 
   fs.writeFileSync(path.join(DIST, "sitemap.xml"), sitemapXml(urls), "utf8")
 
   console.log(
-    `✅ Wrote dist/robots.txt and dist/sitemap.xml (${urls.length} URLs: ${catalog.length} pieces, ${looks.length} looks)`,
+    `✅ Wrote dist/robots.txt and dist/sitemap.xml (${urls.length} URLs: ${catalog.length} pieces, ${looks.length} looks, ${usernames.size} profiles)`,
   )
 }
 

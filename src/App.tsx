@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from "react"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { IconContext } from "@phosphor-icons/react"
 import { Shell } from "./components/shell/Shell"
 import { RequireAuth } from "./components/auth/RequireAuth"
 import { AdminGuard } from "./components/auth/AdminGuard"
@@ -55,6 +56,10 @@ export default function App() {
   }, [])
 
   return (
+    // Solid weight for every Phosphor icon app-wide (the outline style reads
+    // too thin against the dark theme). Individual icons can still override
+    // with an explicit `weight` prop.
+    <IconContext.Provider value={{ weight: "solid" }}>
     <ThemeProvider>
       <AuthProvider>
         <LikesProvider>
@@ -154,5 +159,6 @@ export default function App() {
         </LikesProvider>
       </AuthProvider>
     </ThemeProvider>
+    </IconContext.Provider>
   )
 }

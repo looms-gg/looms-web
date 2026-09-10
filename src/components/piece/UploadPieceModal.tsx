@@ -9,8 +9,9 @@ import { useAuthOptional } from "../../state/auth"
 import { useCloset } from "../../state/closet"
 import { useCatalog } from "../../state/catalog"
 import { supabase, type GarmentRow } from "../../lib/supabase"
-import { CLOTHING_SLOTS, SLOT_GROUP, type Group, type Slot } from "../../data/catalog"
+import { CLOTHING_SLOTS, GROUPS, SLOT_GROUP, type Group, type Slot } from "../../data/catalog"
 import { garmentToPiece } from "../../data/garment"
+import { groupsFromAtlas } from "../../skin/compose"
 import { MAX_LIMITS, sanitizeText, sanitizeUsername, validateFileSize } from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { Icon } from "../ui/Icon"
@@ -39,6 +40,12 @@ export function coversForSlot(slot: Slot): Group[] {
   return slot === "set" ? ["torso", "legs"] : [SLOT_GROUP[slot]]
 }
 
+/** Covers persist what the texture actually paints, so long hair keeps its torso overlay. */
+export function uploadCovers(slot: Slot, painted: Group[]): Group[] {
+  const declared = coversForSlot(slot)
+  return GROUPS.filter((group) => declared.includes(group) || painted.includes(group))
+}
+
 export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
   const auth = useAuthOptional()
   const user = auth?.user ?? null
@@ -48,6 +55,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
 
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [painted, setPainted] = useState<Group[]>([])
   const [slot, setSlot] = useState<Slot>("shirt")
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -84,6 +92,15 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
 
       setFile(selectedFile)
       setPreviewUrl(objectUrl)
+      setPainted([])
+      const stamp = document.createElement("canvas")
+      stamp.width = 64
+      stamp.height = 64
+      const stampCtx = stamp.getContext("2d", { willReadFrequently: true })
+      if (stampCtx) {
+        stampCtx.drawImage(img, 0, 0, 64, 64)
+        setPainted(groupsFromAtlas(stamp))
+      }
       if (!name) {
         const baseName = selectedFile.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
         const cleanDefaultName = sanitizeText(
@@ -146,7 +163,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
 
       const maker = profile?.username ? sanitizeUsername(profile.username) : "you"
       const group = SLOT_GROUP[slot]
-      const covers = coversForSlot(slot)
+      const covers = uploadCovers(slot, painted)
       const row: GarmentRow = {
         id: pieceId,
         user_id: user.id,

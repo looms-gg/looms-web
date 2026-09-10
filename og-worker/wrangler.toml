@@ -1,0 +1,20 @@
+name = "looms-og"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Routes looms.gg/og/* to this worker. Set up the zone in the Cloudflare
+# dashboard first (looms.gg must be on Cloudflare DNS), then uncomment:
+# route = { pattern = "looms.gg/og/*", zone_name = "looms.gg" }
+
+[vars]
+SUPABASE_URL = "https://pcybqblxszemklcxunuz.supabase.co"
+# Public piece textures live in a public storage bucket — same base the site uses.
+TEXTURE_BASE = "https://pcybqblxszemklcxunuz.supabase.co/storage/v1/object/public/garments/45e6be54-c9a5-4627-af39-9c14b27ec92e"
+
+# Fonts are bundled at build time as data modules.
+
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf"]
+fallthrough = true

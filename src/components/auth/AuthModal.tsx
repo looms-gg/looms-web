@@ -3,9 +3,11 @@ import { Warning, X } from "@phosphor-icons/react"
 import { useAuthOptional } from "../../state/auth"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { MAX_LIMITS, sanitizeMinecraftUsername, sanitizeUsername } from "../../lib/sanitize"
+import { isTurnstileEnabled } from "../../lib/turnstile"
 import { Icon } from "../ui/Icon"
 import { LoomsLogo } from "../ui/LoomsLogo"
 import { ModalOverlay } from "../ui/ModalOverlay"
+import { TurnstileWidget } from "./TurnstileWidget"
 
 export type AuthMode = "login" | "signup" | "magic_link"
 
@@ -20,9 +22,11 @@ function switchMode(
   next: AuthMode,
   setMode: (mode: AuthMode) => void,
   clear: () => void,
+  resetCaptcha: () => void,
 ) {
   setMode(next)
   clear()
+  resetCaptcha()
 }
 
 export function AuthModal({
@@ -40,12 +44,17 @@ export function AuthModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [mcUsername, setMcUsername] = useState("")
+  const captchaEnabled = isTurnstileEnabled()
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaError, setCaptchaError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
     setMode(initialMode)
     setErrorMsg(null)
     setSuccessMsg(null)
+    setCaptchaToken(null)
+    setCaptchaError(null)
   }, [initialMode, isOpen])
 
   const emailId = useId()
@@ -56,6 +65,11 @@ export function AuthModal({
   function clearFeedback() {
     setErrorMsg(null)
     setSuccessMsg(null)
+  }
+
+  function resetCaptcha() {
+    setCaptchaToken(null)
+    setCaptchaError(null)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -72,8 +86,12 @@ export function AuthModal({
         setErrorMsg("Auth is unavailable.")
         return
       }
+      if (captchaEnabled && !captchaToken) {
+        setErrorMsg("Please complete the captcha before continuing.")
+        return
+      }
       if (mode === "login") {
-        const { error } = await signInWithPassword({ email, password })
+        const { error } = await signInWithPassword({ email, password, captchaToken: captchaToken ?? undefined })
         if (error) {
           setErrorMsg(formatErrorMessage(error))
         } else {
@@ -98,6 +116,7 @@ export function AuthModal({
           password,
           username: cleanUsername,
           minecraftUsername: cleanMc,
+          captchaToken: captchaToken ?? undefined,
         })
 
         if (error) {
@@ -106,7 +125,10 @@ export function AuthModal({
           onClose?.()
         }
       } else if (mode === "magic_link") {
-        const { error } = await signInWithOtp({ email: email.trim() })
+        const { error } = await signInWithOtp({
+          email: email.trim(),
+          captchaToken: captchaToken ?? undefined,
+        })
         if (error) {
           setErrorMsg(formatErrorMessage(error))
         } else {
@@ -229,7 +251,7 @@ export function AuthModal({
               <button
                 type="button"
                 className="mt-2 text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
-                onClick={() => switchMode("magic_link", setMode, clearFeedback)}
+                onClick={() => switchMode("magic_link", setMode, clearFeedback, resetCaptcha)}
               >
                 Email me a magic link instead
               </button>
@@ -299,6 +321,23 @@ export function AuthModal({
           </>
         ) : null}
 
+        {captchaEnabled ? (
+          <div>
+            <TurnstileWidget
+              onToken={(token) => {
+                setCaptchaToken(token)
+                if (token) setCaptchaError(null)
+              }}
+              onError={setCaptchaError}
+            />
+            {captchaError ? (
+              <p role="alert" className="mt-1.5 text-xs font-bold text-error">
+                {captchaError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <button
           type="submit"
           disabled={loading}
@@ -317,7 +356,7 @@ export function AuthModal({
           <button
             type="button"
             className="font-semibold transition-colors duration-150 hover:text-base-content"
-            onClick={() => switchMode("login", setMode, clearFeedback)}
+            onClick={() => switchMode("login", setMode, clearFeedback, resetCaptcha)}
           >
             Already have an account?{" "}
             <span className="font-extrabold text-primary">Log in</span>
@@ -326,7 +365,7 @@ export function AuthModal({
           <button
             type="button"
             className="font-semibold transition-colors duration-150 hover:text-base-content"
-            onClick={() => switchMode("signup", setMode, clearFeedback)}
+            onClick={() => switchMode("signup", setMode, clearFeedback, resetCaptcha)}
           >
             New here? <span className="font-extrabold text-primary">Sign up</span>
           </button>

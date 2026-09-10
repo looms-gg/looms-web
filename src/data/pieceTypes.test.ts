@@ -30,6 +30,13 @@ describe("pieceTypes", () => {
     expect(focusForPiece(hat)).toBe("head")
   })
 
+  it("keeps long-hair torso overlay paint on head pieces", () => {
+    const hair = piece({ id: "h", slot: "hair", group: "head" })
+    expect(visibleCovers(hair, ["head"])).toEqual(["head"])
+    expect(visibleCovers(hair, ["head", "torso"])).toEqual(["head", "torso"])
+    expect(visibleCovers(hair, ["head", "torso", "legs"])).toEqual(["head", "torso"])
+  })
+
   it("uses declared covers for focus and paint clipping", () => {
     const pants = piece({
       id: "p",

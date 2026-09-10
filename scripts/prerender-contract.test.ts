@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process"
-import { existsSync, readFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 
@@ -47,7 +47,8 @@ describe.skipIf(!hasBuild)("prerendered output contract (run `npm run build` fir
     expect(home.match(/<h1>/g)?.length).toBe(1)
     expect(home).toContain("Custom Minecraft skins. No art skills needed.")
     expect(home).toContain('type="application/ld+json"')
-    expect(home).toContain('"@type": "WebSite"')
+    expect(home).toContain('"@type": "SoftwareApplication"')
+    expect(home).toContain('"price": "0"')
     // SPA must still mount: root div + module script untouched
     expect(home).toContain('<div id="root"></div>')
     expect(home).toMatch(/<script type="module"/)
@@ -94,12 +95,30 @@ describe.skipIf(!hasBuild)("prerendered output contract (run `npm run build` fir
   })
 
   it("is idempotent: re-running the prerender never stacks duplicates", () => {
-    execSync("node scripts/prerender-embeds.mjs", { cwd: ROOT, stdio: "ignore" })
+    execSync("node scripts/prerender-embeds.mjs", { cwd: ROOT, stdio: "ignore", env: { ...process.env, VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ?? "", VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY ?? "" } })
     const rerun = readFileSync(path.join(DIST, "index.html"), "utf8")
     expect(rerun.match(/<h1>/g)?.length).toBe(1)
     expect(rerun.match(/rel="canonical"/g)?.length).toBe(1)
     expect(rerun.match(/name="robots"/g)?.length).toBe(1)
     expect(rerun.match(/application\/ld\+json/g)?.length).toBe(1)
     expect(rerun.match(/<div id="root"><\/div>/g)?.length).toBe(1)
+  })
+
+  it("look pages: real titles and CreativeWork JSON-LD when built with env", () => {
+    // Without Supabase env, the look pages are skipped entirely (build-time
+    // gate); the contract check only applies when they were generated.
+    const lookDirs = existsSync(path.join(DIST, "look"))
+      ? readdirSync(path.join(DIST, "look")).filter((d) => d !== "index.html")
+      : []
+    if (lookDirs.length === 0) return
+    const look = readFileSync(path.join(DIST, "look", lookDirs[0], "index.html"), "utf8")
+    expect(look).toContain('<link rel="canonical" href="https://looms.gg/look/')
+    expect(look).toContain('"@type": "CreativeWork"')
+    expect(look).not.toContain("<h1>Community look — Minecraft outfit</h1>")
+  })
+
+  it("site.webmanifest ships in dist and is linked from the shell", () => {
+    expect(existsSync(path.join(DIST, "site.webmanifest"))).toBe(true)
+    expect(home).toContain('rel="manifest" href="/site.webmanifest"')
   })
 })

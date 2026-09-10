@@ -270,26 +270,60 @@ ${bodyHtml}      </div>
 }
 
 /**
- * Public, non-hidden look ids straight from the database. The moderation_state
+ * Public, non-hidden looks straight from the database. The moderation_state
  * filter is the server-side indexation gate; when the column is missing (older
  * environment) the request fails and we return [] — no look URLs ship.
+ * Names/descriptions come along so prerendered pages carry real crawlable
+ * titles instead of a generic "Community look" placeholder.
  */
-async function fetchPublicLookIds() {
+async function fetchPublicLooks() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) return []
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/looks?visibility=eq.public&moderation_state=neq.hidden&select=id,updated_at,moderation_state`,
+      `${supabaseUrl}/rest/v1/looks?visibility=eq.public&moderation_state=neq.hidden&select=id,name,description,updated_at,user_id,moderation_state`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
       },
     )
     if (!res.ok) return []
-    return await res.json()
+    const looks = await res.json()
+    // Resolve maker usernames for profile attribution + profile page
+    // generation. A failed lookup must never drop the looks themselves.
+    const userIds = [...new Set(looks.map((l) => l.user_id).filter(Boolean))]
+    let profilesById = new Map()
+    if (userIds.length) {
+      try {
+        const pres = await fetch(
+          `${supabaseUrl}/rest/v1/profiles?id=in.(${userIds.join(",")})&select=id,username`,
+          { headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` } },
+        )
+        if (pres.ok) {
+          profilesById = new Map((await pres.json()).map((p) => [p.id, p.username]))
+        }
+      } catch {
+        // profiles optional: looks still prerender with maker-less copy
+      }
+    }
+    return looks.map((l) => ({ ...l, username: profilesById.get(l.user_id) ?? null }))
   } catch {
     return []
   }
+}
+
+/**
+ * Makers with at least one public, non-hidden look qualify for a prerendered
+ * profile page + sitemap entry (indexation gate: no public content, no page).
+ */
+function qualifyingMakers(looks) {
+  const byUsername = new Map()
+  for (const look of looks) {
+    if (!look.username) continue
+    if (!byUsername.has(look.username)) byUsername.set(look.username, [])
+    byUsername.get(look.username).push(look)
+  }
+  return byUsername
 }
 
 async function main() {
@@ -360,7 +394,12 @@ async function main() {
       image: `${BASE_URL}/og/pieces/${piece.id}.png`,
       isAccessibleForFree: true,
       genre: `Minecraft ${slotLabel(piece.slot)}`,
-      keywords: `minecraft ${piece.slot}, minecraft ${slotLabel(piece.slot)}, minecraft skin layer, looms`,
+      keywords: [...new Set([
+        `minecraft ${piece.slot}`,
+        `minecraft ${slotLabel(piece.slot)}`,
+        "minecraft skin layer",
+        "looms",
+      ])].join(", "),
       inLanguage: "en",
     }
 
@@ -391,8 +430,8 @@ async function main() {
 
   console.log(`✅ Prerendered ${count} piece pages in dist/piece/ (${noindexCount} thin pages marked noindex,follow)`)
 
-  // 2. Look pages: only ids returned by the database's public+unhidden filter.
-  const publicLooks = await fetchPublicLookIds()
+  // 2. Look pages: only rows returned by the database's public+unhidden filter.
+  const publicLooks = await fetchPublicLooks()
   const lookDir = path.join(DIST, "look")
   fs.mkdirSync(lookDir, { recursive: true })
 
@@ -441,6 +480,7 @@ async function main() {
     const lookUrl = `${BASE_URL}/look/${look.id}`
     const lookName = sanitizePrerenderText(look.name ?? "Community look", 50)
     const lookDesc = sanitizePrerenderText(look.description ?? "", 500)
+    const maker = sanitizePrerenderText(look.username ?? "", 40)
 
     const html = injectMeta(template, {
       title: `${lookName} — Minecraft outfit | looms`,
@@ -459,6 +499,8 @@ async function main() {
         url: lookUrl,
         image: `${BASE_URL}/og/outfit-default.png`,
         isAccessibleForFree: true,
+        ...(maker ? { author: { "@type": "Person", name: maker } } : {}),
+        keywords: [...new Set(["minecraft outfit", "minecraft skin", "looms", ...(lookDesc ? [lookName.toLowerCase()] : [])])].join(", "),
         inLanguage: "en",
       },
     })
@@ -466,17 +508,20 @@ async function main() {
     const body = buildPageBody({
       h1: `${lookName} — Minecraft outfit`,
       intro: lookDesc
-        ? `${lookDesc} ${lookName} is a community-made layered Minecraft outfit on looms. Open it in Studio to wear or remix it, then export a vanilla skin PNG.`
-        : `${lookName} is a community-made layered Minecraft outfit on looms. Open it in Studio to wear or remix it, then export a vanilla skin PNG.`,
+        ? `${lookDesc} ${lookName} is a community-made layered Minecraft outfit on looms${maker ? ` by ${maker}` : ""}. Open it in Studio to wear or remix it, then export a vanilla skin PNG.`
+        : `${lookName} is a community-made layered Minecraft outfit on looms${maker ? ` by ${maker}` : ""}. Open it in Studio to wear or remix it, then export a vanilla skin PNG.`,
       image: `${BASE_URL}/og/outfit-default.png`,
       imageAlt: `${lookName}, a community-made layered Minecraft outfit preview on looms`,
       imageWidth: 1200,
       imageHeight: 630,
-      links: catalog.slice(0, 4).map((p) => ({
+    links: [
+      ...catalog.slice(0, 4).map((p) => ({
         label: `${p.name} (${slotLabel(p.slot)})`,
         href: `${BASE_URL}/piece/${p.id}`,
       })),
-    })
+      ...(maker ? [{ label: `More by ${maker}`, href: `${BASE_URL}/u/${maker}` }] : []),
+    ],
+  })
 
     fs.writeFileSync(path.join(itemDir, "index.html"), injectBody(html, body), "utf8")
     lookCount++
@@ -486,30 +531,109 @@ async function main() {
     console.log(`✅ Prerendered ${lookCount} public look pages in dist/look/`)
   }
 
-  // 3. Home page — the SPA shell gets a crawlable copy of the hero copy.
+  // 4. Profile pages for makers with public looks (indexation gate: no public
+  // looks → no page — anonymous or look-less accounts stay out of the index).
+  const makers = qualifyingMakers(publicLooks)
+  let profileCount = 0
+  for (const [username, makerLooks] of makers) {
+    if (!username || makerLooks.length === 0) continue
+    const profileDir = path.join(DIST, "u", username)
+    fs.mkdirSync(profileDir, { recursive: true })
+    const profileUrl = `${BASE_URL}/u/${encodeURIComponent(username)}`
+    const latestName = sanitizePrerenderText(makerLooks[0]?.name ?? "", 50)
+    const description = truncateOnWordBoundary(
+      `${username} makes layered Minecraft outfits on looms — ${makerLooks.length} public look${makerLooks.length === 1 ? "" : "s"}, including ${latestName}. Preview in 3D and export the skin PNG free.`,
+      160,
+    )
+
+    const html = injectMeta(template, {
+      title: `${username} — Minecraft skin maker | looms`,
+      description,
+      url: profileUrl,
+      image: `${BASE_URL}/og/outfit-default.png`,
+      type: "profile",
+      index: true,
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "ProfilePage",
+        name: username,
+        description,
+        url: profileUrl,
+        isAccessibleForFree: true,
+        mainEntity: {
+          "@type": "Person",
+          name: username,
+          url: profileUrl,
+        },
+        inLanguage: "en",
+      },
+    })
+
+    const body = buildPageBody({
+      h1: `${username} — Minecraft skin maker`,
+      intro: `${username} publishes layered Minecraft outfits on looms. Every look is a stack of modular clothing pieces you can preview on a 3D character, remix in Studio, and export as a vanilla 64×64 skin PNG.`,
+      image: `${BASE_URL}/og/outfit-default.png`,
+      imageAlt: `A Minecraft character wearing an outfit made by ${username} on looms`,
+      imageWidth: 1200,
+      imageHeight: 630,
+      sections: [
+        {
+          heading: "Latest looks",
+          body: `Recent outfits by ${username} include ${makerLooks
+            .slice(0, 3)
+            .map((l) => sanitizePrerenderText(l.name ?? "a look", 50))
+            .join(", ")}. Open any look to wear or remix it in the looms Studio.`,
+        },
+      ],
+      links: [
+        ...makerLooks.slice(0, 5).map((l) => ({
+          label: `${sanitizePrerenderText(l.name ?? "Community look", 50)} — Minecraft outfit`,
+          href: `${BASE_URL}/look/${l.id}`,
+        })),
+        { label: "Browse all Minecraft outfits", href: `${BASE_URL}/look` },
+      ],
+    })
+
+    fs.writeFileSync(path.join(profileDir, "index.html"), injectBody(html, body), "utf8")
+    profileCount++
+  }
+
+  if (profileCount > 0) {
+    console.log(`✅ Prerendered ${profileCount} maker profile pages in dist/u/`)
+  }
+
+  // 5. Home page — the SPA shell gets a crawlable copy of the hero copy.
+  // The home page shares the outfit card; it doesn't need its own banner.
   const homeHtml = injectMeta(template, {
     title: "looms — Free Minecraft Clothing & Skin Layers",
     description:
       "Mix and match layered Minecraft clothing, hair, and accessories into custom skins in 3D. Free to style, export, and wear.",
     url: `${BASE_URL}/`,
-    image: `${BASE_URL}/og-image.png`,
+    image: `${BASE_URL}/og/outfit-default.png`,
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "WebSite",
+      "@type": "SoftwareApplication",
       name: "looms",
       alternateName: "looms.gg",
+      applicationCategory: "DesignApplication",
+      operatingSystem: "Web",
       url: `${BASE_URL}/`,
       description:
         "Free modular wardrobe for Minecraft skins: browse community clothing layers, stack outfits in Studio, export a vanilla 64×64 PNG.",
       isAccessibleForFree: true,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      },
     },
   })
   const homeBody = buildPageBody({
     h1: "Custom Minecraft skins. No art skills needed.",
     intro:
       "Mix and match layered clothing, hair, and accessories into custom Minecraft skins. looms is a free modular wardrobe: browse the community catalog of clothing pieces, stack outfits on a 3D character in Studio, and export a vanilla 64×64 PNG that works instantly in Minecraft Java and Bedrock.",
-    image: `${BASE_URL}/og-image.png`,
-    imageAlt: "Three Minecraft characters wearing layered looms outfits",
+    image: `${BASE_URL}/og/outfit-default.png`,
+    imageAlt: "A Minecraft character wearing a layered looms outfit",
     imageWidth: 1200,
     imageHeight: 630,
     sections: [
