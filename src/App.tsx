@@ -56,10 +56,10 @@ export default function App() {
   }, [])
 
   return (
-    // Solid weight for every Phosphor icon app-wide (the outline style reads
+    // Fill weight for every Phosphor icon app-wide (the outline style reads
     // too thin against the dark theme). Individual icons can still override
     // with an explicit `weight` prop.
-    <IconContext.Provider value={{ weight: "solid" }}>
+    <IconContext.Provider value={{ weight: "fill" }}>
     <ThemeProvider>
       <AuthProvider>
         <LikesProvider>

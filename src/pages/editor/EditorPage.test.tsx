@@ -17,7 +17,7 @@ function renderEditor(path = "/editor") {
 }
 
 describe("EditorPage", () => {
-  it("leads with the skeleton mockup, message centered below", () => {
+  it("leads with the skeleton mockup, message alongside it", () => {
     const host = renderEditor()
 
     const frame = host.querySelector(".editor-frame") as HTMLElement
@@ -28,9 +28,9 @@ describe("EditorPage", () => {
     // Skeleton comes before the message in document order
     expect(frame.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
-    // Message block is center-aligned
-    expect(section.className).toMatch(/items-center/)
-    expect(section.className).toMatch(/text-center/)
+    // Message block is left-aligned
+    expect(section.className).toMatch(/items-start/)
+    expect(section.className).toMatch(/text-left/)
   })
 
   it("states it is under construction, coming soon, and what will ship", () => {
@@ -43,6 +43,20 @@ describe("EditorPage", () => {
     // The promise: powerful creation + direct publishing
     expect(host.textContent).toMatch(/live 3D figure/i)
     expect(host.textContent).toMatch(/publish/i)
+  })
+
+  it("offers ways to stay involved", () => {
+    const host = renderEditor()
+
+    const discord = host.querySelector(
+      'a[href="https://discord.gg/UNTRgHBBPb"]',
+    ) as HTMLAnchorElement | null
+    expect(discord).toBeTruthy()
+    expect(discord?.target).toBe("_blank")
+    expect(discord?.rel).toMatch(/noopener/)
+
+    const explore = host.querySelector('a[href="/"]') as HTMLAnchorElement | null
+    expect(explore?.textContent).toMatch(/explore pieces/i)
   })
 
   it("renders the skeleton as blobs only", () => {

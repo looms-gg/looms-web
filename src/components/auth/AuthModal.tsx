@@ -261,7 +261,7 @@ export function AuthModal({
           <button
             type="button"
             className="text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
-            onClick={() => switchMode("login", setMode, clearFeedback)}
+            onClick={() => switchMode("login", setMode, clearFeedback, resetCaptcha)}
           >
             Use a password instead
           </button>

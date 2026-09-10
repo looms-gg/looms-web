@@ -2,12 +2,12 @@ import { useRef } from "react"
 import {
   CaretDown,
   Clock,
-  Crown,
   Eye,
   Fire,
   Footprints,
   HardHat,
   Heart,
+  Hoodie,
   Pants,
   PuzzlePiece,
   Scissors,
@@ -45,7 +45,7 @@ const SLOT_ICON: Record<SlotFilter, IconType> = {
   face: Smiley,
   shirt: TShirt,
   set: PuzzlePiece,
-  coat: Crown,
+  coat: Hoodie,
   pants: Pants,
   shoes: Footprints,
 }

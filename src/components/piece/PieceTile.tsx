@@ -1,6 +1,6 @@
 import { memo, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { Bookmark, Check, Plus } from "@phosphor-icons/react"
+import { Bookmark, Check, PlusCircle } from "@phosphor-icons/react"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
 import { useAuthOptional } from "../../state/auth"
 import { useCatalog } from "../../state/catalog"
@@ -84,7 +84,7 @@ export const PieceTile = memo(function PieceTile({
             ) : (
               <button
                 type="button"
-                className="relative grid size-11 place-items-center rounded-full border border-base-content/20 bg-base-100 text-base-content/80 transition-[background-color,border-color,color,transform] duration-150 after:absolute after:-inset-0 after:content-[''] hover:scale-110 hover:border-primary hover:bg-primary hover:text-primary-content active:scale-[0.96]"
+                className="grid size-11 place-items-center rounded-full text-base-content/70 transition-[color,transform] duration-150 hover:text-primary active:scale-[0.96]"
                 title="Add to wardrobe"
                 aria-label={`Add ${piece.name} to wardrobe`}
                 onClick={(event) => {
@@ -101,7 +101,7 @@ export const PieceTile = memo(function PieceTile({
                   })
                 }}
               >
-                <Icon icon={Plus} className="size-3" />
+                <Icon icon={PlusCircle} className="size-7" />
               </button>
             )}
           </div>
