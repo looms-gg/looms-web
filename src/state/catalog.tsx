@@ -150,3 +150,9 @@ export function useCatalog() {
   if (!ctx) throw new Error("useCatalog must be used in CatalogProvider")
   return ctx
 }
+
+// Tolerant variant for components that may render outside the provider
+// (e.g. tests, or decorative previews): null instead of throwing.
+export function useCatalogOptional() {
+  return useContext(CatalogContext)
+}

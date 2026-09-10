@@ -13,6 +13,10 @@ export type HeroPose = "center" | "left" | "right"
 export type HeroPoseThumbResult = {
   url: string
   wash: string
+  // True when the look's stack references pieces the catalog registry has not
+  // hydrated yet: the composed skin would be missing layers (a "naked" hero
+  // figure). Never cached — the caller should retry once the catalog loads.
+  pending?: boolean
 }
 
 const memCache = new Map<string, HeroPoseThumbResult>()
@@ -182,9 +186,10 @@ export async function heroPosedLookThumb(
   pose: HeroPose,
 ): Promise<HeroPoseThumbResult> {
   const stackKey = look.stack.join("|") || "empty"
-  // v10→v11: older entries may hold poisoned { url: "" } failures that stuck
-  // the hero on skeletons forever; the new key ignores them.
-  const key = `hero-bust:v11:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
+  // v11→v12: older entries may hold naked thumbs composed before the garment
+  // catalog finished loading (missing pieces in the stack); the new key
+  // ignores them. (v10→v11 already dropped poisoned { url: "" } failures.)
+  const key = `hero-bust:v12:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
 
   const hit = memCache.get(key)
   if (hit) return hit
@@ -200,6 +205,11 @@ export async function heroPosedLookThumb(
     }
 
     const pieces = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
+    // Refuse to compose (and cache) while any stacked piece is still missing
+    // from the registry: those slots would silently drop out of the skin.
+    if (look.stack.some((id) => id && !pieces.some((p) => p.id === id))) {
+      return { url: "", wash: "", pending: true }
+    }
     const skin = await composeSkin(
       pieces,
       look.bodyId ?? DEFAULT_BODY_ID,

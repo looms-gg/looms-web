@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
 import { MakerLink } from "../piece/MakerLink"
+import { useCatalogOptional } from "../../state/catalog"
 import type { PublicLook } from "../../state/publicLooks"
 import type { HeroPose } from "../../skin/heroPose"
 import { HeroBustSilhouette } from "./HeroBustSilhouette"
@@ -59,6 +60,10 @@ export function HeroPosedFigure({
         ? "top-20 sm:top-24 lg:top-28 left-full -translate-x-5 sm:-translate-x-7 lg:-translate-x-9 items-start text-left w-24 sm:w-28 lg:w-32"
         : "top-5 sm:top-6 lg:top-7 left-1/2 -translate-x-[38%] items-center text-center w-full max-w-[165px]"
   const [imgUrl, setImgUrl] = useState<string | null>(null)
+  // A look stacked with pieces the catalog hasn't hydrated yet composes
+  // "naked" (missing layers). Track catalog readiness so those looks retry
+  // once the registry loads, instead of pinning a half-dressed hero forever.
+  const { loading: catalogLoading } = useCatalogOptional() ?? { loading: false }
 
   useEffect(() => {
     if (!look) return
@@ -67,7 +72,9 @@ export function HeroPosedFigure({
       .then(({ heroPosedLookThumb }) => heroPosedLookThumb(look, pose))
       .then((res) => {
         if (alive) {
-          setImgUrl(res.url)
+          // Pending (catalog still loading): keep the placeholder — the effect
+          // re-runs when catalogLoading flips false and composes the full skin.
+          setImgUrl(res.pending ? null : res.url || null)
         }
       })
       .catch(() => {
@@ -78,7 +85,7 @@ export function HeroPosedFigure({
     return () => {
       alive = false
     }
-  }, [look, pose])
+  }, [look, pose, catalogLoading])
 
 
   if (externalLoading || !look) {
