@@ -1,15 +1,15 @@
 import { useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
 import {
-  faDownload,
-  faLink,
-  faCheck,
-  faWandSparkles,
-  faLayerGroup,
-  faFlag,
-} from "@fortawesome/free-solid-svg-icons"
+  Download,
+  Link as LinkIcon,
+  Check,
+  Sparkle,
+  Stack,
+  Flag,
+} from "@phosphor-icons/react"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Icon } from "../../components/ui/Icon"
 import { MakerLink } from "../../components/piece/MakerLink"
 import { SkinStage } from "../../components/iso/SkinStage"
 import { IsoThumb } from "../../components/iso/IsoThumb"
@@ -117,7 +117,7 @@ export function LookSheet({
                 className="btn btn-primary rounded-full font-black px-5 shadow-sm active:scale-[0.96] transition-transform"
                 onClick={onWear}
               >
-                <FaIcon icon={faWandSparkles} className="size-3.5 mr-1.5" />
+                <Icon icon={Sparkle} className="size-3.5 mr-1.5" />
                 Wear in Studio
               </button>
 
@@ -127,7 +127,7 @@ export function LookSheet({
                 onClick={onDownload}
                 title="Download 64x64 Minecraft skin PNG"
               >
-                <FaIcon icon={faDownload} className="size-3.5 mr-1.5" />
+                <Icon icon={Download} className="size-3.5 mr-1.5" />
                 Download Skin
               </button>
 
@@ -145,7 +145,7 @@ export function LookSheet({
                 title="Copy share link"
                 aria-label="Copy share link"
               >
-                <FaIcon icon={copied ? faCheck : faLink} className={`size-3.5 ${copied ? "text-success" : ""}`} />
+                <Icon icon={copied ? Check : LinkIcon} className={`size-3.5 ${copied ? "text-success" : ""}`} />
               </button>
 
               {!isCreator ? (
@@ -162,7 +162,7 @@ export function LookSheet({
                   title="Report look"
                   aria-label="Report look"
                 >
-                  <FaIcon icon={faFlag} className="size-3.5" />
+                  <Icon icon={Flag} className="size-3.5" />
                 </button>
               ) : null}
             </div>
@@ -172,7 +172,7 @@ export function LookSheet({
           <div className="piece-reveal space-y-3 pt-4 border-t border-base-content/10" style={revealStyle(4)}>
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-black uppercase tracking-[0.06em] text-base-content/60 flex items-center gap-1.5">
-                <FaIcon icon={faLayerGroup} className="size-3" />
+                <Icon icon={Stack} className="size-3" />
                 Outfit Layers ({outfit.length})
               </h2>
             </div>

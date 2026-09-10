@@ -21,7 +21,7 @@ Paste `docs/platform/master-briefing.md` for full context on any task, or indivi
 
 ## What looms is (30-second version)
 
-**looms** is a 100% free, web-based modular character creator for Minecraft skins. Players browse community-made clothing layers (hair, hats, shirts, coats, pants, shoes, eyes, face pieces), save any piece to their wardrobe for free, stack them onto a base skin in a 3D Studio, and export a vanilla 64×64 PNG they can immediately upload to Minecraft Java or Bedrock. No paid unlocks, no ads, no microtransactions, ever. Community features include likes, threaded comments, public "Looks" (saved outfits), creator profiles, and a trending/discovery feed. Live at [looms-gg.github.io/looms-web](https://looms-gg.github.io/looms-web/), built in the open, community-shaped via [Discord](https://discord.gg/UNTRgHBBPb).
+**looms** is a 100% free, web-based modular character creator for Minecraft skins. Players browse community-made clothing layers (hair, hats, shirts, coats, pants, shoes, eyes, face pieces), save any piece to their wardrobe for free, stack them onto a base skin in a 3D Studio, and export a vanilla 64×64 PNG they can immediately upload to Minecraft Java or Bedrock. No paid unlocks, no ads, no microtransactions, ever. Community features include likes, threaded comments, public "Looks" (saved outfits), creator profiles, and a trending/discovery feed. Live at [looms.gg](https://looms.gg/), built in the open, community-shaped via [Discord](https://discord.gg/UNTRgHBBPb).
 
 ## Key identities
 

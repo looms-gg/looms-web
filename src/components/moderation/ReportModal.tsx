@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from "react"
 import {
-  faCheckCircle,
-  faFlag,
-  faTriangleExclamation,
-  faXmark,
-} from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../ui/FaIcon"
+  CheckCircle,
+  Flag,
+  Warning,
+  X,
+} from "@phosphor-icons/react"
+import { Icon } from "../ui/Icon"
 import { ModalOverlay } from "../ui/ModalOverlay"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { MAX_LIMITS } from "../../lib/sanitize"
@@ -103,7 +103,7 @@ export function ReportModal({
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-error/15 text-error">
-            <FaIcon icon={faFlag} className="size-4" />
+            <Icon icon={Flag} className="size-4" />
           </span>
           <div>
             <h2 className="text-xl font-extrabold tracking-tight text-base-content">
@@ -122,14 +122,14 @@ export function ReportModal({
           className="btn btn-ghost btn-sm btn-circle -mr-1 -mt-1 text-base-content/55 hover:text-base-content"
           aria-label="Close report modal"
         >
-          <FaIcon icon={faXmark} className="size-4" />
+          <Icon icon={X} className="size-4" />
         </button>
       </div>
 
       {success ? (
         <div className="py-8 text-center">
           <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success/15 text-success">
-            <FaIcon icon={faCheckCircle} className="size-6" />
+            <Icon icon={CheckCircle} className="size-6" />
           </span>
           <h3 className="mt-4 text-2xl font-black tracking-tight">Report Submitted</h3>
           <p className="mx-auto mt-2 max-w-[300px] text-sm leading-relaxed text-base-content/65">
@@ -211,7 +211,7 @@ export function ReportModal({
               role="alert"
               className="flex items-start gap-2 text-sm font-semibold text-error"
             >
-              <FaIcon icon={faTriangleExclamation} className="mt-0.5 size-3.5 shrink-0" />
+              <Icon icon={Warning} className="mt-0.5 size-3.5 shrink-0" />
               <span>{error}</span>
             </p>
           ) : null}

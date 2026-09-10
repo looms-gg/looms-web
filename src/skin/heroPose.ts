@@ -182,7 +182,9 @@ export async function heroPosedLookThumb(
   pose: HeroPose,
 ): Promise<HeroPoseThumbResult> {
   const stackKey = look.stack.join("|") || "empty"
-  const key = `hero-bust:v10:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
+  // v10→v11: older entries may hold poisoned { url: "" } failures that stuck
+  // the hero on skeletons forever; the new key ignores them.
+  const key = `hero-bust:v11:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
 
   const hit = memCache.get(key)
   if (hit) return hit
@@ -229,8 +231,12 @@ export async function heroPosedLookThumb(
       url = v.canvas.toDataURL("image/png")
     }
     const res: HeroPoseThumbResult = { url, wash }
-    memCache.set(key, res)
-    setStoredThumb(key, res)
+    // Never cache a failed capture (empty url): the hero would show its
+    // skeleton forever on every future visit.
+    if (url) {
+      memCache.set(key, res)
+      setStoredThumb(key, res)
+    }
     return res
   })()
 

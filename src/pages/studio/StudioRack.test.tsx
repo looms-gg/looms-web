@@ -95,6 +95,106 @@ describe("StudioRack", () => {
     expect(tabsContainer.scrollLeft).toBe(100)
   })
 
+  it("replaces the tab row with a piece searcher from the search icon", () => {
+    const host = document.createElement("div")
+    const onWear = vi.fn()
+    const onClear = vi.fn()
+
+    const shirtPiece = {
+      id: "test-shirt",
+      name: "Test Shirt",
+      slot: "shirt",
+      group: "torso",
+      maker: "Test",
+      savedCount: 0,
+      likeCount: 0,
+      added: 0,
+      blurb: "Test blurb",
+      skin: "data:image/png;base64,test",
+    } as const
+
+    flushSync(() => {
+      createRoot(host).render(
+        <MemoryRouter>
+          <StudioRack
+            ownedCount={2}
+            ownedBySlot={{
+              ...emptyOwnedBySlot(),
+              shirt: [shirtPiece],
+              pants: [
+                { ...shirtPiece, id: "test-pants", name: "Zany Pants", slot: "pants" },
+              ],
+            }}
+            racks={["shirt", "pants"]}
+            rack="all"
+            equipped={{}}
+            onRack={() => {}}
+            onWear={onWear}
+            onClear={onClear}
+          />
+        </MemoryRouter>,
+      )
+    })
+
+    // Search icon sits next to the All pill
+    const searchIcon = host.querySelector(
+      'button[aria-label="Search pieces"]',
+    ) as HTMLButtonElement
+    expect(searchIcon).toBeTruthy()
+    flushSync(() => {
+      searchIcon.click()
+    })
+
+    // Tab row stays in place underneath; the searcher overlays it
+    const tabsRow = host.querySelector('[data-testid="studio-wardrobe-tabs"]') as HTMLElement
+    expect(tabsRow).toBeTruthy()
+    expect(tabsRow.getAttribute("aria-hidden")).toBe("true")
+    const searchInput = host.querySelector(
+      'input[aria-label="Search pieces"]',
+    ) as HTMLInputElement
+    expect(searchInput).toBeTruthy()
+
+    // Typing filters pieces across slots
+    flushSync(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set
+      nativeSetter?.call(searchInput, "zany")
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    expect(host.querySelector('button[aria-label="Wear Test Shirt"]')).toBeNull()
+    const pantsBtn = host.querySelector(
+      'button[aria-label="Wear Zany Pants"]',
+    ) as HTMLButtonElement
+    expect(pantsBtn).toBeTruthy()
+    flushSync(() => {
+      pantsBtn.click()
+    })
+    expect(onWear).toHaveBeenCalledWith("test-pants")
+
+    // No-match state
+    flushSync(() => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set
+      nativeSetter?.call(searchInput, "nomatch")
+      searchInput.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    expect(host.textContent).toContain("No pieces match")
+
+    // Closing the searcher restores the tab row and clears the query
+    const closeBtn = host.querySelector(
+      'button[aria-label="Close piece search"]',
+    ) as HTMLButtonElement
+    flushSync(() => {
+      closeBtn.click()
+    })
+    expect(tabsRow.getAttribute("aria-hidden")).toBeNull()
+    expect(host.querySelector('button[aria-label="Wear Zany Pants"]')).toBeTruthy()
+  })
+
   it("renders Appearance tab with skin tones, hue slider, and eyes gallery", () => {
     const host = document.createElement("div")
     const onWear = vi.fn()
@@ -151,7 +251,7 @@ describe("StudioRack", () => {
     ) as HTMLInputElement
     expect(eyeHeightInput).toBeTruthy()
     expect(eyeHeightInput.min).toBe("-3")
-    expect(eyeHeightInput.max).toBe("1")
+    expect(eyeHeightInput.max).toBe("3")
     expect(eyeHeightInput.value).toBe("-1")
 
     flushSync(() => {

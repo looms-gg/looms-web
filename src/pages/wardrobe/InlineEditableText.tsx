@@ -1,6 +1,6 @@
 import { useEffect, useState, type KeyboardEvent } from "react"
-import { faPen } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Pencil } from "@phosphor-icons/react"
+import { Icon } from "../../components/ui/Icon"
 
 export function InlineEditableText({
   value,
@@ -123,7 +123,7 @@ export function InlineEditableText({
             onClick={startEditing}
             className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-base-content"
           >
-            <FaIcon icon={faPen} className="size-2.5" />
+            <Icon icon={Pencil} className="size-2.5" />
           </button>
         </div>
       </div>
@@ -143,7 +143,7 @@ export function InlineEditableText({
         onClick={startEditing}
         className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-base-content"
       >
-        <FaIcon icon={faPen} className="size-3" />
+        <Icon icon={Pencil} className="size-3" />
       </button>
     </div>
   )

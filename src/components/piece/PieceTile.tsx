@@ -1,12 +1,12 @@
 import { memo, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { faBookmark, faCheck, faPlus } from "@fortawesome/free-solid-svg-icons"
+import { Bookmark, Check, Plus } from "@phosphor-icons/react"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
 import { useAuthOptional } from "../../state/auth"
 import { useCatalog } from "../../state/catalog"
 import { useCloset } from "../../state/closet"
 import { AuthModal } from "../auth/AuthModal"
-import { FaIcon } from "../ui/FaIcon"
+import { Icon } from "../ui/Icon"
 import { IsoThumb } from "../iso/IsoThumb"
 import { MakerLink } from "./MakerLink"
 
@@ -69,7 +69,7 @@ export const PieceTile = memo(function PieceTile({
                 className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold tabular-nums text-base-content/55"
                 title={`${piece.savedCount} saved`}
               >
-                <FaIcon icon={faBookmark} className="size-2.5" />
+                <Icon icon={Bookmark} className="size-2.5" />
                 {piece.savedCount}
               </span>
             </span>
@@ -79,7 +79,7 @@ export const PieceTile = memo(function PieceTile({
                 title="In wardrobe"
                 aria-label={`${piece.name} in wardrobe`}
               >
-                <FaIcon icon={faCheck} className="size-3" />
+                <Icon icon={Check} className="size-3" />
               </span>
             ) : (
               <button
@@ -101,7 +101,7 @@ export const PieceTile = memo(function PieceTile({
                   })
                 }}
               >
-                <FaIcon icon={faPlus} className="size-3" />
+                <Icon icon={Plus} className="size-3" />
               </button>
             )}
           </div>

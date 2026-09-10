@@ -13,7 +13,7 @@ export type LegalDoc = {
 }
 
 const DISCORD = "https://discord.gg/UNTRgHBBPb"
-const CONTACT = "privacy@[TBD]"
+const CONTACT = "privacy@looms.gg"
 
 export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
   privacy: {
@@ -25,7 +25,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         heading: "Who we are",
         paragraphs: [
           `looms is operated by ser0th in the United States. This policy explains what personal data we process when you use the looms website and related services.`,
-          `Contact for privacy requests: ${CONTACT} (placeholder — replace with a real address before treating this policy as final). Community questions can also go through Discord at ${DISCORD}.`,
+          `Contact for privacy requests: ${CONTACT} Community questions can also go through Discord at ${DISCORD}.`,
         ],
       },
       {

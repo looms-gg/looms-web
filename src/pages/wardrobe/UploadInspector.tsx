@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, type ChangeEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  faCloudArrowUp,
-  faShirt,
-  faTrash,
-  faTriangleExclamation,
-} from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/ui/FaIcon"
+  CloudArrowUp,
+  TShirt,
+  Trash,
+  Warning,
+} from "@phosphor-icons/react"
+import { Icon } from "../../components/ui/Icon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
 import { validateDimensions } from "../../components/piece/UploadPieceModal"
@@ -257,7 +257,7 @@ export function UploadInspector({
       <div className="mt-4 space-y-4">
         {errorMsg && (
           <div className="alert alert-error text-xs p-2.5 rounded-xl flex items-center gap-2">
-            <FaIcon icon={faTriangleExclamation} className="size-4 shrink-0" />
+            <Icon icon={Warning} className="size-4 shrink-0" />
             <span className="leading-snug">{errorMsg}</span>
           </div>
         )}
@@ -319,7 +319,7 @@ export function UploadInspector({
             onClick={handleTriggerFileInput}
             disabled={replacing}
           >
-            <FaIcon icon={faCloudArrowUp} className="size-3.5 mr-1.5" />
+            <Icon icon={CloudArrowUp} className="size-3.5 mr-1.5" />
             {replacing ? "Uploading version..." : "Upload new version"}
           </button>
 
@@ -331,7 +331,7 @@ export function UploadInspector({
               void navigate("/studio")
             }}
           >
-            <FaIcon icon={faShirt} className="size-3.5 mr-1.5" />
+            <Icon icon={TShirt} className="size-3.5 mr-1.5" />
             Wear in Studio
           </button>
 
@@ -344,7 +344,7 @@ export function UploadInspector({
             }`}
             onClick={() => void handleDelete()}
           >
-            <FaIcon icon={faTrash} className="size-3 mr-1" />
+            <Icon icon={Trash} className="size-3 mr-1" />
             {confirmDelete ? "Confirm delete upload?" : "Delete upload"}
           </button>
         </div>

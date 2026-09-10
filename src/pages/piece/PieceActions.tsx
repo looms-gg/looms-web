@@ -1,8 +1,8 @@
 import { useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
-import { faBookmark, faCheck, faFlag, faLink, faPlus } from "@fortawesome/free-solid-svg-icons"
+import { Bookmark, Check, Flag, Link as LinkIcon, Plus } from "@phosphor-icons/react"
 import type { Piece } from "../../data/catalog"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Icon } from "../../components/ui/Icon"
 import { LikeButton } from "../../components/piece/LikeButton"
 import { copyShareLink, getPieceShareUrl } from "../../lib/share"
 import { useAuthOptional } from "../../state/auth"
@@ -57,7 +57,7 @@ export function PieceActions({
         className="inline-flex h-11 items-center gap-1.5 rounded-full border border-base-content/15 bg-base-100 px-3 text-sm font-extrabold tabular-nums text-base-content/70"
         title={`${piece.savedCount} ${piece.savedCount === 1 ? "save" : "saves"}`}
       >
-        <FaIcon icon={faBookmark} className="size-3" />
+        <Icon icon={Bookmark} className="size-3" />
         {piece.savedCount}
         <span className="font-bold text-base-content/45">saved</span>
       </span>
@@ -68,7 +68,7 @@ export function PieceActions({
         title={copied ? "Link copied to clipboard!" : `Share ${piece.name}`}
         aria-label={copied ? "Link copied" : `Share ${piece.name}`}
       >
-        <FaIcon icon={copied ? faCheck : faLink} className="size-3.5 mr-1.5" />
+        <Icon icon={copied ? Check : LinkIcon} className="size-3.5 mr-1.5" />
         {copied ? "Copied!" : "Share"}
       </button>
       {owned ? (
@@ -93,7 +93,7 @@ export function PieceActions({
             onClick={onAddToWardrobe}
           >
             <span className="grid size-5 place-items-center rounded-full bg-primary-content/20">
-              <FaIcon icon={faPlus} className="size-2.5" />
+              <Icon icon={Plus} className="size-2.5" />
             </span>
             Add to wardrobe
           </button>
@@ -125,7 +125,7 @@ export function PieceActions({
           title={`Report ${piece.name}`}
           aria-label={`Report ${piece.name}`}
         >
-          <FaIcon icon={faFlag} className="size-3.5 mr-1.5" />
+          <Icon icon={Flag} className="size-3.5 mr-1.5" />
           Report
         </button>
       ) : null}

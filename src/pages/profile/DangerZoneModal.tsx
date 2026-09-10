@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { faTriangleExclamation, faXmark } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Warning, X } from "@phosphor-icons/react"
+import { Icon } from "../../components/ui/Icon"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
 import { requestAccountDeletion } from "../../lib/accountDeletion"
 import { formatErrorMessage } from "../../lib/errorFormat"
@@ -50,7 +50,7 @@ export function DangerZoneModal({
         aria-label="Close"
         onClick={onClose}
       >
-        <FaIcon icon={faXmark} className="size-4" />
+        <Icon icon={X} className="size-4" />
       </button>
 
       <h2 className="pr-8 text-lg font-extrabold text-error">Delete account</h2>
@@ -59,7 +59,7 @@ export function DangerZoneModal({
       </p>
 
       <div className="mt-3 flex items-start gap-2 rounded-xl border border-error/30 bg-error/10 p-3 text-xs text-error">
-        <FaIcon icon={faTriangleExclamation} className="mt-0.5 size-3.5 shrink-0" />
+        <Icon icon={Warning} className="mt-0.5 size-3.5 shrink-0" />
         <span>Type DELETE below to confirm.</span>
       </div>
 

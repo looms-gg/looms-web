@@ -1,13 +1,12 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom"
-import { faBoxOpen, faShirt, faWandSparkles } from "@fortawesome/free-solid-svg-icons"
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core"
+import { MagicWand, Package, Sparkle, TShirt } from "@phosphor-icons/react"
 import { useCloset } from "../../state/closet"
 import { useAuth } from "../../state/auth"
 import { useLikes } from "../../state/likes"
 import { CookieConsentProvider } from "../../state/cookieConsent"
 import { CookieBanner } from "./CookieBanner"
 import { SiteBanner } from "./SiteBanner"
-import { FaIcon } from "../ui/FaIcon"
+import { Icon, type IconType } from "../ui/Icon"
 import { LoomsLogo } from "../ui/LoomsLogo"
 import { ShellAuthControls } from "./ShellAuthControls"
 import { SiteFooter } from "./SiteFooter"
@@ -15,11 +14,13 @@ import { ThemeToggle } from "./ThemeToggle"
 import { VerifyEmailModal } from "../auth/VerifyEmailModal"
 import { useNavThumbs } from "./useNavThumbs"
 import { useStudioLock } from "./useStudioLock"
+import { usePendingActionReplay } from "./usePendingActionReplay"
 
-const links: { to: string; label: string; icon: IconDefinition }[] = [
-  { to: "/", label: "Explore", icon: faShirt },
-  { to: "/wardrobe", label: "Wardrobe", icon: faBoxOpen },
-  { to: "/studio", label: "Studio", icon: faWandSparkles },
+const links: { to: string; label: string; icon: IconType }[] = [
+  { to: "/", label: "Explore", icon: TShirt },
+  { to: "/wardrobe", label: "Wardrobe", icon: Package },
+  { to: "/studio", label: "Studio", icon: Sparkle },
+  { to: "/editor", label: "Editor", icon: MagicWand },
 ]
 
 function pathOn(to: string, pathname: string, from?: string) {
@@ -59,7 +60,7 @@ function DockLinks({ pathname, from }: { pathname: string; from?: string }) {
         data-nav-on={on}
         className={`plaza-dock-link ${on ? "plaza-dock-link-on" : ""}`}
       >
-        <FaIcon icon={link.icon} className="size-4" />
+        <Icon icon={link.icon} className="size-4" />
         {link.label}
       </NavLink>
     )
@@ -92,6 +93,7 @@ function ShellFrame() {
   const studio = location.pathname === "/studio"
   const { navRef, dockRef, thumb, dockThumb } = useNavThumbs(location.pathname + (from ?? ""))
   useStudioLock(studio)
+  usePendingActionReplay()
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "Player"
   const toast =

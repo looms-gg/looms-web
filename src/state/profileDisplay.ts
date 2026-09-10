@@ -55,6 +55,19 @@ export function nextUsernameChangeAt(
   return new Date(changed + USERNAME_COOLDOWN_MS)
 }
 
+/**
+ * Human-readable reason the username is locked, or null when it can change.
+ */
+export function usernameLockMessage(
+  usernameChangedAt: string | null | undefined,
+): string | null {
+  if (canChangeUsername(usernameChangedAt)) return null
+  const next = nextUsernameChangeAt(usernameChangedAt)
+  return next
+    ? `You can change your username again on ${next.toLocaleDateString()}.`
+    : "Username can only be changed once every 15 days."
+}
+
 export function formatLastSeen(
   lastSeenAt: string | null | undefined,
   now: number = Date.now(),

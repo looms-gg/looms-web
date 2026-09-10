@@ -1,5 +1,5 @@
-import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../ui/FaIcon"
+import { Moon, Sun } from "@phosphor-icons/react"
+import { Icon } from "../ui/Icon"
 import { useTheme } from "../../state/theme"
 
 export function ThemeToggle() {
@@ -24,7 +24,7 @@ export function ThemeToggle() {
           transitionTimingFunction: "cubic-bezier(0.2, 0, 0, 1)",
         }}
       >
-        <FaIcon icon={faMoon} className="size-4" />
+        <Icon icon={Moon} className="size-4" />
       </span>
       <span
         className={`absolute inset-0 grid place-items-center transition-[transform,opacity,filter] duration-300 ${
@@ -36,7 +36,7 @@ export function ThemeToggle() {
           transitionTimingFunction: "cubic-bezier(0.2, 0, 0, 1)",
         }}
       >
-        <FaIcon icon={faSun} className="size-4" />
+        <Icon icon={Sun} className="size-4" />
       </span>
     </button>
   )

@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import {
-  faCheck,
-  faCircleCheck,
-  faComment,
-  faEye,
-  faShirt,
-  faTrash,
-  faUser,
-  faWandSparkles,
-  faXmark,
-} from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/ui/FaIcon"
+  Check,
+  CheckCircle,
+  ChatCircle,
+  Eye,
+  TShirt,
+  Trash,
+  User,
+  Sparkle,
+  X,
+} from "@phosphor-icons/react"
+import { Icon } from "../../components/ui/Icon"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import {
   adminDeleteContent,
@@ -103,13 +103,13 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
   const getTargetIcon = (type: ReportTargetType) => {
     switch (type) {
       case "look":
-        return faWandSparkles
+        return Sparkle
       case "piece":
-        return faShirt
+        return TShirt
       case "comment":
-        return faComment
+        return ChatCircle
       case "profile":
-        return faUser
+        return User
     }
   }
 
@@ -209,7 +209,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
       ) : reports.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-base-content/20 bg-base-200/20 p-12 text-center space-y-3">
           <div className="mx-auto grid size-12 place-items-center rounded-full bg-success/10 text-success">
-            <FaIcon icon={faCircleCheck} className="size-6" />
+            <Icon icon={CheckCircle} className="size-6" />
           </div>
           <div className="space-y-1">
             <h3 className="text-base font-black text-base-content text-balance">All caught up!</h3>
@@ -233,7 +233,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="badge badge-sm badge-ghost font-extrabold uppercase gap-1 tracking-wider text-xs">
-                        <FaIcon icon={getTargetIcon(report.target_type)} className="size-2.5" />
+                        <Icon icon={getTargetIcon(report.target_type)} className="size-2.5" />
                         {report.target_type}
                       </span>
                       <span
@@ -269,7 +269,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
                           className="btn btn-ghost btn-xs min-h-[28px] px-2.5 rounded-full gap-1 text-primary active:scale-[0.96] transition-transform"
                           title="Inspect live content"
                         >
-                          <FaIcon icon={faEye} className="size-3" />
+                          <Icon icon={Eye} className="size-3" />
                           View
                         </Link>
                       ) : null}
@@ -302,7 +302,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
                           className="btn btn-success btn-xs min-h-[30px] px-3 rounded-full font-bold gap-1 active:scale-[0.96] transition-transform shadow-sm"
                           title="Mark resolved"
                         >
-                          <FaIcon icon={faCheck} className="size-3" />
+                          <Icon icon={Check} className="size-3" />
                           Resolve
                         </button>
                         <button
@@ -312,7 +312,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
                           className="btn btn-ghost btn-xs min-h-[30px] px-3 rounded-full font-bold gap-1 text-base-content/70 hover:bg-base-300/60 active:scale-[0.96] transition-transform"
                           title="Dismiss report"
                         >
-                          <FaIcon icon={faXmark} className="size-3" />
+                          <Icon icon={X} className="size-3" />
                           Dismiss
                         </button>
                         {report.target_type !== "profile" ? (
@@ -323,7 +323,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
                             className="btn btn-error btn-outline btn-xs min-h-[30px] px-3 rounded-full font-bold gap-1 active:scale-[0.96] transition-transform"
                             title="Delete offending content"
                           >
-                            <FaIcon icon={faTrash} className="size-3" />
+                            <Icon icon={Trash} className="size-3" />
                             Delete Content
                           </button>
                         ) : null}

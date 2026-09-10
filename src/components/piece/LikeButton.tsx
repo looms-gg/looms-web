@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import { faHeart } from "@fortawesome/free-solid-svg-icons"
+import { Heart } from "@phosphor-icons/react"
 import { AuthModal } from "../auth/AuthModal"
-import { FaIcon } from "../ui/FaIcon"
+import { Icon } from "../ui/Icon"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { useAuthOptional } from "../../state/auth"
 import { useLikesOptional, type LikeTargetType } from "../../state/likes"
@@ -71,7 +71,7 @@ export function LikeButton({
           })
         }}
       >
-        <FaIcon icon={faHeart} className="size-3 shrink-0" />
+        <Icon icon={Heart} className="size-3 shrink-0" />
         <span className="min-w-[1ch] text-xs font-extrabold tabular-nums">
           {displayCount}
         </span>

@@ -8,8 +8,13 @@ import {
   type PublicLook,
 } from "../state/publicLooks"
 import { equippedFromStack, piecesFromEquipped } from "../data/outfit"
+import { HeadMeta } from "../components/shell/HeadMeta"
+import { getLookShareUrl } from "../lib/share"
 import { tryDownloadSkinFile } from "../skin/compose"
 import { CommentsSection } from "../components/comments/CommentsSection"
+import { AuthModal } from "../components/auth/AuthModal"
+import { useAuthOptional } from "../state/auth"
+import { setPendingAction } from "../lib/pendingAction"
 import { LookSheet } from "./look/LookSheet"
 import { PieceSkeleton } from "./piece/PieceSkeleton"
 
@@ -21,10 +26,13 @@ export function LookPage() {
   const { id } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const auth = useAuthOptional()
+  const user = auth?.user ?? null
   const { loadLook, notify } = useCloset()
 
   const [look, setLook] = useState<PublicLook | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authOpen, setAuthOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -87,8 +95,17 @@ export function LookPage() {
   }
 
   const outfit = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
+  const shareUrl = getLookShareUrl(look.id)
+  const metaDesc =
+    look.description || `${look.name} — community Minecraft outfit on looms. Preview in 3D and export the skin free.`
 
   const handleWear = () => {
+    if (!user) {
+      // Remember the outfit so it loads into Studio after sign-up confirms.
+      setPendingAction({ action: "wearLook", lookId: id })
+      setAuthOpen(true)
+      return
+    }
     loadLook(publicLookToLook(look))
     void navigate("/studio")
   }
@@ -106,6 +123,25 @@ export function LookPage() {
 
   return (
     <div className="space-y-6">
+      <HeadMeta
+        title={`${look.name} — Minecraft outfit`}
+        description={metaDesc}
+        url={shareUrl}
+        image={`https://looms.gg/og/outfit-default.png`}
+        // Indexation quality gate: only public looks may be indexed; private
+        // or unlisted outfits stay crawlable for the owner but out of search.
+        index={look.visibility === "public"}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CreativeWork",
+          name: look.name,
+          description: metaDesc,
+          url: shareUrl,
+          image: `https://looms.gg/og/outfit-default.png`,
+          isAccessibleForFree: true,
+          inLanguage: "en",
+        }}
+      />
       <Link
         to={backTo}
         className="piece-reveal link inline-flex min-h-11 items-center text-sm font-bold text-primary no-underline"
@@ -128,6 +164,8 @@ export function LookPage() {
         ownerId={look.userId}
         isPublic={look.visibility === "public"}
       />
+
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
     </div>
   )
 }

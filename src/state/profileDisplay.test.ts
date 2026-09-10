@@ -5,6 +5,7 @@ import {
   initialsFromUsername,
   nextUsernameChangeAt,
   resolveAvatarUrl,
+  usernameLockMessage,
   USERNAME_COOLDOWN_MS,
 } from "./profileDisplay"
 
@@ -52,6 +53,16 @@ describe("username cooldown", () => {
   it("allows after cooldown", () => {
     const changed = new Date(Date.now() - USERNAME_COOLDOWN_MS - 1000).toISOString()
     expect(canChangeUsername(changed)).toBe(true)
+  })
+
+  it("usernameLockMessage returns null when editable", () => {
+    expect(usernameLockMessage(null)).toBeNull()
+    expect(usernameLockMessage("2020-01-01T00:00:00.000Z")).toBeNull()
+  })
+
+  it("usernameLockMessage names the next change date when locked", () => {
+    const msg = usernameLockMessage(new Date(Date.now() - 24 * 3600 * 1000).toISOString())
+    expect(msg).toMatch(/change your username again on/i)
   })
 })
 

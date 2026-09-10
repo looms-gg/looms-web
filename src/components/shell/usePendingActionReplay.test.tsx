@@ -84,7 +84,7 @@ function Probe({ path }: { path: { current: string } }) {
   return null
 }
 
-function Harness({ auth, path }: { auth: AuthContextValue; path: { current: string } }) {
+function Harness({ path }: { auth: AuthContextValue; path: { current: string } }) {
   usePendingActionReplay()
   return (
     <Routes>

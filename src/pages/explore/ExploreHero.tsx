@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { faWandSparkles } from "@fortawesome/free-solid-svg-icons"
+import { Sparkle } from "@phosphor-icons/react"
 import type { Piece } from "../../data/catalog"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Icon } from "../../components/ui/Icon"
 import { DEFAULT_FEATURED_LOOKS, type PublicLook } from "../../state/publicLooks"
 import { HeroPosedFigure } from "../../components/hero/HeroPosedFigure"
 
@@ -22,18 +22,28 @@ export function pickFeaturedPieces(pieces: Piece[]): Piece[] {
 export function ExploreHero({
   trendingLooks = DEFAULT_FEATURED_LOOKS,
   loading = false,
+  yesterdayTop = null,
   onWearLook: _onWearLook,
   featuredPieces: _featuredPieces,
   onWearFeatured: _onWearFeatured,
 }: {
   trendingLooks?: PublicLook[]
   loading?: boolean
+  yesterdayTop?: PublicLook | null
   onWearLook?: (look: PublicLook) => void
   featuredPieces?: Piece[]
   onWearFeatured?: () => void
 }) {
   const [mobileTab, setMobileTab] = useState<0 | 1 | 2>(0)
   const looks = trendingLooks.length >= 3 ? trendingLooks : DEFAULT_FEATURED_LOOKS
+  // Yesterday's #1 takes the center slot, bumping the lowest-ranked trending
+  // look out of the pose. A look already trending keeps the hero unchanged.
+  const crownWorthy = Boolean(
+    !loading && yesterdayTop && !looks.some((l) => l.id === yesterdayTop.id),
+  )
+  const heroLooks = crownWorthy && yesterdayTop
+    ? [yesterdayTop, looks[0], looks[1]]
+    : looks
 
   return (
     <section className="plaza-panel hero-closet rounded-[22px] overflow-hidden">
@@ -102,7 +112,7 @@ export function ExploreHero({
             to="/studio"
             className="btn btn-primary rounded-full pl-5 pr-6 font-extrabold shadow-md active:scale-[0.96] transition-transform"
           >
-            <FaIcon icon={faWandSparkles} className="size-3.5" />
+            <Icon icon={Sparkle} className="size-3.5" />
             Open Studio
           </Link>
           <a
@@ -122,6 +132,17 @@ export function ExploreHero({
 
       {/* 3 Friends Posing Together (Intimate Bust Portrait) */}
       <div className="relative z-10 flex flex-col items-center">
+        {crownWorthy && yesterdayTop ? (
+          <Link
+            to={`/look/${yesterdayTop.id}`}
+            className="btn btn-xs sm:btn-sm rounded-full font-bold border border-base-content/15 bg-base-100/80 hover:border-primary gap-2 pl-3 pr-4 mb-2"
+            title="The look the community liked most yesterday"
+          >
+            <span className="font-extrabold text-primary">Yesterday's #1</span>
+            <span className="max-w-[140px] truncate opacity-70">{yesterdayTop.name}</span>
+          </Link>
+        ) : null}
+
         {/* Mobile Look Switcher tabs */}
         <div className="flex md:hidden items-center gap-2 mb-2">
           {loading
@@ -141,7 +162,7 @@ export function ExploreHero({
                   }`}
                   onClick={() => setMobileTab(idx as 0 | 1 | 2)}
                 >
-                  {looks[idx]?.name || `Look ${idx + 1}`}
+                  {heroLooks[idx]?.name || `Look ${idx + 1}`}
                 </button>
               ))}
         </div>
@@ -149,7 +170,7 @@ export function ExploreHero({
         {/* Mobile View: single bust figure */}
         <div className="w-full max-w-xs md:hidden flex justify-center py-2">
           <HeroPosedFigure
-            look={looks[mobileTab]}
+            look={heroLooks[mobileTab]}
             pose={mobileTab === 0 ? "center" : mobileTab === 1 ? "left" : "right"}
             loading={loading}
           />
@@ -159,7 +180,7 @@ export function ExploreHero({
         <div className="hidden md:flex items-end justify-center w-full max-w-2xl py-2">
           {/* Friend 2 (Left, leaning in close, forward over top the middle one) */}
           <HeroPosedFigure
-            look={looks[1]}
+            look={heroLooks[1]}
             pose="left"
             loading={loading}
             className="z-20 hover:z-30"
@@ -167,7 +188,7 @@ export function ExploreHero({
 
           {/* Friend 1 (Center, prominent, moved left to wrap arm behind left friend) */}
           <HeroPosedFigure
-            look={looks[0]}
+            look={heroLooks[0]}
             pose="center"
             loading={loading}
             className="z-10 scale-105 hover:z-30 -ml-20 sm:-ml-26 lg:-ml-32"
@@ -175,7 +196,7 @@ export function ExploreHero({
 
           {/* Friend 3 (Right, leaning in close) */}
           <HeroPosedFigure
-            look={looks[2]}
+            look={heroLooks[2]}
             pose="right"
             loading={loading}
             className="z-10 hover:z-30 -ml-16 sm:-ml-20 lg:-ml-24"

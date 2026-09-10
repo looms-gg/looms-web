@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
-import { faXmark } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { X } from "@phosphor-icons/react"
+import { Icon } from "../../components/ui/Icon"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
 
 export function InspectorModal({
@@ -27,7 +27,7 @@ export function InspectorModal({
         aria-label="Close"
         onClick={onClose}
       >
-        <FaIcon icon={faXmark} className="size-4" />
+        <Icon icon={X} className="size-4" />
       </button>
       {children}
     </ModalOverlay>

@@ -95,7 +95,7 @@ When generating posts about looms, use these mappings:
 
 Facts to lean on: free forever, no ads, no account needed to browse, works on phone or laptop, export = upload to Java/Bedrock, remix layers instead of redrawing, hair/coat/shoes swap independently, 70+ built-in eyes with adjustable height, skin-tone bodies with a hue slider, community likes/comments/wear-this.
 
-Hard rules for any generated content: stay in **platform voice** (warm, wholesome, playful, no snark, no dark humor) even when quoting UGC, which may be quirkier; never imply cost, scarcity, or buying; never promise a mobile app or offline mode; keep the "unofficial fan project, not affiliated with Mojang" caveat on anything press-like, and never imply Nintendo affiliation either (tone, not branding); Discord link is `https://discord.gg/UNTRgHBBPb`; site is `https://looms-gg.github.io/looms-web/`.
+Hard rules for any generated content: stay in **platform voice** (warm, wholesome, playful, no snark, no dark humor) even when quoting UGC, which may be quirkier; never imply cost, scarcity, or buying; never promise a mobile app or offline mode; keep the "unofficial fan project, not affiliated with Mojang" caveat on anything press-like, and never imply Nintendo affiliation either (tone, not branding); Discord link is `https://discord.gg/UNTRgHBBPb`; site is `https://looms.gg/`.
 
 **Tone dial by context:**
 
@@ -115,7 +115,7 @@ Hard rules for any generated content: stay in **platform voice** (warm, wholesom
 >
 > looms lets you stack clothing layers, hair, coats, sneakers, and export a vanilla PNG in minutes. Free to style, export, and wear.
 >
-> https://looms-gg.github.io/looms-web/
+> https://looms.gg/
 
 > New on looms: Wear This ✨
 >

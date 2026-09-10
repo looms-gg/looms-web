@@ -19,7 +19,7 @@ describe("LEGAL_DOCS", () => {
   })
 
   it("keeps a privacy contact placeholder and discord link in privacy + guidelines", () => {
-    expect(LEGAL_DOCS.privacy.sections.some((s) => s.paragraphs.some((p) => p.includes("privacy@[TBD]")))).toBe(
+    expect(LEGAL_DOCS.privacy.sections.some((s) => s.paragraphs.some((p) => p.includes("privacy@looms.gg")))).toBe(
       true,
     )
     expect(

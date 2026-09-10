@@ -17,8 +17,9 @@ cd "$SCRIPT_DIR"
 
 REPO_SLUG="looms-gg/looms-web"
 ORIGIN_URL="https://github.com/${REPO_SLUG}.git"
-DEFAULT_BASE="/looms-web/"
-PAGES_URL="https://looms-gg.github.io/looms-web/"
+CUSTOM_DOMAIN="looms.gg"
+DEFAULT_BASE="/"
+PAGES_URL="https://${CUSTOM_DOMAIN}/"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo " Looms Deploy (GitHub Pages)"
@@ -254,17 +255,21 @@ echo "☁️  Publishing dist/ to gh-pages..."
   npx --yes gh-pages@latest -d dist -b gh-pages -m "${DEPLOY_FINAL_MSG:-deploy: $(date '+%Y-%m-%d %H:%M')}"
 )
 
-# Ensure Pages is enabled on gh-pages / root.
+# Ensure Pages is enabled on gh-pages / root and bound to the custom domain.
 # Use a JSON body — form -f "source[branch]=..." is unreliable with the Pages API,
 # and a misconfigured source publishes main (raw index.html → /src/main.tsx MIME errors).
-echo "ℹ️  Ensuring GitHub Pages source is gh-pages / ..."
-PAGES_PAYLOAD='{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"}}'
+echo "ℹ️  Ensuring GitHub Pages source is gh-pages / (domain: ${CUSTOM_DOMAIN})..."
+PAGES_PAYLOAD="{\"build_type\":\"legacy\",\"cname\":\"${CUSTOM_DOMAIN}\",\"source\":{\"branch\":\"gh-pages\",\"path\":\"/\"}}"
 if ! gh api -X PUT "repos/${REPO_SLUG}/pages" --input - <<<"$PAGES_PAYLOAD" >/dev/null 2>&1; then
   if ! gh api -X POST "repos/${REPO_SLUG}/pages" --input - <<<"$PAGES_PAYLOAD" >/dev/null 2>&1; then
     echo "⚠️  Could not configure Pages via API." >&2
     echo "   Enable manually: Settings → Pages → Deploy from branch → gh-pages / (root)." >&2
   fi
 fi
+
+# Ensure HTTPS is enforced on the custom domain (only works once DNS + cert are ready).
+gh api -X PUT "repos/${REPO_SLUG}/pages" --input - <<<"{\"https_enforced\":true}" >/dev/null 2>&1 \
+  || echo "ℹ️  HTTPS enforcement not applied yet — GitHub needs DNS to propagate and issue the cert first. Re-run deploy later." >&2
 
 PAGES_BRANCH="$(gh api "repos/${REPO_SLUG}/pages" --jq '.source.branch // empty' 2>/dev/null || true)"
 if [[ "$PAGES_BRANCH" != "gh-pages" ]]; then
@@ -276,6 +281,14 @@ else
   # Nudge GitHub to rebuild from the branch we just published
   gh api -X POST "repos/${REPO_SLUG}/pages/builds" >/dev/null 2>&1 \
     || echo "ℹ️  Could not request a Pages rebuild (push to gh-pages should still trigger one)." >&2
+fi
+
+PAGES_CNAME="$(gh api "repos/${REPO_SLUG}/pages" --jq '.cname // empty' 2>/dev/null || true)"
+if [[ "$PAGES_CNAME" == "$CUSTOM_DOMAIN" ]]; then
+  echo "✅ Pages custom domain: ${CUSTOM_DOMAIN}"
+else
+  echo "⚠️  Pages CNAME is '${PAGES_CNAME:-unset}', expected '${CUSTOM_DOMAIN}'." >&2
+  echo "   Check DNS records and https://github.com/${REPO_SLUG}/settings/pages" >&2
 fi
 
 echo ""

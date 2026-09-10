@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
-import { faCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import { CheckCircle } from "@phosphor-icons/react"
 import { useAuth } from "../../state/auth"
 import { formatErrorMessage } from "../../lib/errorFormat"
-import { FaIcon } from "../ui/FaIcon"
+import { Icon } from "../ui/Icon"
 import { ModalOverlay } from "../ui/ModalOverlay"
 
 function useResendCountdown(resendWait: number, setResendWait: (fn: (value: number) => number) => void) {
@@ -60,7 +60,7 @@ export function VerifyEmailModal() {
       {emailVerified ? (
         <div className="text-center">
           <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success/15 text-success">
-            <FaIcon icon={faCircleCheck} className="size-6" />
+            <Icon icon={CheckCircle} className="size-6" />
           </span>
           <h2 id="verify-email-title" className="mt-4 text-2xl font-black tracking-tight">
             You're in

@@ -1,6 +1,6 @@
 import { supabase } from "../../lib/supabase"
 import { MAX_LIMITS, validateFileSize } from "../../lib/sanitize"
-import { compressProfileImage } from "./compressProfileImage"
+import { compressProfileImage, type ProfileCrop } from "./compressProfileImage"
 
 const ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
 
@@ -14,6 +14,7 @@ export async function uploadProfileImage(
   userId: string,
   kind: "avatar" | "banner",
   file: File,
+  crop?: ProfileCrop,
 ): Promise<string> {
   if (!ALLOWED_TYPES.has(file.type)) {
     throw new Error(
@@ -26,7 +27,7 @@ export async function uploadProfileImage(
     throw new Error(sizeCheck.error ?? "File is too large.")
   }
 
-  const compressed = await compressProfileImage(file, kind)
+  const compressed = await compressProfileImage(file, kind, crop)
 
   const compressedCheck = validateFileSize(compressed, MAX_LIMITS.FILE_SIZE_BYTES)
   if (!compressedCheck.valid) {

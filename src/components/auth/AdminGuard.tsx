@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { Link } from "react-router-dom"
-import { faShieldHalved, faArrowLeft } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../ui/FaIcon"
+import { ShieldCheck, ArrowLeft } from "@phosphor-icons/react"
+import { Icon } from "../ui/Icon"
 import { useAuth } from "../../state/auth"
 import { isAdmin } from "../../lib/admin"
 
@@ -20,7 +20,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
     return (
       <div className="mx-auto max-w-md py-16 text-center space-y-5">
         <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-error/10 text-error">
-          <FaIcon icon={faShieldHalved} className="size-8" />
+          <Icon icon={ShieldCheck} className="size-8" />
         </div>
         <div className="space-y-2">
           <h1 className="text-2xl font-black tracking-tight">Access Restricted</h1>
@@ -30,7 +30,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
         </div>
         <div>
           <Link to="/" className="btn btn-primary btn-sm rounded-full font-extrabold gap-2">
-            <FaIcon icon={faArrowLeft} className="size-3" />
+            <Icon icon={ArrowLeft} className="size-3" />
             Back to Explore
           </Link>
         </div>

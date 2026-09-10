@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import {
-  faCloudArrowUp,
-  faMagnifyingGlass,
-  faWandSparkles,
-} from "@fortawesome/free-solid-svg-icons"
+  CloudArrowUp,
+  MagnifyingGlass,
+  Sparkle,
+} from "@phosphor-icons/react"
 import { SLOT_LABEL } from "../data/catalog"
 import { ExploreRail } from "../components/explore/ExploreRail"
-import { FaIcon } from "../components/ui/FaIcon"
+import { Icon } from "../components/ui/Icon"
 import { useCloset } from "../state/closet"
 import { useAuth } from "../state/auth"
 import { useCatalog } from "../state/catalog"
@@ -58,7 +58,16 @@ export function ExplorePage() {
   useEffect(() => {
     let active = true
     setTrendingLoading(true)
-    void fetchTrendingLooksPastDay(3)
+    // Never let a hung request pin the hero on skeletons forever.
+    const withTimeout = <T,>(p: Promise<T>, ms: number): Promise<T> =>
+      new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error("timeout")), ms)
+        p.then(
+          (v) => { clearTimeout(t); resolve(v) },
+          (e) => { clearTimeout(t); reject(e) },
+        )
+      })
+    void withTimeout(fetchTrendingLooksPastDay(3), 10_000)
       .then((res) => {
         if (active) {
           if (res.length >= 3) {
@@ -165,7 +174,7 @@ export function ExplorePage() {
 
         <div className="flex w-full max-w-md items-center gap-2">
           <label className="input input-bordered flex h-11 grow items-center gap-2 rounded-full bg-base-100">
-            <FaIcon icon={faMagnifyingGlass} className="size-3.5 opacity-50" />
+            <Icon icon={MagnifyingGlass} className="size-3.5 opacity-50" />
             <input
               type="search"
               maxLength={MAX_LIMITS.SEARCH_QUERY}
@@ -189,7 +198,7 @@ export function ExplorePage() {
                 }
               }}
             >
-              <FaIcon icon={faCloudArrowUp} className="size-3.5" />
+              <Icon icon={CloudArrowUp} className="size-3.5" />
               <span className="hidden sm:inline">Upload Piece</span>
             </button>
           ) : (
@@ -204,7 +213,7 @@ export function ExplorePage() {
                 }
               }}
             >
-              <FaIcon icon={faWandSparkles} className="size-3.5" />
+              <Icon icon={Sparkle} className="size-3.5" />
               <span className="hidden sm:inline">Open Studio</span>
             </button>
           )}

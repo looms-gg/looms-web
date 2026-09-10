@@ -3,6 +3,34 @@ import { MAX_LIMITS, sanitizeText, sanitizeUrl } from "./sanitize"
 import { supabase, type SiteBannerRow } from "./supabase"
 
 const DISMISSED_BANNER_STORAGE_KEY = "looms_dismissed_site_banner"
+const LAST_BANNER_STORAGE_KEY = "looms_last_site_banner"
+
+/**
+ * Returns the last banner seen by this browser (from localStorage), or null.
+ * Lets the SiteBanner render synchronously on mount so the page never shifts
+ * when the fetch resolves.
+ */
+export function getCachedActiveBanner(): CachedBanner | null {
+  try {
+    const stored = localStorage.getItem(LAST_BANNER_STORAGE_KEY)
+    if (!stored) return null
+    return JSON.parse(stored) as SiteBannerRow
+  } catch {
+    return null
+  }
+}
+
+function setCachedActiveBanner(banner: SiteBannerRow | null) {
+  try {
+    if (banner) {
+      localStorage.setItem(LAST_BANNER_STORAGE_KEY, JSON.stringify(banner))
+    } else {
+      localStorage.removeItem(LAST_BANNER_STORAGE_KEY)
+    }
+  } catch {
+    // localStorage quota or private mode fallback
+  }
+}
 
 /**
  * Fetches the currently active site announcement banner for display.
@@ -20,6 +48,7 @@ export async function fetchActiveSiteBanner(): Promise<SiteBannerRow | null> {
     console.error("Failed to load active site banner:", error)
     return null
   }
+  setCachedActiveBanner(data)
   return data as SiteBannerRow | null
 }
 

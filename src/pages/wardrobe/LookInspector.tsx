@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { faDownload, faLink, faCheck } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Download, Link, Check } from "@phosphor-icons/react"
+import { Icon } from "../../components/ui/Icon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { piecesFromEquipped } from "../../data/outfit"
 import { tryDownloadSkinFile } from "../../skin/compose"
@@ -122,7 +122,7 @@ export function LookInspector({
               })()
             }}
           >
-            <FaIcon icon={faDownload} className="size-3.5 mr-1.5" />
+            <Icon icon={Download} className="size-3.5 mr-1.5" />
             Download skin
           </button>
           <button
@@ -142,7 +142,7 @@ export function LookInspector({
             title={copied ? "Link copied to clipboard!" : `Share ${look.name}`}
             aria-label={copied ? "Link copied" : `Share ${look.name}`}
           >
-            <FaIcon icon={copied ? faCheck : faLink} className="size-3.5 mr-1.5" />
+            <Icon icon={copied ? Check : Link} className="size-3.5 mr-1.5" />
             {copied ? "Copied!" : "Share outfit link"}
           </button>
         </div>

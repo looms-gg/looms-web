@@ -1,11 +1,13 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import {
-  faBan,
-  faPalette,
-  faRotateLeft,
-  faSliders,
-} from "@fortawesome/free-solid-svg-icons"
+  Prohibit,
+  Palette,
+  ArrowCounterClockwise,
+  MagnifyingGlass,
+  SlidersHorizontal,
+  X,
+} from "@phosphor-icons/react"
 import {
   SLOT_LABEL,
   type Piece,
@@ -13,9 +15,15 @@ import {
 } from "../../data/catalog"
 import type { Equipped } from "../../data/outfit"
 import { bodies as defaultBodies, bodyOrDefault, type Body } from "../../data/bodies"
-import { bundledEyes, EYE_OFFSET_MAX, EYE_OFFSET_MIN, parseEyeId } from "../../data/eyes"
+import {
+  bundledEyes,
+  EYE_OFFSET_MAX,
+  EYE_OFFSET_MIN,
+  eyeThumbUrl,
+  parseEyeId,
+} from "../../data/eyes"
 import { IsoThumb } from "../../components/iso/IsoThumb"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Icon } from "../../components/ui/Icon"
 import { HUE_MAX, HUE_MIN, hueRamp, shiftHex } from "../../skin/hue"
 import type { StudioRackTab } from "./studioOwned"
 import { MAX_LIMITS } from "../../lib/sanitize"
@@ -38,7 +46,7 @@ function PieceRackRow({
         aria-pressed={on}
         aria-label={on ? `Take off ${piece.name}` : `Wear ${piece.name}`}
         onClick={() => (on ? onClear(piece.slot) : onWear(piece.id))}
-        className={`studio-piece flex w-full items-center gap-3 rounded-[12px] p-2 text-left cursor-pointer transition-all ${
+        className={`studio-piece studio-piece-row flex w-full items-center gap-3 rounded-[12px] p-2 text-left cursor-pointer ${
           on ? "studio-piece-on" : ""
         }`}
       >
@@ -103,6 +111,8 @@ export function StudioRack({
   const currentBody = body ?? bodyOrDefault(bodyId)
   const currentTint = bodyTint ?? shiftHex(currentBody.swatch, bodyHue)
   const [eyeFilter, setEyeFilter] = useState("")
+  const [pieceSearchOpen, setPieceSearchOpen] = useState(false)
+  const [pieceQuery, setPieceQuery] = useState("")
 
   const filteredEyes = bundledEyes.filter((eye) => {
     if (!eyeFilter.trim()) return true
@@ -113,6 +123,20 @@ export function StudioRack({
   const shownSlots = rack === "all" ? racks : racks.filter((slot) => slot === rack)
   const hasOwned = ownedCount > 0
   const isAppearance = rack === "appearance"
+  const query = pieceQuery.trim().toLowerCase()
+  const searching = !isAppearance && pieceSearchOpen && query.length > 0
+  const matchesQuery = (piece: Piece) =>
+    piece.name.toLowerCase().includes(query) ||
+    piece.id.toLowerCase().includes(query) ||
+    SLOT_LABEL[piece.slot].toLowerCase().includes(query)
+  const searchSlots = searching
+    ? racks
+        .map((slot) => ({
+          slot,
+          pieces: ownedBySlot[slot].filter(matchesQuery),
+        }))
+        .filter((group) => group.pieces.length > 0)
+    : []
 
   return (
     <aside className="studio-wardrobe rounded-[18px] bg-base-200 p-4">
@@ -141,8 +165,8 @@ export function StudioRack({
             onClick={() => onRack("appearance")}
             aria-pressed={isAppearance}
           >
-            <FaIcon
-              icon={faPalette}
+            <Icon
+              icon={Palette}
               className={`size-3.5 ${
                 isAppearance ? "text-primary" : "text-base-content/40"
               }`}
@@ -151,38 +175,111 @@ export function StudioRack({
           </button>
         </div>
 
-        {/* Sub-category pills for Pieces */}
+        {/* Sub-category pills for Pieces. The searcher overlays this row in
+            place instead of replacing it, so toggling search never shifts the
+            surrounding layout. */}
         {!isAppearance && hasOwned ? (
-          <div
-            className="studio-wardrobe-tabs"
-            data-testid="studio-wardrobe-tabs"
-            onWheel={(e) => {
-              if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-                e.currentTarget.scrollLeft += e.deltaY
-              }
-            }}
-          >
-            <button
-              type="button"
-              className={`badge h-8 shrink-0 rounded-full border-0 px-3 font-bold cursor-pointer ${
-                rack === "all" ? "badge-primary" : "badge-neutral"
+          <div className="relative">
+            <div
+              className={`studio-wardrobe-tabs ${
+                pieceSearchOpen ? "invisible" : ""
               }`}
-              onClick={() => onRack("all")}
+              data-testid="studio-wardrobe-tabs"
+              aria-hidden={pieceSearchOpen || undefined}
+              onWheel={(e) => {
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                  e.currentTarget.scrollLeft += e.deltaY
+                }
+              }}
             >
-              All
-            </button>
-            {racks.map((slot) => (
               <button
-                key={slot}
                 type="button"
+                tabIndex={pieceSearchOpen ? -1 : 0}
                 className={`badge h-8 shrink-0 rounded-full border-0 px-3 font-bold cursor-pointer ${
-                  rack === slot ? "badge-primary" : "badge-neutral"
+                  rack === "all" ? "badge-primary" : "badge-neutral"
                 }`}
-                onClick={() => onRack(slot)}
+                onClick={() => onRack("all")}
               >
-                {SLOT_LABEL[slot]}
+                All
               </button>
-            ))}
+              <button
+                type="button"
+                aria-label="Search pieces"
+                title="Search pieces"
+                tabIndex={pieceSearchOpen ? -1 : 0}
+                className="badge badge-neutral h-8 shrink-0 rounded-full border-0 px-2.5 font-bold cursor-pointer hover:bg-base-content/20"
+                onClick={() => setPieceSearchOpen(true)}
+              >
+                <Icon icon={MagnifyingGlass} className="size-3.5" />
+              </button>
+              {racks.map((slot) => (
+                <button
+                  key={slot}
+                  type="button"
+                  tabIndex={pieceSearchOpen ? -1 : 0}
+                  className={`badge h-8 shrink-0 rounded-full border-0 px-3 font-bold cursor-pointer ${
+                    rack === slot ? "badge-primary" : "badge-neutral"
+                  }`}
+                  onClick={() => onRack(slot)}
+                >
+                  {SLOT_LABEL[slot]}
+                </button>
+              ))}
+            </div>
+            {pieceSearchOpen ? (
+              <div
+                className="studio-piece-search-pop absolute inset-x-0 top-1 z-20 flex h-8 items-center"
+                data-testid="studio-piece-search"
+              >
+                {/* Same pill-search pattern as Explore and the Wardrobe:
+                    label.input wrapper with the icon inside. */}
+                <label className="input input-bordered flex h-8 w-full items-center gap-2 rounded-full bg-base-100 pl-3">
+                  <Icon icon={MagnifyingGlass} className="size-3.5 shrink-0 opacity-50" />
+                  <input
+                    autoFocus
+                    type="search"
+                    maxLength={MAX_LIMITS.SEARCH_QUERY}
+                    placeholder="Search pieces..."
+                    aria-label="Search pieces"
+                    value={pieceQuery}
+                    onChange={(e) =>
+                      setPieceQuery(e.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") {
+                        e.stopPropagation()
+                        setPieceSearchOpen(false)
+                        setPieceQuery("")
+                      }
+                    }}
+                    className="grow border-none bg-transparent text-xs font-medium shadow-none outline-none focus:border-none focus:shadow-none focus:outline-none focus:ring-0"
+                  />
+                  {pieceQuery ? (
+                    <button
+                      type="button"
+                      aria-label="Clear search"
+                      title="Clear search"
+                      className="shrink-0 cursor-pointer text-base-content/40 hover:text-base-content"
+                      onClick={() => setPieceQuery("")}
+                    >
+                      <Icon icon={X} className="size-3.5" />
+                    </button>
+                  ) : null}
+                </label>
+                <button
+                  type="button"
+                  aria-label="Close piece search"
+                  title="Close search"
+                  className="btn btn-ghost btn-xs h-8 min-h-0 shrink-0 rounded-full px-2 ml-1 text-base-content/50 hover:text-base-content"
+                  onClick={() => {
+                    setPieceSearchOpen(false)
+                    setPieceQuery("")
+                  }}
+                >
+                  <Icon icon={X} className="size-4" />
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -238,7 +335,7 @@ export function StudioRack({
               <div className="mt-3 pt-2.5 border-t border-white/5">
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="font-extrabold text-base-content/60 flex items-center gap-1.5">
-                    <FaIcon icon={faSliders} className="size-3 text-base-content/40" />
+                    <Icon icon={SlidersHorizontal} className="size-3 text-base-content/40" />
                     Hue Shift
                   </span>
                   <div className="flex items-center gap-2">
@@ -252,7 +349,7 @@ export function StudioRack({
                         onClick={() => onBodyHue?.(0)}
                         title="Reset hue"
                       >
-                        <FaIcon icon={faRotateLeft} className="size-2.5" />
+                        <Icon icon={ArrowCounterClockwise} className="size-2.5" />
                       </button>
                     ) : null}
                   </div>
@@ -297,71 +394,29 @@ export function StudioRack({
                 ) : null}
               </div>
 
-              {/* Eye height adjustment */}
-              {equippedEyes ? (
-                <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs mb-1.5 min-h-5">
-                    <span className="font-extrabold text-base-content/60 flex items-center gap-1.5">
-                      <FaIcon icon={faSliders} className="size-3 text-base-content/40" />
-                      Eye height
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block min-w-[4.5rem] text-right tabular-nums font-bold text-base-content/70">
-                        {eyeOffset === 0
-                          ? "Default"
-                          : eyeOffset < 0
-                            ? `Up ${Math.abs(eyeOffset)}`
-                            : `Down ${eyeOffset}`}
-                      </span>
-                      <button
-                        type="button"
-                        className={`btn btn-ghost btn-xs h-5 min-h-0 px-1 text-base-content/50 hover:text-base-content cursor-pointer ${
-                          eyeOffset === 0 ? "invisible pointer-events-none" : ""
-                        }`}
-                        disabled={eyeOffset === 0}
-                        onClick={() => onEyeOffset?.(0)}
-                        title="Reset eye height"
-                        aria-label="Reset eye height"
-                      >
-                        <FaIcon icon={faRotateLeft} className="size-2.5" />
-                      </button>
-                    </div>
-                  </div>
-                  <span className="studio-hue-track block bg-base-content/15">
-                    <input
-                      type="range"
-                      min={EYE_OFFSET_MIN}
-                      max={EYE_OFFSET_MAX}
-                      step={1}
-                      value={eyeOffset}
-                      aria-label="Eye height on face"
-                      className="studio-hue-range"
-                      onChange={(event) => onEyeOffset?.(Number(event.target.value))}
-                    />
-                  </span>
-                </div>
-              ) : null}
-
-              {/* Eye Filter */}
-              <div className="relative mb-2.5">
+              {/* Eye Filter — same pill-search pattern as Explore/Wardrobe */}
+              <label className="input input-bordered flex h-8 mb-2.5 items-center gap-2 rounded-full bg-base-100 pl-3">
+                <Icon icon={MagnifyingGlass} className="size-3.5 shrink-0 opacity-50" />
                 <input
                   type="search"
                   maxLength={MAX_LIMITS.SEARCH_QUERY}
                   placeholder="Filter eyes (e.g. 05)..."
+                  aria-label="Filter eyes"
                   value={eyeFilter}
                   onChange={(e) => setEyeFilter(e.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))}
-                  className="input input-sm bg-base-100 rounded-xl w-full text-xs font-medium pl-3 pr-8"
+                  className="grow border-none bg-transparent text-xs font-medium shadow-none outline-none focus:border-none focus:shadow-none focus:outline-none focus:ring-0"
                 />
                 {eyeFilter ? (
                   <button
                     type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-base-content/40 hover:text-base-content"
+                    aria-label="Clear eye filter"
+                    className="shrink-0 cursor-pointer text-base-content/40 hover:text-base-content"
                     onClick={() => setEyeFilter("")}
                   >
-                    ✕
+                    <Icon icon={X} className="size-3.5" />
                   </button>
                 ) : null}
-              </div>
+              </label>
 
               {/* Eyes Grid */}
               <div className="grid grid-cols-2 gap-2 pb-6">
@@ -378,7 +433,7 @@ export function StudioRack({
                   }`}
                 >
                   <div className="size-11 rounded-lg bg-base-300 flex items-center justify-center">
-                    <FaIcon icon={faBan} className="size-5 text-base-content/40" />
+                    <Icon icon={Prohibit} className="size-5 text-base-content/40" />
                   </div>
                   <span className="text-xs font-extrabold">Default</span>
                 </button>
@@ -403,7 +458,7 @@ export function StudioRack({
                     >
                       <div className="size-11 rounded-lg bg-base-300/80 flex items-center justify-center overflow-hidden border border-white/5">
                         <img
-                          src={eye.thumb}
+                          src={eyeThumbUrl(eye)}
                           alt=""
                           className="size-8 [image-rendering:pixelated] group-hover:scale-110 transition-transform"
                         />
@@ -416,7 +471,87 @@ export function StudioRack({
                 })}
               </div>
             </div>
+
+          {/* Eye height dock — pinned to the bottom of the scrollport so it's
+              always reachable, even with the eyes grid scrolled down */}
+          {equippedEyes ? (
+            <div className="studio-eye-dock sticky bottom-0 z-10 bg-base-200 pt-2 pb-1 -mb-1">
+              <div className="rounded-[14px] bg-base-300/85 p-3 shadow-xs border border-white/5">
+                <div className="flex items-center justify-between text-xs mb-1.5 min-h-5">
+                  <span className="font-extrabold text-base-content/60 flex items-center gap-1.5">
+                    <Icon icon={SlidersHorizontal} className="size-3 text-base-content/40" />
+                    Eye height
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block min-w-[4.5rem] text-right tabular-nums font-bold text-base-content/70">
+                      {eyeOffset === 0
+                        ? "Default"
+                        : eyeOffset < 0
+                          ? `Up ${Math.abs(eyeOffset)}`
+                          : `Down ${eyeOffset}`}
+                    </span>
+                    <button
+                      type="button"
+                      className={`btn btn-ghost btn-xs h-5 min-h-0 px-1 text-base-content/50 hover:text-base-content cursor-pointer ${
+                        eyeOffset === 0 ? "invisible pointer-events-none" : ""
+                      }`}
+                      disabled={eyeOffset === 0}
+                      onClick={() => onEyeOffset?.(0)}
+                      title="Reset eye height"
+                      aria-label="Reset eye height"
+                    >
+                      <Icon icon={ArrowCounterClockwise} className="size-2.5" />
+                    </button>
+                  </div>
+                </div>
+                <span className="studio-hue-track block bg-base-content/15">
+                  <input
+                    type="range"
+                    min={EYE_OFFSET_MIN}
+                    max={EYE_OFFSET_MAX}
+                    step={1}
+                    value={eyeOffset}
+                    aria-label="Eye height on face"
+                    className="studio-hue-range"
+                    onChange={(event) => onEyeOffset?.(Number(event.target.value))}
+                  />
+                </span>
+              </div>
+            </div>
+          ) : null}
           </div>
+        </div>
+      ) : searching ? (
+        <div className="studio-wardrobe-clip">
+          {searchSlots.length === 0 ? (
+            <div className="mt-4 grid flex-1 place-items-center rounded-[12px] border border-dashed border-base-content/15 px-3 py-8 text-center">
+              <p className="font-extrabold">No pieces match</p>
+              <p className="mt-1 text-sm text-base-content/65">
+                Nothing in your wardrobe matches "{pieceQuery.trim()}".
+              </p>
+            </div>
+          ) : (
+            <div className="studio-wardrobe-list space-y-4">
+              {searchSlots.map(({ slot, pieces }) => (
+                <div key={slot}>
+                  <p className="mb-2 text-sm font-bold text-base-content/55">
+                    {SLOT_LABEL[slot]}
+                  </p>
+                  <ul className="flex flex-col gap-2">
+                    {pieces.map((piece) => (
+                      <PieceRackRow
+                        key={piece.id}
+                        piece={piece}
+                        on={equipped[slot] === piece.id}
+                        onWear={onWear}
+                        onClear={onClear}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : !hasOwned ? (
         <div className="mt-4 grid flex-1 place-items-center rounded-[12px] border border-dashed border-base-content/15 px-3 py-8 text-center">
@@ -430,7 +565,7 @@ export function StudioRack({
               className="btn btn-secondary rounded-full font-extrabold btn-sm"
               onClick={() => onRack("appearance")}
             >
-              <FaIcon icon={faPalette} className="size-3.5 mr-1" />
+              <Icon icon={Palette} className="size-3.5 mr-1" />
               Appearance
             </button>
             <Link to="/" className="btn btn-primary rounded-full font-extrabold btn-sm">

@@ -1,24 +1,32 @@
 import { useEffect, useState } from "react"
 import {
-  faBullhorn,
-  faCircleInfo,
-  faTriangleExclamation,
-  faWandSparkles,
-  faXmark,
-  faArrowRight,
-} from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../ui/FaIcon"
+  Megaphone,
+  Info,
+  Warning,
+  Sparkle,
+  X,
+  ArrowRight,
+} from "@phosphor-icons/react"
+import { Icon } from "../ui/Icon"
 import type { SiteBannerRow } from "../../lib/supabase"
 import {
   dismissBanner,
   fetchActiveSiteBanner,
+  getCachedActiveBanner,
   isBannerDismissed,
 } from "../../lib/siteBanner"
 
 export function SiteBanner() {
-  const [banner, setBanner] = useState<SiteBannerRow | null>(null)
+  // Seed from the last banner this browser saw so the first paint already
+  // includes the banner bar — the fetch resolving can't shift the page. The
+  // dismissed check runs synchronously too, so a dismissed banner never
+  // flashes back before the fetch confirms it.
+  const [banner, setBanner] = useState<SiteBannerRow | null>(() => {
+    const cached = getCachedActiveBanner()
+    if (!cached || isBannerDismissed(cached.id, cached.updated_at)) return null
+    return cached
+  })
   const [dismissed, setDismissed] = useState(false)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let mounted = true
@@ -34,8 +42,6 @@ export function SiteBanner() {
         }
       } catch (err) {
         console.error("Error loading site banner:", err)
-      } finally {
-        if (mounted) setLoading(false)
       }
     }
 
@@ -45,7 +51,7 @@ export function SiteBanner() {
     }
   }, [])
 
-  if (loading || !banner || dismissed) {
+  if (!banner || dismissed) {
     return null
   }
 
@@ -59,21 +65,21 @@ export function SiteBanner() {
       case "accent":
         return {
           wrapper: "bg-secondary/15 text-secondary-content border-secondary/25",
-          icon: faWandSparkles,
+          icon: Sparkle,
           iconColor: "text-secondary",
           btnClass: "btn-secondary",
         }
       case "warning":
         return {
           wrapper: "bg-warning/15 text-warning-content border-warning/25",
-          icon: faTriangleExclamation,
+          icon: Warning,
           iconColor: "text-warning",
           btnClass: "btn-warning",
         }
       case "neutral":
         return {
           wrapper: "bg-base-200 text-base-content border-base-content/10",
-          icon: faBullhorn,
+          icon: Megaphone,
           iconColor: "text-base-content/70",
           btnClass: "btn-ghost border border-base-content/20",
         }
@@ -81,7 +87,7 @@ export function SiteBanner() {
       default:
         return {
           wrapper: "bg-primary/10 text-base-content border-primary/25",
-          icon: faCircleInfo,
+          icon: Info,
           iconColor: "text-primary",
           btnClass: "btn-primary",
         }
@@ -99,7 +105,7 @@ export function SiteBanner() {
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
         <div className="flex flex-1 items-center justify-center gap-2 text-center md:gap-3">
           <span className={`shrink-0 ${style.iconColor}`}>
-            <FaIcon icon={style.icon} className="size-4" />
+            <Icon icon={style.icon} className="size-4" />
           </span>
           <span className="leading-snug text-pretty">{banner.text}</span>
           {banner.link_url ? (
@@ -110,7 +116,7 @@ export function SiteBanner() {
               className={`btn btn-xs rounded-full font-extrabold gap-1 shrink-0 ${style.btnClass}`}
             >
               {banner.link_label || "Learn more"}
-              <FaIcon icon={faArrowRight} className="size-2.5" />
+              <Icon icon={ArrowRight} className="size-2.5" />
             </a>
           ) : null}
         </div>
@@ -122,7 +128,7 @@ export function SiteBanner() {
             aria-label="Dismiss banner"
             className="btn btn-ghost btn-circle btn-xs shrink-0 opacity-60 hover:opacity-100"
           >
-            <FaIcon icon={faXmark} className="size-3.5" />
+            <Icon icon={X} className="size-3.5" />
           </button>
         ) : null}
       </div>

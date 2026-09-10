@@ -1,15 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react"
 import {
-  faBullhorn,
-  faCheck,
-  faCircleInfo,
-  faFloppyDisk,
-  faTriangleExclamation,
-  faWandSparkles,
-  faArrowRight,
-  faXmark,
-} from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/ui/FaIcon"
+  Megaphone,
+  Check,
+  Info,
+  FloppyDisk,
+  Warning,
+  Sparkle,
+  ArrowRight,
+  X,
+} from "@phosphor-icons/react"
+import { Icon } from "../../components/ui/Icon"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { MAX_LIMITS } from "../../lib/sanitize"
 import {
@@ -92,21 +92,21 @@ export function BannerSettings({ adminId }: { adminId: string }) {
       case "accent":
         return {
           wrapper: "bg-secondary/15 text-secondary-content border-secondary/25",
-          icon: faWandSparkles,
+          icon: Sparkle,
           iconColor: "text-secondary",
           btnClass: "btn-secondary",
         }
       case "warning":
         return {
           wrapper: "bg-warning/15 text-warning-content border-warning/25",
-          icon: faTriangleExclamation,
+          icon: Warning,
           iconColor: "text-warning",
           btnClass: "btn-warning",
         }
       case "neutral":
         return {
           wrapper: "bg-base-200 text-base-content border-base-content/10",
-          icon: faBullhorn,
+          icon: Megaphone,
           iconColor: "text-base-content/70",
           btnClass: "btn-ghost border border-base-content/20",
         }
@@ -114,7 +114,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
       default:
         return {
           wrapper: "bg-primary/10 text-base-content border-primary/25",
-          icon: faCircleInfo,
+          icon: Info,
           iconColor: "text-primary",
           btnClass: "btn-primary",
         }
@@ -145,7 +145,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
             <div className="flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
               <div className="flex flex-1 items-center justify-center gap-2 text-center md:gap-3">
                 <span className={`shrink-0 ${preview.iconColor}`}>
-                  <FaIcon icon={preview.icon} className="size-4" />
+                  <Icon icon={preview.icon} className="size-4" />
                 </span>
                 <span className="leading-snug">{text.trim() || "Your announcement text will show here."}</span>
                 {linkUrl.trim() ? (
@@ -153,14 +153,14 @@ export function BannerSettings({ adminId }: { adminId: string }) {
                     className={`btn btn-xs rounded-full font-extrabold gap-1 shrink-0 ${preview.btnClass}`}
                   >
                     {linkLabel.trim() || "Learn more"}
-                    <FaIcon icon={faArrowRight} className="size-2.5" />
+                    <Icon icon={ArrowRight} className="size-2.5" />
                   </span>
                 ) : null}
               </div>
 
               {dismissible ? (
                 <span className="opacity-40">
-                  <FaIcon icon={faXmark} className="size-3.5" />
+                  <Icon icon={X} className="size-3.5" />
                 </span>
               ) : null}
             </div>
@@ -297,7 +297,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
 
         {success ? (
           <div className="alert alert-success text-sm font-bold text-success-content flex items-center gap-2" role="alert">
-            <FaIcon icon={faCheck} className="size-4" />
+            <Icon icon={Check} className="size-4" />
             Announcement banner settings saved successfully!
           </div>
         ) : null}
@@ -308,7 +308,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
             disabled={saving}
             className="btn btn-primary min-h-11 rounded-full font-black px-6 gap-2 shadow-sm transition-colors active:scale-[0.96] transition-transform"
           >
-            <FaIcon icon={faFloppyDisk} className={`size-3.5 ${saving ? "animate-spin" : ""}`} />
+            <Icon icon={FloppyDisk} className={`size-3.5 ${saving ? "animate-spin" : ""}`} />
             {saving ? "Saving..." : "Save Banner"}
           </button>
         </div>

@@ -3,12 +3,19 @@ import { Link } from "react-router-dom"
 import { MakerLink } from "../piece/MakerLink"
 import type { PublicLook } from "../../state/publicLooks"
 import type { HeroPose } from "../../skin/heroPose"
+import { HeroBustSilhouette } from "./HeroBustSilhouette"
 
 // Loaded on demand: skin/heroPose pulls in three.js + skinview3d (~large async
 // chunk). The hero shows skeletons until the module is ready. Shadow+rim fx
 // are baked into the hero PNG (skin/thumbFx) — no per-figure CSS filters.
 
-export function HeroPosedFigureSkeleton({ className = "" }: { className?: string }) {
+export function HeroPosedFigureSkeleton({
+  pose = "center",
+  className = "",
+}: {
+  pose?: HeroPose
+  className?: string
+}) {
   return (
     <div
       className={`relative flex flex-col items-center select-none shrink-0 w-[160px] sm:w-[190px] lg:w-[210px] pointer-events-none ${className}`}
@@ -20,9 +27,10 @@ export function HeroPosedFigureSkeleton({ className = "" }: { className?: string
         <div className="skin-bone h-2.5 sm:h-3 w-14 sm:w-16 rounded-md opacity-40" />
       </div>
 
-      {/* Skeleton Bust silhouette */}
+      {/* Skeleton Bust silhouette: pose-accurate SVG in the exact box the
+          rendered bust will occupy (same aspect + bottom anchoring). */}
       <div className="relative w-full max-w-[210px] sm:max-w-[250px] lg:max-w-[280px] aspect-[9/10] flex items-end justify-center py-2">
-        <div className="skin-bone w-28 sm:w-32 lg:w-36 h-36 sm:h-40 lg:h-44 rounded-2xl opacity-40" />
+        <HeroBustSilhouette pose={pose} />
       </div>
     </div>
   )
@@ -74,7 +82,7 @@ export function HeroPosedFigure({
 
 
   if (externalLoading || !look) {
-    return <HeroPosedFigureSkeleton className={className} />
+    return <HeroPosedFigureSkeleton pose={pose} className={className} />
   }
 
   const fillStyle: CSSProperties = imgUrl
@@ -129,19 +137,22 @@ export function HeroPosedFigure({
         className="pointer-events-none relative w-full max-w-[231px] sm:max-w-[275px] lg:max-w-[308px] aspect-[9/10] flex items-end justify-center transition-transform duration-300 group-hover:scale-105 active:scale-[0.98]"
         title={`View ${look.name} by ${look.maker}`}
       >
-        {imgUrl ? (
-          <div className="relative w-full h-full animate-fade-in">
-            {/* Figure with baked punch shadow + rim highlight (skin/thumbFx) */}
-            <div
-              role="img"
-              aria-label={`${look.name} by ${look.maker}`}
-              className="iso-thumb-fill iso-thumb-figure thumb-in"
-              style={fillStyle}
-            />
-          </div>
-        ) : (
-          <div className="skin-bone w-28 sm:w-32 lg:w-36 h-36 sm:h-40 lg:h-44 rounded-2xl opacity-40 mb-2" aria-hidden="true" />
-        )}
+        <div className="relative w-full h-full">
+          {/* Pose-accurate placeholder: sits in the exact box the rendered
+              bust fills (contain, anchored bottom) so the swap is seamless. */}
+          {imgUrl ? null : <HeroBustSilhouette pose={pose} />}
+          {imgUrl ? (
+            <div className="absolute inset-0 animate-fade-in">
+              {/* Figure with baked punch shadow + rim highlight (skin/thumbFx) */}
+              <div
+                role="img"
+                aria-label={`${look.name} by ${look.maker}`}
+                className="iso-thumb-fill iso-thumb-figure thumb-in"
+                style={fillStyle}
+              />
+            </div>
+          ) : null}
+        </div>
         {/* Invisible hit column over the bust: the only pointer-catchable area of this figure */}
         <span
           aria-hidden="true"

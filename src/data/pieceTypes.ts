@@ -1,16 +1,19 @@
 export const GROUPS = ["head", "torso", "legs"] as const
 export type Group = (typeof GROUPS)[number]
 
-export const CLOTHING_SLOTS = ["hair", "hat", "face", "shirt", "coat", "pants", "shoes"] as const
+export const CLOTHING_SLOTS = ["hair", "hat", "face", "shirt", "set", "coat", "pants", "shoes"] as const
 export type ClothingSlot = (typeof CLOTHING_SLOTS)[number]
 
-export const SLOTS = ["eyes", "hair", "hat", "face", "shirt", "coat", "pants", "shoes"] as const
+export const SLOTS = ["eyes", "hair", "hat", "face", "shirt", "set", "coat", "pants", "shoes"] as const
 export type Slot = (typeof SLOTS)[number]
 
 /** Bottom → top. A higher piece punches the second (outer) Minecraft layer of pieces below it. */
+// "set" sits just above "shirt": a set is a multi-region garment base (e.g. a
+// bikini), so shirts and coats paint over its torso and pants over its legs.
 export const SLOT_STACK: Slot[] = [
   "eyes",
   "shirt",
+  "set",
   "coat",
   "pants",
   "shoes",
@@ -25,6 +28,7 @@ export const SLOT_GROUP: Record<Slot, Group> = {
   hat: "head",
   face: "head",
   shirt: "torso",
+  set: "torso",
   coat: "torso",
   pants: "legs",
   shoes: "legs",
@@ -58,6 +62,7 @@ export const SLOT_LABEL: Record<Slot, string> = {
   hat: "Hat",
   face: "Face",
   shirt: "Shirt",
+  set: "Set",
   coat: "Coat",
   pants: "Pants",
   shoes: "Shoes",

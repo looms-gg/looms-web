@@ -3,7 +3,7 @@
 **Free modular wardrobe for Minecraft skins.**  
 Browse clothing layers, stack outfits in Studio, export a vanilla PNG.
 
-**[Live site](https://looms-gg.github.io/looms-web/)** · **[Discord](https://discord.gg/UNTRgHBBPb)**
+**[Live site](https://looms.gg/)** · **[Discord](https://discord.gg/UNTRgHBBPb)**
 
 ---
 
@@ -24,9 +24,9 @@ GitHub is for developers: pull requests, code review, and bugs that need a repro
 | --------------------------------------------------------------- | ---------------------------------- |
 | [PRODUCT.md](PRODUCT.md)                                        | Who looms is for and why it exists |
 | [DESIGN.md](DESIGN.md)                                          | Visual system and UI tokens        |
-| [AGENTS.md](AGENTS.md)                                          | Rules for contributors and agents  |
+| [AGENTS.md](AGENTS.md)                                          | Contribution rules and code standards |
 | [Threat modeling](docs/THREAT_MODELING_AND_ABUSE_PREVENTION.md) | Security and abuse prevention      |
-| [Platform docs](docs/platform/README.md)                       | AI-ready briefings: product, features, tech, brand |
+| [Platform docs](docs/platform/README.md)                       | Deep-dive briefings: product, features, tech, brand |
 
 
 ---
@@ -48,7 +48,7 @@ Copy `[.env.example](.env.example)` to `.env` (and/or `.env.local` for `VITE_*` 
 
 **Email confirmation links:** Supabase must allow the app's URL or sign-up links bounce to the wrong host (e.g. `localhost:3000`). In the Supabase dashboard → Authentication → URL Configuration:
 
-- **Site URL:** `https://looms-gg.github.io/looms-web/`
-- **Redirect URLs** should include `https://looms-gg.github.io/looms-web/**` and `http://localhost:*/**` (the app sends the current origin + base path with every auth email, so local sign-ups come back to local).
+- **Site URL:** `https://looms.gg/`
+- **Redirect URLs** should include `https://looms.gg/**` and `http://localhost:*/**` (the app sends the current origin + base path with every auth email, so local sign-ups come back to local).
 
 PRs welcome. Talk through bigger ideas on Discord first so we are not building past each other!

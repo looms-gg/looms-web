@@ -1,8 +1,8 @@
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
+import { MemoryRouter } from "react-router-dom"
 import { describe, expect, it, vi } from "vitest"
 import type { ProfileRow } from "../../lib/supabase"
-import { AuthProvider } from "../../state/auth"
 import * as authModule from "../../state/auth"
 import { ProfileHeader } from "./ProfileHeader"
 
@@ -23,56 +23,42 @@ const baseProfile: ProfileRow = {
 
 function renderHeader(isOwner: boolean) {
   vi.spyOn(authModule, "useAuth").mockReturnValue({
-    updateProfile: vi.fn(async () => ({ error: null })),
+    user: isOwner ? { id: "u1" } : null,
   } as any)
 
   const host = document.createElement("div")
   flushSync(() => {
     createRoot(host).render(
-      <AuthProvider>
-        <ProfileHeader profile={baseProfile} isOwner={isOwner} onSaved={() => {}} />
-      </AuthProvider>,
+      <MemoryRouter>
+        <ProfileHeader profile={baseProfile} isOwner={isOwner} />
+      </MemoryRouter>,
     )
   })
   return host
 }
 
 describe("ProfileHeader", () => {
-  it("shows privacy settings cog only for the owner", () => {
-    const owner = renderHeader(true)
-    const cog = owner.querySelector('button[aria-label="Privacy settings"]') as HTMLButtonElement
-    expect(cog).not.toBeNull()
-    expect(owner.querySelector('button[aria-label="Change banner"]')).not.toBeNull()
-    expect(owner.querySelector('button[aria-label="Change profile picture"]')).not.toBeNull()
+  it("is display-only: no inline edit inputs for the owner", () => {
+    const host = renderHeader(true)
+    expect(host.querySelector("input")).toBeNull()
+    expect(host.querySelector("textarea")).toBeNull()
+  })
 
-    flushSync(() => {
-      cog.click()
-    })
-    expect(owner.textContent).toMatch(/Last seen/i)
-    expect(owner.textContent).toMatch(/Show likes/i)
+  it("shows an edit-profile settings link only for the owner", () => {
+    const owner = renderHeader(true)
+    const editLink = owner.querySelector('a[aria-label="Edit profile"]')
+    expect(editLink).not.toBeNull()
+    expect(editLink?.getAttribute("href")).toContain("/settings")
 
     const visitor = renderHeader(false)
-    expect(visitor.querySelector('button[aria-label="Privacy settings"]')).toBeNull()
-    expect(visitor.querySelector('button[aria-label="Change banner"]')).toBeNull()
+    expect(visitor.querySelector('a[aria-label="Edit profile"]')).toBeNull()
   })
 
-  it("hides owner upload icons until hover", () => {
-    const host = renderHeader(true)
-    const banner = host.querySelector('button[aria-label="Change banner"]') as HTMLButtonElement
-    const avatar = host.querySelector(
-      'button[aria-label="Change profile picture"]',
-    ) as HTMLButtonElement
-    const bannerIcon = banner.querySelector(".absolute.inset-0.grid") as HTMLElement
-    const avatarIcon = avatar.querySelector(".absolute.inset-0.grid") as HTMLElement
-    expect(bannerIcon.className).toContain("opacity-0")
-    expect(bannerIcon.className).toContain("group-hover/banner:opacity-100")
-    expect(avatarIcon.className).toContain("opacity-0")
-    expect(avatarIcon.className).toContain("group-hover/avatar:opacity-100")
-  })
-
-  it("shows bio text for visitors", () => {
+  it("shows bio text and username for visitors without owner chrome", () => {
     const host = renderHeader(false)
     expect(host.textContent).toContain("Hello plaza")
     expect(host.textContent).toContain("PixelWeaver")
+    expect(host.querySelector('button[aria-label="Change banner"]')).toBeNull()
+    expect(host.querySelector('button[aria-label="Change profile picture"]')).toBeNull()
   })
 })

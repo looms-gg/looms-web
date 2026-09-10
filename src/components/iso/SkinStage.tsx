@@ -45,6 +45,11 @@ export function SkinStage({
   const replayRef = useRef<(() => void) | null>(null)
   const paintFxRef = useRef<() => void>(() => {})
   const [ready, setReady] = useState(false)
+  // Once the first compose has landed we never go back to the skeleton: the
+  // viewer stays mounted and subsequent outfit swaps just re-texture it, so
+  // clothing changes read as instant instead of a refresh-from-scratch flash.
+  const firstPaint = useRef(true)
+  const poseSigRef = useRef<string | null>(null)
   const outfitRef = useRef(outfit)
   outfitRef.current = outfit
   const outfitIds = outfit.map((piece) => piece.id).join("|")
@@ -148,38 +153,62 @@ export function SkinStage({
     const viewer = viewerRef.current
     if (!viewer) return
     let cancelled = false
-    setReady(false)
+    // Hue shifts recolor the body only — pose, camera, and animation stay
+    // exactly as they are, so dragging the slider updates the figure live
+    // with zero flicker. The full pipeline runs only when the pose signature
+    // (outfit, body, model) actually changes.
+    const poseSig = `${bodyId}\u0000${model}\u0000${fullFigure ? 1 : 0}\u0000${outfitIds}`
+    const poseChanged = poseSigRef.current !== poseSig
+    poseSigRef.current = poseSig
     void composeSkin(outfitRef.current, bodyId, bodyHue, model)
       .then((skin) => {
         if (cancelled || viewerRef.current !== viewer) return
-        const next = outfitRef.current
         viewer.loadSkin(skin, { model: skinviewModel(model) })
         crispSkinTexture(viewer)
-        const painted = groupsFromAtlas(skin)
-        const { covers, group } = preparePreview(next, painted, { fullFigure })
-        const pose = covers ? poseGroupForParts(covers) : group
-        viewer.animation = isoPoseAnimation(pose)
-        const focus = () => {
-          applyGroupFocus(
-            viewer,
-            group,
-            next,
-            fullFigure ? ["head", "torso", "legs"] : covers,
-            true,
-          )
+        if (poseChanged) {
+          const next = outfitRef.current
+          const painted = groupsFromAtlas(skin)
+          const { covers, group } = preparePreview(next, painted, { fullFigure })
+          const pose = covers ? poseGroupForParts(covers) : group
+          viewer.animation = isoPoseAnimation(pose)
+          const focus = () => {
+            applyGroupFocus(
+              viewer,
+              group,
+              next,
+              fullFigure ? ["head", "torso", "legs"] : covers,
+              true,
+            )
+          }
+          replayRef.current = focus
+          focus()
+          // Soft 160ms fade on the re-posed frame so clothing swaps read as a
+          // smooth transition. Web Animations API — no remount, so the WebGL
+          // context survives. Never on hue drags (must be live) or under
+          // reduced motion.
+          if (!firstPaint.current) {
+            const node = canvasRef.current
+            if (
+              node &&
+              !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ) {
+              node.animate(
+                [{ opacity: 0.55 }, { opacity: 1 }],
+                { duration: 160, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+              )
+            }
+          }
         }
-        replayRef.current = focus
-        focus()
         // Renders the new frame and repaints the fx overlays from it.
         paintFxRef.current()
         setReady(true)
+        firstPaint.current = false
       })
       .catch(() => {
-        if (!cancelled) setReady(false)
+        if (!cancelled && firstPaint.current) setReady(false)
       })
     return () => {
       cancelled = true
-      replayRef.current = null
     }
   }, [bodyHue, bodyId, fullFigure, model, outfitIds])
 

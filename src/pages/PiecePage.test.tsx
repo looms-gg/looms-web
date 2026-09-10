@@ -1,13 +1,14 @@
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { pieces, upsertPiece } from "../data/catalog"
 import { ClosetProvider } from "../state/closet"
 import { AuthContext } from "../state/auth"
 import { CatalogProvider } from "../state/catalog"
 import * as catalogState from "../state/catalog"
 import { LikesProvider } from "../state/likes"
+import { peekPendingAction, clearPendingAction } from "../lib/pendingAction"
 import { PiecePage } from "./PiecePage"
 
 vi.mock("../components/iso/IsoThumb", () => ({
@@ -202,5 +203,51 @@ describe("PiecePage", () => {
     expect(scrollToSpy).toHaveBeenCalledWith(
       expect.objectContaining({ top: 0, left: 0 }),
     )
+  })
+
+  describe("guest resume-after-auth", () => {
+    beforeEach(() => {
+      sessionStorage.clear()
+      clearPendingAction()
+    })
+
+    it("stores an add envelope when a guest clicks Add to wardrobe", () => {
+      const host = renderPiece(`/piece/${pieces[0].id}`)
+      const addBtn = [...host.querySelectorAll("button")].find((b) =>
+        b.textContent?.includes("Add to wardrobe"),
+      ) as HTMLButtonElement
+      flushSync(() => {
+        addBtn.click()
+      })
+      expect(peekPendingAction()).toMatchObject({
+        action: "add",
+        pieceId: pieces[0].id,
+      })
+    })
+
+    it("stores an addAndWear envelope when a guest clicks Add & wear", () => {
+      const host = renderPiece(`/piece/${pieces[0].id}`)
+      const addWearBtn = [...host.querySelectorAll("button")].find((b) =>
+        b.textContent?.includes("Add & wear"),
+      ) as HTMLButtonElement
+      flushSync(() => {
+        addWearBtn.click()
+      })
+      expect(peekPendingAction()).toMatchObject({
+        action: "addAndWear",
+        pieceId: pieces[0].id,
+      })
+    })
+
+    it("does not store an envelope for signed-in users", () => {
+      const host = renderPiece(`/piece/${pieces[0].id}`, "user-1")
+      const addBtn = [...host.querySelectorAll("button")].find((b) =>
+        b.textContent?.includes("Add to wardrobe"),
+      ) as HTMLButtonElement
+      flushSync(() => {
+        addBtn.click()
+      })
+      expect(peekPendingAction()).toBeNull()
+    })
   })
 })

@@ -11,7 +11,7 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 | --- | --- |
 | Product name | looms (lowercase) |
 | One-liner | Free modular wardrobe for Minecraft skins |
-| Live URL | https://looms-gg.github.io/looms-web/ |
+| Live URL | https://looms.gg/ |
 | Discord | https://discord.gg/UNTRgHBBPb |
 | GitHub | https://github.com/looms-gg/looms-web |
 | Operator | ser0th (individual, United States) |
@@ -26,7 +26,7 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 | Clothing slots | hair, hat, face, shirt, coat, pants, shoes (+ system-only eyes) |
 | Body groups | head, torso, legs |
 | Skin models | Classic (4px arms) & Slim (3px arms); garments auto-convert between them |
-| Base bodies | 8 tones (Fair, Light, Warm, Tan*, Medium, Deep, Dark, Deepest). *Tan is the default |
+| Base bodies | 8 tones (Fair, Light, Warm*, Tan, Medium, Deep, Dark, Deepest). *Warm is the default |
 | Body hue shift | ±120° OKLCH rotation |
 | Bundled eyes | 70+ styles, adjustable vertical offset (−3…+1 px) |
 | Seed catalog | 22 named pieces |
@@ -59,7 +59,7 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 | 3D | skinview3d + three.js (on-device rendering, IndexedDB-cached thumbnails) |
 | Backend | Supabase (Postgres + Auth + Storage), 17 SQL migrations |
 | Security | RLS + triggers + sliding-window rate limiter + quota functions (never client-trusted) |
-| Hosting | GitHub Pages (SPA 404 fallback, base path `/looms-web/`) |
+| Hosting | GitHub Pages with custom domain looms.gg (SPA 404 fallback, served at root) |
 | Deploy | `deploy.command`: commit → push → migrations → build → prerender embeds → publish dist |
 | Tests | Vitest + happy-dom, ~112 test files |
 | SEO | Build-time prerendered OG/Twitter embeds per piece & look |
@@ -114,16 +114,16 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 ## 4. Honest gaps & known caveats (so AI output stays truthful)
 
 - **Solo project:** one developer, no SLA; terms disclaim warranties and liability.
-- **Legal contact placeholder:** the privacy/terms contact email is literally `privacy@[TBD]` pending a real address.
+- **Legal contact placeholder:** the privacy/terms contact email is literally `privacy@looms.gg` pending a real address.
 - **No monetization, no moat of scale:** no revenue model by design; Supabase free-tier realities apply to growth plans.
 - **Discovery is early:** one flat feed; no follows, collections, tags UI (tags exist in schema only), or search beyond name/maker/slot.
 - **Trending is heuristic:** pieces = savedCount × recency; looks = past-24h likes RPC with all-time/featured fallbacks. No anti-gaming heuristics beyond rate limits.
 - **Base-body workflow:** you compose from looms bodies, not arbitrary imported skins.
 - **No analytics:** growth insight currently comes from Discord/GitHub, not product metrics.
-- **Custom domain:** anticipated (`VITE_BASE=/` support exists) but the app lives at `looms-gg.github.io/looms-web/`.
+- **Custom domain:** anticipated (`VITE_BASE=/` support exists) but the app lives at `looms.gg/`.
 - **Embeds cover catalog + public looks:** profile/user pages don't get prerendered embeds yet.
 - **Bedrock support is by artifact** (the PNG works), not by integration (no marketplace/custom-server features).
 
 ## 5. One-paragraph boilerplate (press-ready, safe)
 
-> looms is a free, open-source wardrobe for Minecraft skins: browse community-made clothing layers, save any piece to your wardrobe, stack outfits on a 3D character in Studio, and export a vanilla 64×64 PNG that works instantly on Minecraft Java and Bedrock. No art skills, no ads, no paid unlocks, just dress up, remix, and wear. An unofficial fan project, unaffiliated with Mojang. https://looms-gg.github.io/looms-web/ · Discord: https://discord.gg/UNTRgHBBPb
+> looms is a free, open-source wardrobe for Minecraft skins: browse community-made clothing layers, save any piece to your wardrobe, stack outfits on a 3D character in Studio, and export a vanilla 64×64 PNG that works instantly on Minecraft Java and Bedrock. No art skills, no ads, no paid unlocks, just dress up, remix, and wear. An unofficial fan project, unaffiliated with Mojang. https://looms.gg/ · Discord: https://discord.gg/UNTRgHBBPb

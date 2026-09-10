@@ -44,9 +44,10 @@ function isoSaverPlugin(): Plugin {
   }
 }
 
-export default defineConfig(({ command }) => ({
-  // Dev stays at `/`. Production defaults to project Pages path unless VITE_BASE is set.
-  base: process.env.VITE_BASE ?? (command === "build" ? "/looms-web/" : "/"),
+export default defineConfig(() => ({
+  // Served at root via custom domain (looms.gg). Override with VITE_BASE for
+  // project-Pages builds (e.g. /looms-web/).
+  base: process.env.VITE_BASE ?? "/",
   plugins: [tailwindcss(), react(), isoSaverPlugin()],
   test: {
     environment: "happy-dom",

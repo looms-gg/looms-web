@@ -1,12 +1,9 @@
 import type { Piece } from "./pieceTypes"
 
-// Vite glob imports for bundled eye textures
+// Vite glob imports for bundled eye textures. Previews crop these atlases
+// live (eyeThumbUrl) — there are no separate thumb assets to keep in sync.
 const skinModules = import.meta.glob<{ default: string }>(
   "../assets/eyes/eye-*.png",
-  { eager: true }
-)
-const thumbModules = import.meta.glob<{ default: string }>(
-  "../assets/eyes/thumbs/eye-*.png",
   { eager: true }
 )
 
@@ -69,20 +66,56 @@ function resolveAssetUrl(module: unknown): string {
   return ""
 }
 
-// Build list of eyes, whites-first then id ascending within each group
+// Build list of eyes, whites-first then id ascending within each group.
+// Previews always derive from the eye texture itself (the 64×64 atlas PNG):
+// thumbs are cropped live in a shared offscreen canvas, so updating an eye
+// PNG can never leave a stale second copy of the art in the UI.
+const eyeThumbCache = new Map<string, string>()
+
+export function eyeThumbUrl(eye: Eye): string {
+  const hit = eyeThumbCache.get(eye.id)
+  if (hit) return hit
+  const canvas = document.createElement("canvas")
+  canvas.width = 8
+  canvas.height = 8
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return eye.skin
+  ctx.imageSmoothingEnabled = false
+  const img = new Image()
+  img.src = eye.skin
+  // drawImage of a not-yet-loaded image is a no-op; fall back to the atlas
+  // itself and retry once the decode completes.
+  if (img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, 8, 8, 8, 8, 0, 0, 8, 8)
+  } else {
+    img.onload = () => {
+      const retry = document.createElement("canvas")
+      retry.width = 8
+      retry.height = 8
+      const rctx = retry.getContext("2d")
+      if (!rctx) return
+      rctx.imageSmoothingEnabled = false
+      rctx.drawImage(img, 8, 8, 8, 8, 0, 0, 8, 8)
+      eyeThumbCache.set(eye.id, retry.toDataURL())
+    }
+    return eye.skin
+  }
+  const url = canvas.toDataURL()
+  eyeThumbCache.set(eye.id, url)
+  return url
+}
+
 export const bundledEyes: Eye[] = Object.keys(skinModules)
   .sort((a, b) => a.localeCompare(b))
   .map((skinPath, index) => {
     const num = index + 1
     const id = `eye-${String(num).padStart(2, "0")}`
-    const thumbPath = skinPath.replace("/eyes/", "/eyes/thumbs/")
     const skinUrl = resolveAssetUrl(skinModules[skinPath])
-    const thumbUrl = resolveAssetUrl(thumbModules[thumbPath])
     return {
       id,
       name: `Eyes #${String(num).padStart(2, "0")}`,
       skin: skinUrl,
-      thumb: thumbUrl || skinUrl,
+      thumb: "",
       hasWhites: EYES_WITH_WHITES.has(id),
     }
   })
@@ -91,8 +124,10 @@ export const bundledEyes: Eye[] = Object.keys(skinModules)
     return a.id.localeCompare(b.id)
   })
 
+// Symmetric vertical range: -3 = three pixels up, +3 = three pixels down,
+// 0 (the middle) = default position.
 export const EYE_OFFSET_MIN = -3
-export const EYE_OFFSET_MAX = 1
+export const EYE_OFFSET_MAX = 3
 
 export function clampEyeOffset(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0

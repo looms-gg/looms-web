@@ -116,7 +116,7 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <ProfileHeader profile={profile} isOwner={isOwner} onSaved={load} />
+      <ProfileHeader profile={profile} isOwner={isOwner} />
       {errorMsg ? (
         <p className="text-sm text-error" role="alert">
           {errorMsg}

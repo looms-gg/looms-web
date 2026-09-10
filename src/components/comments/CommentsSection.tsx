@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react"
-import { faReply, faTrash, faPen, faFlag } from "@fortawesome/free-solid-svg-icons"
+import { ArrowBendUpLeft, Trash, Pencil, Flag } from "@phosphor-icons/react"
 import {
   createGarmentComment,
   createLookComment,
@@ -18,7 +18,7 @@ import { MAX_LIMITS } from "../../lib/sanitize"
 import { useAuthOptional } from "../../state/auth"
 import { AuthModal } from "../auth/AuthModal"
 import { ReportModal } from "../moderation/ReportModal"
-import { FaIcon } from "../ui/FaIcon"
+import { Icon } from "../ui/Icon"
 import { MakerLink } from "../piece/MakerLink"
 
 function formatWhen(ts: number) {
@@ -200,7 +200,7 @@ function CommentCard({
               setReplyOpen((open) => !open)
             }}
           >
-            <FaIcon icon={faReply} className="size-3 mr-1" />
+            <Icon icon={ArrowBendUpLeft} className="size-3 mr-1" />
             Reply
           </button>
         ) : null}
@@ -211,7 +211,7 @@ function CommentCard({
             title="Edit comment"
             onClick={() => setEditing(true)}
           >
-            <FaIcon icon={faPen} className="size-3 mr-1" />
+            <Icon icon={Pencil} className="size-3 mr-1" />
             Edit
           </button>
         ) : null}
@@ -232,7 +232,7 @@ function CommentCard({
                 .catch((err) => setError(formatErrorMessage(err)))
             }}
           >
-            <FaIcon icon={faTrash} className="size-3 mr-1" />
+            <Icon icon={Trash} className="size-3 mr-1" />
             Delete
           </button>
         ) : null}
@@ -250,7 +250,7 @@ function CommentCard({
               setReportOpen(true)
             }}
           >
-            <FaIcon icon={faFlag} className="size-3 mr-1" />
+            <Icon icon={Flag} className="size-3 mr-1" />
             Report
           </button>
         ) : null}

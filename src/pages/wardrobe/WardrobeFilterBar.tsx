@@ -1,7 +1,7 @@
-import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
+import { MagnifyingGlass } from "@phosphor-icons/react"
 import { SLOTS, SLOT_LABEL } from "../../data/catalog"
 import type { SlotFilter } from "../../lib/exploreBrowse"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Icon } from "../../components/ui/Icon"
 import { MAX_LIMITS } from "../../lib/sanitize"
 
 export function WardrobeFilterBar({
@@ -44,7 +44,7 @@ export function WardrobeFilterBar({
       </div>
       <div className="w-full sm:max-w-xs">
         <label className="input input-bordered flex h-10 items-center gap-2 rounded-full bg-base-100">
-          <FaIcon icon={faMagnifyingGlass} className="size-3.5 opacity-50" />
+          <Icon icon={MagnifyingGlass} className="size-3.5 opacity-50" />
           <input
             type="search"
             maxLength={MAX_LIMITS.SEARCH_QUERY}

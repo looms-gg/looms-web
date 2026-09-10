@@ -9,11 +9,11 @@ Deep-dive companion to [master-briefing.md](master-briefing.md). Covers the stac
 | Layer | Technology | Notes |
 | --- | --- | --- |
 | UI | React 19 + TypeScript (strict) | Function components, context providers, no global store library |
-| Build | Vite 8 | Base-path aware (`/looms-web/` for Pages), dev stays at `/` |
+| Build | Vite 8 | Root-served custom domain (looms.gg); base overridable via VITE_BASE |
 | Styling | Tailwind CSS 4 + daisyUI 5 | Two custom themes (`looms` dark default, `looms-light`); daisyUI stock themes disabled |
 | Routing | React Router 7 | `BrowserRouter` with dynamic basename from `import.meta.env.BASE_URL` |
 | 3D | skinview3d + three.js | Skin rendering, custom lighting rig, on-device thumbnail baking |
-| Icons | FontAwesome (solid free set) | Thin `FaIcon` wrapper |
+| Icons | Phosphor (`@phosphor-icons/react`) | Thin `Icon` wrapper (`src/components/ui/Icon`) |
 | Testing | Vitest + happy-dom | ~112 test files colocated with source; setup seeds a test catalog |
 | Lint | oxlint | |
 | Backend | Supabase | Postgres + Auth + Storage; types hand-owned in `src/lib/supabase.ts` |
@@ -35,7 +35,7 @@ Deep-dive companion to [master-briefing.md](master-briefing.md). Covers the stac
 - **Slot** (`eyes, hair, hat, face, shirt, coat, pants, shoes`) → belongs to a **body group** (`head, torso, legs`).
 - **Stack order** is canonical: bottom→top = eyes, shirt, coat, pants, shoes, hair, face, hat. Users can reorder within rules; the DB `stack` array is the persisted z-order.
 - A **Piece** carries optional `covers: Group[]`, a long-hair piece may paint head *and* torso; previews honor the actual paint.
-- **Bodies** are 8 real base skins (Fair→Deepest) bundled as PNGs; default is `body-4` ("Tan").
+- **Bodies** are 8 real base skins (Fair→Deepest) bundled as PNGs; default is `body-3` ("Warm").
 - **Eyes** are system pieces (`eye-01`…`eye-71`) with a numeric offset suffix (`eye-42@-1`) shifting eye pixels vertically, clamped −3…+1.
 
 ### 2.2 Compositing (`src/skin/compose.ts`)
@@ -99,7 +99,7 @@ Everything sensitive happens in **Postgres triggers + RLS**, never client-side:
 - **Providers**: Theme → Auth → Likes → Catalog → Closet wrap the router. Closet is the heart: it merges server state (owned pieces, looks) with optimistic local updates and detects the "active look" by matching equipped layers.
 - **Offline-first touches**: signed-out users get a local-only closet session; theme and cookie consent persist in localStorage; iso thumbnails persist in IndexedDB.
 - **Auth flows**: unconfirmed sign-ins open a listening modal that polls `getUser()` every 4s and auto-unlocks; magic links; resend with 45s cooldown; `absoluteAppUrl()` bakes the Pages base path into every email redirect.
-- **Routing**: basename derived from Vite `BASE_URL` so the same build works at `/` (dev) and `/looms-web/` (Pages); canonical/share URLs re-add the origin + base.
+- **Routing**: basename derived from Vite `BASE_URL` so the same build works at `/` (prod custom domain) or a subdirectory (`VITE_BASE=/looms-web/` for project Pages); canonical/share URLs re-add the origin + base.
 - **Testing**: colocated `*.test.ts(x)`; `happy-dom` environment; a shared setup seeds the catalog registry; pure domain logic (stack math, sanitizers, error formatting, quotas mapping) is heavily unit-tested; contexts and pages are component-tested.
 - **The dev "iso-saver"**: a Vite middleware that accepts batched PNG renders and writes them to `public/iso/pieces/`, how the pre-baked isometric tiles shipped in `public/` were generated. `scripts/generate-og-assets.py` similarly builds per-piece OG images; `scripts/prerender-embeds.mjs` runs after `vite build` to emit SEO-ready static HTML per piece/look.
 

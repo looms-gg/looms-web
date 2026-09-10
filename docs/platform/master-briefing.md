@@ -8,7 +8,7 @@
 
 looms is a **100% free modular character creator for Minecraft skins**. Think "dress-up closet for Minecraft": instead of hand-painting a skin in Photoshop, players browse community-made clothing layers, hair, hats, face pieces, eyes, shirts, coats, pants, shoes, add any of them to their wardrobe for free, stack them onto a base skin in a 3D Studio, and export a **vanilla 64×64 PNG** that works instantly on Minecraft Java and Bedrock.
 
-- **Live site:** https://looms-gg.github.io/looms-web/
+- **Live site:** https://looms.gg/
 - **Discord:** https://discord.gg/UNTRgHBBPb
 - **GitHub:** https://github.com/looms-gg/looms-web (open source)
 - **Operator:** ser0th, solo developer, United States
@@ -98,11 +98,11 @@ This is the product's moat, worth understanding:
 
 ## 5. The platform & data model
 
-- **Frontend:** React 19 + TypeScript + Vite 8, Tailwind CSS 4 + daisyUI 5, React Router 7, FontAwesome, skinview3d + three.js.
+- **Frontend:** React 19 + TypeScript + Vite 8, Tailwind CSS 4 + daisyUI 5, React Router 7, Phosphor Icons, skinview3d + three.js.
 - **Backend:** Supabase (Postgres + Auth + Storage), all security in RLS + triggers (never the client).
 - **Main tables:** `profiles`, `garments` (clothing pieces; the catalogue), `wardrobe_items` (user→piece ownership), `looks` (saved outfits with visibility), `likes` (polymorphic garment/look), `garment_comments` / `look_comments`, `content_reports`, `site_banners`, `admin_users`, `profile_presence` (last-seen), `rate_limit_events` (internal).
 - **Storage buckets:** `garments` (textures, PNG-only) and `profiles` (avatars/banners), both path-scoped to the owning user's ID.
-- **Hosting:** GitHub Pages (SPA with 404.html fallback + base path `/looms-web/`), deployed by `deploy.command` which commits, pushes, applies Supabase migrations, builds, and publishes. Email confirmation redirects include the base path so signups work from production and localhost.
+- **Hosting:** GitHub Pages with custom domain looms.gg (SPA with 404.html fallback, served at root), deployed by `deploy.command` which commits, pushes, applies Supabase migrations, builds, and publishes. Email confirmation redirects include the base path so signups work from production and localhost.
 - **Quotas & limits (server-enforced):** 150 garments & 15/10min per account, 100 looks & 30/10min, 500 wardrobe items & 60/10min, 60 likes/10min & 5000 lifetime, 30 comments/10min & 2000 lifetime, 2MB max upload, PNG-only textures, 64×64 enforced client-side, one reply level, 15-day username cooldown, 10 reports/10min & 25 pending. Friendly error messages map every server limit to human wording.
 - **Privacy posture:** no ads, no trackers, no analytics today; only essential storage (session, theme, cookie-consent record); cookie banner with accept/reject; last-seen hidden by user toggle (stored in a separate RLS-guarded presence table); likes visible only when the user allows; GDPR-friendly rights language; explicit "not affiliated with Mojang" terms.
 
@@ -142,5 +142,5 @@ Recently landed: public looks + trending, profiles with privacy controls, server
 | Sign-in | Email+password or magic link, confirmation required |
 | Platform | Web app (desktop + mobile web), no app install |
 | Stack | React 19, TS, Vite 8, Tailwind 4, daisyUI 5, Supabase |
-| Hosting | GitHub Pages at /looms-web/ |
+| Hosting | GitHub Pages at looms.gg |
 | Moderation | User reports → admin queue; RLS-enforced takedowns |

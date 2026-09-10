@@ -1,19 +1,19 @@
 import { useState, useRef, type ChangeEvent, type FormEvent } from "react"
 import {
-  faCloudArrowUp,
-  faTriangleExclamation,
-  faXmark,
-  faCircleCheck,
-} from "@fortawesome/free-solid-svg-icons"
+  CloudArrowUp,
+  Warning,
+  X,
+  CheckCircle,
+} from "@phosphor-icons/react"
 import { useAuthOptional } from "../../state/auth"
 import { useCloset } from "../../state/closet"
 import { useCatalog } from "../../state/catalog"
 import { supabase, type GarmentRow } from "../../lib/supabase"
-import { CLOTHING_SLOTS, SLOT_GROUP, type Slot } from "../../data/catalog"
+import { CLOTHING_SLOTS, SLOT_GROUP, type Group, type Slot } from "../../data/catalog"
 import { garmentToPiece } from "../../data/garment"
 import { MAX_LIMITS, sanitizeText, sanitizeUsername, validateFileSize } from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
-import { FaIcon } from "../ui/FaIcon"
+import { Icon } from "../ui/Icon"
 import { ModalOverlay } from "../ui/ModalOverlay"
 
 export interface UploadPieceModalProps {
@@ -32,6 +32,11 @@ export function validateDimensions(
     }
   }
   return { valid: true }
+}
+
+/** A set is a multi-region garment (bikini, tracksuit): one texture paints torso and legs. */
+export function coversForSlot(slot: Slot): Group[] {
+  return slot === "set" ? ["torso", "legs"] : [SLOT_GROUP[slot]]
 }
 
 export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
@@ -140,17 +145,19 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
       } = supabase.storage.from("garments").getPublicUrl(storagePath)
 
       const maker = profile?.username ? sanitizeUsername(profile.username) : "you"
+      const group = SLOT_GROUP[slot]
+      const covers = coversForSlot(slot)
       const row: GarmentRow = {
         id: pieceId,
         user_id: user.id,
         name: pieceName,
         description: pieceDescription || null,
         slot,
-        body_group: SLOT_GROUP[slot],
+        body_group: group,
         saved_count: 0,
         like_count: 0,
         added: Date.now(),
-        covers: [SLOT_GROUP[slot]],
+        covers,
         texture_url: publicUrl,
         is_public: isPublic,
         tags: [],
@@ -201,12 +208,12 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
           aria-label="Close"
           onClick={onClose}
         >
-          <FaIcon icon={faXmark} className="size-4" />
+          <Icon icon={X} className="size-4" />
         </button>
 
         <div className="flex items-center gap-3 mb-5">
           <span className="grid size-10 place-items-center rounded-xl bg-primary/20 text-primary">
-            <FaIcon icon={faCloudArrowUp} className="size-5" />
+            <Icon icon={CloudArrowUp} className="size-5" />
           </span>
           <div>
             <h2
@@ -226,7 +233,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
             role="alert"
             className="mb-4 flex items-center gap-2 rounded-xl bg-error/15 border border-error/30 p-3 text-xs text-error font-medium"
           >
-            <FaIcon icon={faTriangleExclamation} className="shrink-0 size-4" />
+            <Icon icon={Warning} className="shrink-0 size-4" />
             <span>{errorMsg}</span>
           </div>
         ) : null}
@@ -252,14 +259,14 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
                   className="size-24 rounded-lg bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px] object-contain p-1 border border-white/10 [image-rendering:pixelated]"
                 />
                 <span className="text-xs font-bold text-success flex items-center gap-1">
-                  <FaIcon icon={faCircleCheck} className="size-3" />
+                  <Icon icon={CheckCircle} className="size-3" />
                   {file?.name} (64x64)
                 </span>
                 <span className="text-[11px] text-base-content/50">Click to change file</span>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1.5 text-base-content/65">
-                <FaIcon icon={faCloudArrowUp} className="size-8 text-primary/70 mb-1" />
+                <Icon icon={CloudArrowUp} className="size-8 text-primary/70 mb-1" />
                 <span className="text-xs font-bold text-base-content">
                   Click or drag a 64x64 PNG here
                 </span>

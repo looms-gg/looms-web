@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react"
-import { faPen } from "@fortawesome/free-solid-svg-icons"
+import { Pencil } from "@phosphor-icons/react"
 import { GROUP_LABEL, SLOT_LABEL, pieceCovers, type Piece } from "../../data/catalog"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Icon } from "../../components/ui/Icon"
 import { MakerLink } from "../../components/piece/MakerLink"
 import { SkinStage } from "../../components/iso/SkinStage"
 import { PieceActions } from "./PieceActions"
@@ -43,7 +43,7 @@ export function PieceSheet({
           title={`Edit ${piece.name}`}
           onClick={onEdit}
         >
-          <FaIcon icon={faPen} className="size-3.5 mr-1.5" />
+          <Icon icon={Pencil} className="size-3.5 mr-1.5" />
           Edit
         </button>
       ) : null}

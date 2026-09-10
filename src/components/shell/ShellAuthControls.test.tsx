@@ -55,6 +55,29 @@ describe("ShellAuthControls", () => {
     expect(host.textContent).toContain("PixelWeaver")
   })
 
+  it("shows a Settings link in the account menu when signed in", () => {
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <MemoryRouter>
+          <ShellAuthControls
+            user={{ id: "u1" }}
+            displayName="PixelWeaver"
+            username="PixelWeaver"
+            emailVerified={true}
+            onOpenEmailVerify={() => {}}
+            onSignOut={() => {}}
+          />
+        </MemoryRouter>,
+      )
+    })
+    const settingsLink = Array.from(host.querySelectorAll("a")).find((a) =>
+      /Settings/.test(a.textContent ?? ""),
+    ) as HTMLAnchorElement
+    expect(settingsLink).toBeTruthy()
+    expect(settingsLink.getAttribute("href")).toContain("/settings")
+  })
+
   it("blurs active element to close dropdown when an option is clicked", () => {
     const host = document.createElement("div")
     document.body.appendChild(host)

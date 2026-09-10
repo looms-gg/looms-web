@@ -1,10 +1,15 @@
 import { useEffect } from "react"
+import { withBase } from "../../lib/basePath"
 
 export type HeadMetaProps = {
   title?: string
   description?: string
   image?: string
   url?: string
+  /** Set false to keep a route out of search indexes (auth-gated, private, reported). */
+  index?: boolean
+  /** JSON-LD structured data attached to the document head for this route. */
+  jsonLd?: Record<string, unknown> | null
 }
 
 function updateMetaTag(selector: string, attr: string, value: string) {
@@ -18,7 +23,7 @@ function updateMetaTag(selector: string, attr: string, value: string) {
   el.setAttribute(attr, value)
 }
 
-export function HeadMeta({ title, description, image, url }: HeadMetaProps) {
+export function HeadMeta({ title, description, image, url, index = true, jsonLd }: HeadMetaProps) {
   useEffect(() => {
     if (typeof document === "undefined") return
 
@@ -40,9 +45,39 @@ export function HeadMeta({ title, description, image, url }: HeadMetaProps) {
     }
 
     if (url) {
-      updateMetaTag('meta[property="og:url"]', "content", url)
+      // Canonical + og:url are always absolute on the production origin, never
+      // localhost preview origins — they travel with link tags and share URLs.
+      const canonical = url.startsWith("http") ? url : `https://looms.gg${withBase(url)}`
+      updateMetaTag('meta[property="og:url"]', "content", canonical)
+
+      let link = document.querySelector('link[rel="canonical"]')
+      if (!link) {
+        link = document.createElement("link")
+        link.setAttribute("rel", "canonical")
+        document.head.appendChild(link)
+      }
+      link.setAttribute("href", canonical)
     }
-  }, [title, description, image, url])
+
+    // Robots: indexable routes declare index,follow; private/thin/reported
+    // routes switch the live document to noindex,follow.
+    updateMetaTag('meta[name="robots"]', "content", index ? "index, follow" : "noindex, follow")
+
+    // JSON-LD: one route-owned script tag, replaced on every navigation.
+    const JSONLD_ID = "looms-route-jsonld"
+    let script = document.getElementById(JSONLD_ID)
+    if (jsonLd) {
+      if (!script) {
+        script = document.createElement("script")
+        script.setAttribute("id", JSONLD_ID)
+        script.setAttribute("type", "application/ld+json")
+        document.head.appendChild(script)
+      }
+      script.textContent = JSON.stringify(jsonLd).replace(/</g, "\\u003c").replace(/>/g, "\\u003e")
+    } else {
+      script?.remove()
+    }
+  }, [title, description, image, url, index, jsonLd])
 
   return null
 }

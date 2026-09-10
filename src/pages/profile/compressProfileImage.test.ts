@@ -3,10 +3,52 @@ import {
   compressProfileImage,
   fitAvatarDraw,
   fitBannerSize,
+  fitCropDraw,
   AVATAR_MAX,
   BANNER_MAX_W,
   BANNER_MAX_H,
 } from "./compressProfileImage"
+
+describe("fitCropDraw", () => {
+  it("default crop matches the center cover rect", () => {
+    const draw = fitCropDraw(2000, 1000, 1)
+    expect(draw.sw).toBe(1000)
+    expect(draw.sh).toBe(1000)
+    expect(draw.sx).toBe(500)
+    expect(draw.sy).toBe(0)
+  })
+
+  it("offsets the rect toward the chosen center", () => {
+    // cx=0 picks the leftmost square of a wide image.
+    const left = fitCropDraw(2000, 1000, 1, { cx: 0, cy: 0.5, zoom: 1 })
+    expect(left.sx).toBe(0)
+    // cx=1 picks the rightmost square.
+    const right = fitCropDraw(2000, 1000, 1, { cx: 1, cy: 0.5, zoom: 1 })
+    expect(right.sx).toBe(1000)
+  })
+
+  it("zoom in shrinks the source rect", () => {
+    const zoomed = fitCropDraw(2000, 1000, 1, { cx: 0.5, cy: 0.5, zoom: 2 })
+    expect(zoomed.sw).toBe(500)
+    expect(zoomed.sh).toBe(500)
+    expect(zoomed.sx).toBe(750)
+  })
+
+  it("uses the banner aspect for banner crops", () => {
+    // aspect 3: cover rect bounded by the 500px source height → 1500x500.
+    const draw = fitCropDraw(3000, 500, 3)
+    expect(draw.sw).toBe(1500)
+    expect(draw.sh).toBe(500)
+  })
+
+  it("never lets the rect exceed the source", () => {
+    const draw = fitCropDraw(100, 100, 1, { cx: 0.5, cy: 0.5, zoom: 3 })
+    expect(draw.sx).toBeGreaterThanOrEqual(0)
+    expect(draw.sy).toBeGreaterThanOrEqual(0)
+    expect(draw.sx + draw.sw).toBeLessThanOrEqual(100)
+    expect(draw.sy + draw.sh).toBeLessThanOrEqual(100)
+  })
+})
 
 describe("fitAvatarDraw", () => {
   it("cover-crops a wide image to a square source then caps at AVATAR_MAX", () => {

@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { faTriangleExclamation, faXmark } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Warning, X } from "@phosphor-icons/react"
+import { Icon } from "../../components/ui/Icon"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
 import { DangerZoneModal } from "./DangerZoneModal"
 
@@ -38,7 +38,7 @@ export function ProfilePrivacyModal({
         aria-label="Close"
         onClick={onClose}
       >
-        <FaIcon icon={faXmark} className="size-4" />
+        <Icon icon={X} className="size-4" />
       </button>
 
       <h2 className="pr-8 text-lg font-extrabold">Privacy</h2>
@@ -88,7 +88,7 @@ export function ProfilePrivacyModal({
           onClick={() => setDangerOpen(true)}
         >
           <span className="flex items-center gap-2">
-            <FaIcon icon={faTriangleExclamation} className="size-3.5" />
+            <Icon icon={Warning} className="size-3.5" />
             Delete account
           </span>
           <span className="text-xs font-normal text-base-content/50">→</span>

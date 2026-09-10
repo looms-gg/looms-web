@@ -1,8 +1,8 @@
 import { useMemo, useState, type CSSProperties } from "react"
 import { useNavigate } from "react-router-dom"
-import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons"
+import { MagnifyingGlass } from "@phosphor-icons/react"
 import { piecesFromEquipped } from "../../data/outfit"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Icon } from "../../components/ui/Icon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { RackGrid } from "../../components/piece/RackGrid"
 import { MAX_LIMITS } from "../../lib/sanitize"
@@ -52,7 +52,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
               </p>
               <div className="w-full sm:max-w-xs">
                 <label className="input input-bordered flex h-10 items-center gap-2 rounded-full bg-base-100">
-                  <FaIcon icon={faMagnifyingGlass} className="size-3.5 opacity-50" />
+                  <Icon icon={MagnifyingGlass} className="size-3.5 opacity-50" />
                   <input
                     type="search"
                     maxLength={MAX_LIMITS.SEARCH_QUERY}

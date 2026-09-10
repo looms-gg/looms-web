@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   bundledEyes,
   EYES_WITH_WHITES,
+  eyeThumbUrl,
   getEye,
   getEyePiece,
   parseEyeId,
@@ -13,11 +14,19 @@ describe("bundledEyes", () => {
     expect(bundledEyes).toHaveLength(71)
   })
 
-  it("assigns valid IDs and skin/thumb paths", () => {
+  it("assigns valid IDs and skin paths", () => {
     const eye01 = bundledEyes.find((e) => e.id === "eye-01")
     expect(eye01?.name).toBe("Eyes #01")
     expect(eye01?.skin).toBeTruthy()
-    expect(eye01?.thumb).toBeTruthy()
+  })
+
+  it("derives previews from the eye texture itself, not a separate thumb asset", () => {
+    const eye = bundledEyes.find((e) => e.id === "eye-01")!
+    // In a DOM environment the crop resolves synchronously from the atlas.
+    const url = eyeThumbUrl(eye)
+    expect(url).toBeTruthy()
+    // Either the live 8×8 crop (data URL) or the atlas fallback (module URL).
+    expect(url === eye.skin || url.startsWith("data:image/png")).toBe(true)
   })
 
   it("retrieves eye piece with slot 'eyes'", () => {
@@ -29,6 +38,15 @@ describe("bundledEyes", () => {
     expect(piece?.group).toBe("head")
     expect(piece?.covers).toEqual(["head"])
     expect(piece?.offsetY).toBe(0)
+  })
+
+  it("clamps offsets to a symmetric up-3 / down-3 range", () => {
+    expect(parseEyeId("eye-05@3")).toEqual({ baseId: "eye-05", offset: 3 })
+    expect(parseEyeId("eye-05@-3")).toEqual({ baseId: "eye-05", offset: -3 })
+    expect(parseEyeId("eye-05@10")).toEqual({ baseId: "eye-05", offset: 3 })
+    expect(parseEyeId("eye-05@-10")).toEqual({ baseId: "eye-05", offset: -3 })
+    expect(formatEyeId("eye-05", -3)).toBe("eye-05@-3")
+    expect(formatEyeId("eye-05", 3)).toBe("eye-05@3")
   })
 
   it("parses and formats eye IDs with offsets", () => {

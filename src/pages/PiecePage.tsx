@@ -8,6 +8,7 @@ import { useCatalog } from "../state/catalog"
 import { useAuthOptional } from "../state/auth"
 import { HeadMeta } from "../components/shell/HeadMeta"
 import { getPieceShareUrl } from "../lib/share"
+import { setPendingAction } from "../lib/pendingAction"
 import { PieceSheet } from "./piece/PieceSheet"
 import { PieceSkeleton } from "./piece/PieceSkeleton"
 import { InspectorModal } from "./wardrobe/InspectorModal"
@@ -75,8 +76,13 @@ export function PiecePage() {
     upsert({ ...latest, savedCount: latest.savedCount + 1 })
   }
 
-  function requireAuth(action: () => void) {
+  function requireAuth(
+    pending: { action: "add" | "addAndWear"; pieceId: string },
+    action: () => void,
+  ) {
     if (!user) {
+      // Remember the intent so it replays once the account is confirmed.
+      setPendingAction(pending)
       setAuthOpen(true)
       return
     }
@@ -87,14 +93,29 @@ export function PiecePage() {
   const metaDesc = currentPiece.blurb
     ? `${currentPiece.blurb} · ${currentPiece.slot.toUpperCase()} · Minecraft clothing on looms`
     : `${currentPiece.name} — modular Minecraft clothing piece on looms.`
+  // Indexation quality gate: uploads without a description are thin content —
+  // keep them crawlable for link discovery but out of the index.
+  const isThin = !currentPiece.blurb || currentPiece.blurb.length < 40
 
   return (
     <div className="space-y-4">
       <HeadMeta
-        title={currentPiece.name}
+        title={`${currentPiece.name} — ${currentPiece.slot.toUpperCase()} Minecraft clothing piece`}
         description={metaDesc}
         url={shareUrl}
-        image={`https://looms-gg.github.io/looms-web/og/pieces/${currentPiece.id}.png`}
+        image={`https://looms.gg/og/pieces/${currentPiece.id}.png`}
+        index={!isThin}
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CreativeWork",
+          name: currentPiece.name,
+          description: metaDesc,
+          url: shareUrl,
+          image: `https://looms.gg/og/pieces/${currentPiece.id}.png`,
+          isAccessibleForFree: true,
+          genre: `Minecraft ${currentPiece.slot} layer`,
+          inLanguage: "en",
+        }}
       />
 
       <Link
@@ -114,14 +135,14 @@ export function PiecePage() {
         onLikeCountChange={(likeCount) => upsert({ ...currentPiece, likeCount })}
         onWear={() => wear(currentPiece.id)}
         onAddToWardrobe={() =>
-          requireAuth(() => {
+          requireAuth({ action: "add", pieceId: currentPiece.id }, () => {
             void addToWardrobe(currentPiece.id).then(({ inserted }) => {
               if (inserted) bumpSaved()
             })
           })
         }
         onAddAndWear={() =>
-          requireAuth(() => {
+          requireAuth({ action: "addAndWear", pieceId: currentPiece.id }, () => {
             void addAndWear(currentPiece.id).then(({ inserted }) => {
               if (inserted) bumpSaved()
             })

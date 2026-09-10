@@ -4,6 +4,7 @@ import {
   pieceCovers,
   preparePreview,
   SLOT_GROUP,
+  SLOT_LABEL,
   SLOT_STACK,
   visibleCovers,
   type Piece,
@@ -67,5 +68,20 @@ describe("pieceTypes", () => {
     expect(SLOT_STACK[0]).toBe("eyes")
     expect(SLOT_GROUP.pants).toBe("legs")
     expect(SLOT_GROUP.coat).toBe("torso")
+  })
+
+  it("layers a set above shirt so outer clothes paint over it", () => {
+    const shirt = SLOT_STACK.indexOf("shirt")
+    const set = SLOT_STACK.indexOf("set")
+    const coat = SLOT_STACK.indexOf("coat")
+    const pants = SLOT_STACK.indexOf("pants")
+    expect(set).toBeGreaterThan(shirt)
+    expect(set).toBeLessThan(coat)
+    expect(set).toBeLessThan(pants)
+  })
+
+  it("treats set as a torso fallback group with a label", () => {
+    expect(SLOT_GROUP.set).toBe("torso")
+    expect(SLOT_LABEL.set).toBe("Set")
   })
 })

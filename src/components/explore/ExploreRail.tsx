@@ -1,58 +1,59 @@
 import { useRef } from "react"
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core"
 import {
-  faChevronDown,
-  faClock,
-  faEye,
-  faFaceSmile,
-  faFire,
-  faHatWizard,
-  faHeart,
-  faLayerGroup,
-  faShirt,
-  faShoePrints,
-  faScissors,
-  faSocks,
-  faUser,
-  faUsers,
-  faVest,
-  faWandSparkles,
-} from "@fortawesome/free-solid-svg-icons"
+  CaretDown,
+  Clock,
+  Crown,
+  Eye,
+  Fire,
+  Footprints,
+  HardHat,
+  Heart,
+  Pants,
+  PuzzlePiece,
+  Scissors,
+  Smiley,
+  Sparkle,
+  Stack,
+  TShirt,
+  User,
+  Users,
+} from "@phosphor-icons/react"
 import { CLOTHING_SLOTS, SLOT_LABEL } from "../../data/catalog"
 import { SORTS, type SlotFilter, type Sort } from "../../lib/exploreBrowse"
 import type { LookModelFilter, LookSort } from "../../state/publicLooks"
-import { FaIcon } from "../ui/FaIcon"
+import { Icon, type IconType } from "../ui/Icon"
 
-const PIECE_SORT_ICON: Record<Sort, IconDefinition> = {
-  Newest: faClock,
-  Trending: faFire,
-  "Most Saved": faUsers,
+const PIECE_SORT_ICON: Record<Sort, IconType> = {
+  Newest: Clock,
+  Trending: Fire,
+  "Most Saved": Users,
 }
 
-const LOOK_SORT_ICON: Record<LookSort, IconDefinition> = {
-  Trending: faFire,
-  Popular: faHeart,
-  Newest: faClock,
+const LOOK_SORT_ICON: Record<LookSort, IconType> = {
+  Trending: Fire,
+  Popular: Heart,
+  Newest: Clock,
 }
 
 const LOOK_SORTS: LookSort[] = ["Trending", "Popular", "Newest"]
 
-const SLOT_ICON: Record<SlotFilter, IconDefinition> = {
-  all: faLayerGroup,
-  eyes: faEye,
-  hair: faScissors,
-  hat: faHatWizard,
-  face: faFaceSmile,
-  shirt: faShirt,
-  coat: faVest,
-  pants: faSocks,
-  shoes: faShoePrints,
+const SLOT_ICON: Record<SlotFilter, IconType> = {
+  all: Stack,
+  eyes: Eye,
+  hair: Scissors,
+  hat: HardHat,
+  face: Smiley,
+  shirt: TShirt,
+  set: PuzzlePiece,
+  coat: Crown,
+  pants: Pants,
+  shoes: Footprints,
 }
 
-const MODEL_ITEMS: { id: LookModelFilter; icon: IconDefinition; label: string }[] = [
-  { id: "all", icon: faLayerGroup, label: "All models" },
-  { id: "classic", icon: faUser, label: "Classic (4px)" },
-  { id: "slim", icon: faUser, label: "Slim (3px)" },
+const MODEL_ITEMS: { id: LookModelFilter; icon: IconType; label: string }[] = [
+  { id: "all", icon: Stack, label: "All models" },
+  { id: "classic", icon: User, label: "Classic (4px)" },
+  { id: "slim", icon: User, label: "Slim (3px)" },
 ]
 
 function RailList<T extends string>({
@@ -62,7 +63,7 @@ function RailList<T extends string>({
   onPick,
 }: {
   label: string
-  items: { id: T; icon: IconDefinition; label: string }[]
+  items: { id: T; icon: IconType; label: string }[]
   selected: T
   onPick: (id: T) => void
 }) {
@@ -89,7 +90,7 @@ function RailList<T extends string>({
             onClick={() => onPick(item.id)}
             className={`rail-row ${on ? "rail-row-on" : ""}`}
           >
-            <FaIcon icon={item.icon} className="size-3.5 shrink-0" />
+            <Icon icon={item.icon} className="size-3.5 shrink-0" />
             <span>{item.label}</span>
           </button>
         )
@@ -154,7 +155,7 @@ export function ExploreRail({
           }`}
           onClick={() => onModeChange("pieces")}
         >
-          <FaIcon icon={faShirt} className="size-3" />
+          <Icon icon={TShirt} className="size-3" />
           <span>Pieces</span>
           {pieceCount > 0 ? (
             <span className="opacity-65 tabular-nums text-[10px]">({pieceCount})</span>
@@ -171,7 +172,7 @@ export function ExploreRail({
           }`}
           onClick={() => onModeChange("looks")}
         >
-          <FaIcon icon={faWandSparkles} className="size-3" />
+          <Icon icon={Sparkle} className="size-3" />
           <span>Looks</span>
           {lookCount > 0 ? (
             <span className="opacity-65 tabular-nums text-[10px]">({lookCount})</span>
@@ -205,9 +206,9 @@ export function ExploreRail({
         </p>
         <details ref={combo} className="cat-combo lg:hidden">
           <summary className="rail-row rail-row-on">
-            <FaIcon icon={currentModel.icon} className="size-3.5 shrink-0" />
+            <Icon icon={currentModel.icon} className="size-3.5 shrink-0" />
             <span className="min-w-0 flex-1 truncate">{currentModel.label}</span>
-            <FaIcon icon={faChevronDown} className="cat-chevron size-3 shrink-0 opacity-80" />
+            <Icon icon={CaretDown} className="cat-chevron size-3 shrink-0 opacity-80" />
           </summary>
           <div className="cat-combo-panel">
             <RailList
@@ -256,9 +257,9 @@ export function ExploreRail({
       </p>
       <details ref={combo} className="cat-combo lg:hidden">
         <summary className="rail-row rail-row-on">
-          <FaIcon icon={SLOT_ICON[currentSlot.id]} className="size-3.5 shrink-0" />
+          <Icon icon={SLOT_ICON[currentSlot.id]} className="size-3.5 shrink-0" />
           <span className="min-w-0 flex-1 truncate">{currentSlot.label}</span>
-          <FaIcon icon={faChevronDown} className="cat-chevron size-3 shrink-0 opacity-80" />
+          <Icon icon={CaretDown} className="cat-chevron size-3 shrink-0 opacity-80" />
         </summary>
         <div className="cat-combo-panel">
           <RailList

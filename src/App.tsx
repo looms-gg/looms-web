@@ -18,8 +18,12 @@ const PiecePage = lazy(() => import("./pages/PiecePage").then((m) => ({ default:
 const LookPage = lazy(() => import("./pages/LookPage").then((m) => ({ default: m.LookPage })))
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })))
 const StudioPage = lazy(() => import("./pages/StudioPage").then((m) => ({ default: m.StudioPage })))
+const EditorPage = lazy(() => import("./pages/editor/EditorPage").then((m) => ({ default: m.EditorPage })))
 const WardrobePage = lazy(() => import("./pages/WardrobePage").then((m) => ({ default: m.WardrobePage })))
 const AdminPage = lazy(() => import("./pages/AdminPage").then((m) => ({ default: m.AdminPage })))
+const SettingsRoute = lazy(() =>
+  import("./pages/settings/SettingsPage").then((m) => ({ default: m.SettingsRoute })),
+)
 
 function RouteFallback() {
   return (
@@ -107,6 +111,22 @@ export default function App() {
                           >
                             <StudioPage />
                           </RequireAuth>
+                        </Suspense>
+                      }
+                    />
+                    <Route
+                      path="editor"
+                      element={
+                        <Suspense fallback={<RouteFallback />}>
+                          <EditorPage />
+                        </Suspense>
+                      }
+                    />
+                    <Route
+                      path="settings"
+                      element={
+                        <Suspense fallback={<RouteFallback />}>
+                          <SettingsRoute />
                         </Suspense>
                       }
                     />

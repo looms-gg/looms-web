@@ -77,7 +77,7 @@ When limits hit, the server raises errors that the client maps through `formatEr
 - **Cookie Policy** (`/cookies`): essential vs non-essential explained, how to change consent.
 - **Community Guidelines** (`/guidelines`): allowed/not-allowed/enforcement/reporting.
 
-One known gap, deliberately tracked in the docs themselves: the contact email in legal pages is a placeholder (`privacy@[TBD]`) pending a real address before the policies are "final."
+One known gap, deliberately tracked in the docs themselves: the contact email in legal pages is a placeholder (`privacy@looms.gg`) pending a real address before the policies are "final."
 
 ## 6. Input hardening details (for security-minded writing)
 

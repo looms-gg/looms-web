@@ -1,6 +1,6 @@
 import { withBase } from "./basePath"
 
-export const DEFAULT_ORIGIN = "https://looms-gg.github.io"
+export const DEFAULT_ORIGIN = "https://looms.gg"
 
 export function getCanonicalUrl(path: string): string {
   const origin = typeof window !== "undefined" && window.location?.origin

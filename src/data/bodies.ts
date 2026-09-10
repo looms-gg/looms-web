@@ -25,7 +25,7 @@ export const bodies: Body[] = [
   { id: "body-8", name: "Deepest", skin: body8, swatch: "#442e25" },
 ]
 
-export const DEFAULT_BODY_ID = "body-4"
+export const DEFAULT_BODY_ID = "body-3"
 
 const bodyById = new Map(bodies.map((body) => [body.id, body]))
 

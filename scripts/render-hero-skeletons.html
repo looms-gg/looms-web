@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>hero skeleton render</title>
+</head>
+<body>
+  <pre id="out" style="font: 11px monospace"></pre>
+  <script type="module">
+    const log = (m) => { document.getElementById("out").textContent += m + "\n" }
+
+    try {
+      const { DEFAULT_BODY_ID } = await import("/src/data/bodies")
+      const { composeSkin } = await import("/src/skin/compose")
+      const { applyHeroCameraPose, frameHeroCamera } = await import("/src/skin/heroPose")
+      const { lightSkinViewer, pauseViewerLoop, crispSkinTexture, skinviewModel } = await import("/src/skin/focus")
+      const { compositeIsoThumbFx } = await import("/src/skin/thumbFx")
+      const { SkinViewer } = await import("skinview3d")
+
+      // Render a plain default body (no clothes) — the skeleton placeholder
+      // must be outfit-agnostic. bodyHue 0, classic model.
+      const skin = await composeSkin([], DEFAULT_BODY_ID, 0, "classic")
+
+      const payload = {}
+      for (const pose of ["left", "center", "right"]) {
+        const viewer = new SkinViewer({
+          canvas: document.createElement("canvas"),
+          width: 280,
+          height: 310,
+          renderPaused: true,
+        })
+        lightSkinViewer(viewer)
+        crispSkinTexture(viewer)
+        pauseViewerLoop(viewer)
+        viewer.loadSkin(skin, { model: skinviewModel("classic") })
+        applyHeroCameraPose(viewer.playerObject, pose)
+        frameHeroCamera(viewer, pose)
+        viewer.render()
+        payload[`hero-pose-${pose}`] = { url: compositeIsoThumbFx(viewer.canvas, viewer.canvas.width, viewer.canvas.height), wash: "" }
+        viewer.dispose()
+        log(`rendered ${pose}`)
+      }
+
+      // Reuse the project's iso-saver dev middleware to write the PNGs.
+      const res = await fetch("/api/save-iso-renders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const body = await res.json()
+      log("SAVED " + JSON.stringify(body))
+      document.title = "RENDER_OK"
+    } catch (err) {
+      log("FAILED " + String(err && err.stack || err))
+      document.title = "RENDER_FAILED"
+    }
+  </script>
+</body>
+</html>

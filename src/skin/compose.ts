@@ -13,6 +13,25 @@ import { ensureModel, type SkinModel } from "./convert"
 const ATLAS = 64
 const decoded = new Map<string, HTMLImageElement | Promise<HTMLImageElement>>()
 
+/**
+ * Cache of fully composed skin canvases, keyed by outfit + body + hue + model.
+ * Switching clothing in the studio then resolves instantly (a Map hit) instead
+ * of re-rasterizing and re-blitting every layer from scratch.
+ */
+const composedSkins = new Map<string, HTMLCanvasElement>()
+const COMPOSED_CACHE_MAX = 48
+
+function composedKey(
+  outfit: Piece[],
+  bodyId: string,
+  bodyHue: number,
+  model: SkinModel,
+) {
+  return `${bodyId}\u0000${bodyHue}\u0000${model}\u0000${outfit
+    .map((piece) => piece.id)
+    .join("\u0000")}`
+}
+
 function loadSkinImage(src: string) {
   const hit = decoded.get(src)
   if (hit instanceof HTMLImageElement) return Promise.resolve(hit)
@@ -175,6 +194,14 @@ export async function composeSkin(
   model: SkinModel = "classic",
 ) {
   const slim = model === "slim"
+  const key = composedKey(outfit, bodyId, bodyHue, model)
+  const cached = composedSkins.get(key)
+  if (cached) {
+    // Refresh LRU order so the hottest looks survive the cap.
+    composedSkins.delete(key)
+    composedSkins.set(key, cached)
+    return cached
+  }
   const { canvas: base, ctx } = makeSkinCanvas()
   blitOpaque(ctx, await loadSkinImage(bodyOrDefault(bodyId).skin))
   const normalizedBody = ensureModel(base, model)
@@ -187,6 +214,11 @@ export async function composeSkin(
     blitPixels(dest.data, layer.data)
   }
   ctx.putImageData(dest, 0, 0)
+  composedSkins.set(key, base)
+  if (composedSkins.size > COMPOSED_CACHE_MAX) {
+    const oldest = composedSkins.keys().next().value
+    if (oldest !== undefined) composedSkins.delete(oldest)
+  }
   return base
 }
 
@@ -200,7 +232,13 @@ export async function downloadSkinFile(
   const canvas = await composeSkin(outfit, bodyId, bodyHue, model)
   const stem = filename.trim() || "looms-look"
   const a = document.createElement("a")
-  a.href = canvas.toDataURL("image/png")
+  // composeSkin may hand back a cached canvas shared with live viewers; export
+  // from a private copy so nothing else can ever see later mutations.
+  const snapshot = document.createElement("canvas")
+  snapshot.width = canvas.width
+  snapshot.height = canvas.height
+  snapshot.getContext("2d")?.drawImage(canvas, 0, 0)
+  a.href = snapshot.toDataURL("image/png")
   a.download = stem.toLowerCase().endsWith(".png") ? stem : `${stem}.png`
   a.click()
 }

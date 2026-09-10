@@ -1,12 +1,12 @@
 import { useState } from "react"
 import {
-  faBullhorn,
-  faClipboardList,
-  faClockRotateLeft,
-  faFlag,
-  faShieldHalved,
-} from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../components/ui/FaIcon"
+  Megaphone,
+  ClipboardText,
+  ClockCounterClockwise,
+  Flag,
+  ShieldCheck,
+} from "@phosphor-icons/react"
+import { Icon, type IconType } from "../components/ui/Icon"
 import { HeadMeta } from "../components/shell/HeadMeta"
 import { useAuth } from "../state/auth"
 import { ModerationQueue } from "./admin/ModerationQueue"
@@ -20,11 +20,11 @@ export function AdminPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<AdminTab>("moderation")
 
-  const tabs: { id: AdminTab; label: string; icon: typeof faFlag }[] = [
-    { id: "moderation", label: "Moderation Queue", icon: faFlag },
-    { id: "activity", label: "Latest Activity", icon: faClockRotateLeft },
-    { id: "banner", label: "Site Banner", icon: faBullhorn },
-    { id: "audit", label: "Audit Log", icon: faClipboardList },
+  const tabs: { id: AdminTab; label: string; icon: IconType }[] = [
+    { id: "moderation", label: "Moderation Queue", icon: Flag },
+    { id: "activity", label: "Latest Activity", icon: ClockCounterClockwise },
+    { id: "banner", label: "Site Banner", icon: Megaphone },
+    { id: "audit", label: "Audit Log", icon: ClipboardText },
   ]
 
   return (
@@ -38,7 +38,7 @@ export function AdminPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-base-content/10 pb-6">
         <div className="flex items-center gap-3.5">
           <div className="grid size-12 place-items-center rounded-2xl bg-warning/15 text-warning">
-            <FaIcon icon={faShieldHalved} className="size-6" />
+            <Icon icon={ShieldCheck} className="size-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ export function AdminPage() {
                   : "btn-ghost text-base-content/70 hover:text-base-content"
               }`}
             >
-              <FaIcon icon={tab.icon} className="size-3.5" />
+              <Icon icon={tab.icon} className="size-3.5" />
               <span>{tab.label}</span>
             </button>
           )

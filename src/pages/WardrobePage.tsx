@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import { faCloudArrowUp } from "@fortawesome/free-solid-svg-icons"
-import { FaIcon } from "../components/ui/FaIcon"
+import { CloudArrowUp } from "@phosphor-icons/react"
+import { Icon } from "../components/ui/Icon"
 import { UploadPieceModal } from "../components/piece/UploadPieceModal"
 import { useCloset } from "../state/closet"
 import { useCatalog } from "../state/catalog"
@@ -80,7 +80,7 @@ export function WardrobePage() {
             onClick={() => setUploadOpen(true)}
             className="btn btn-outline btn-sm rounded-full font-bold"
           >
-            <FaIcon icon={faCloudArrowUp} className="size-3.5 mr-1.5" />
+            <Icon icon={CloudArrowUp} className="size-3.5 mr-1.5" />
             Upload piece
           </button>
         </div>

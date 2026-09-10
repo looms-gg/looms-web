@@ -1,10 +1,10 @@
-import { faChevronDown, faChevronUp, faXmark } from "@fortawesome/free-solid-svg-icons"
+import { CaretDown, CaretUp, X } from "@phosphor-icons/react"
 import type { Piece, Slot } from "../../data/catalog"
 import { SLOT_LABEL } from "../../data/catalog"
 import type { Body } from "../../data/bodies"
-import { getEye } from "../../data/eyes"
+import { getEye, eyeThumbUrl } from "../../data/eyes"
 import { IsoThumb } from "../../components/iso/IsoThumb"
-import { FaIcon } from "../../components/ui/FaIcon"
+import { Icon } from "../../components/ui/Icon"
 import type { SkinModel } from "../../skin/convert"
 
 function StackRow({
@@ -28,7 +28,7 @@ function StackRow({
       {eye ? (
         <div className="iso-frame iso-frame--chip flex items-center justify-center bg-base-300">
           <img
-            src={eye.thumb}
+            src={eyeThumbUrl(eye)}
             alt=""
             className="size-7 [image-rendering:pixelated]"
           />
@@ -50,7 +50,7 @@ function StackRow({
               disabled={outside}
               onClick={() => onMove(piece.id, 1)}
             >
-              <FaIcon icon={faChevronUp} className="size-3" />
+              <Icon icon={CaretUp} className="size-3" />
             </button>
             <button
               type="button"
@@ -59,7 +59,7 @@ function StackRow({
               disabled={inside}
               onClick={() => onMove(piece.id, -1)}
             >
-              <FaIcon icon={faChevronDown} className="size-3" />
+              <Icon icon={CaretDown} className="size-3" />
             </button>
           </div>
         ) : null}
@@ -69,7 +69,7 @@ function StackRow({
           aria-label={`Take off ${piece.name}`}
           onClick={() => onClear(piece.slot)}
         >
-          <FaIcon icon={faXmark} className="size-3.5" />
+          <Icon icon={X} className="size-3.5" />
         </button>
       </div>
     </li>
@@ -110,10 +110,14 @@ export function StudioLayers({
           <span className="text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/60">
             Model
           </span>
-          <div className="join rounded-full bg-base-300 p-0.5" role="group" aria-label="Arm model">
+          <div
+            className="flex items-center gap-1 rounded-full bg-base-300 p-0.5"
+            role="group"
+            aria-label="Arm model"
+          >
             <button
               type="button"
-              className={`join-item btn btn-xs rounded-full border-0 font-extrabold px-3 ${
+              className={`btn btn-xs h-7 min-h-0 rounded-full border-0 font-extrabold px-3 ${
                 model === "classic" ? "btn-primary shadow-xs" : "btn-ghost text-base-content/70"
               }`}
               onClick={() => onModel("classic")}
@@ -123,7 +127,7 @@ export function StudioLayers({
             </button>
             <button
               type="button"
-              className={`join-item btn btn-xs rounded-full border-0 font-extrabold px-3 ${
+              className={`btn btn-xs h-7 min-h-0 rounded-full border-0 font-extrabold px-3 ${
                 model === "slim" ? "btn-primary shadow-xs" : "btn-ghost text-base-content/70"
               }`}
               onClick={() => onModel("slim")}
