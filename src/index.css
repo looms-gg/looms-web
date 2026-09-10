@@ -491,40 +491,6 @@ label input.grow:focus-visible,
   transition-duration: 150ms;
 }
 
-.verify-listen {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 44px;
-  padding: 0.75rem 1rem;
-  border-radius: 14px;
-  background: color-mix(in oklab, var(--color-primary) 12%, var(--color-base-100));
-}
-
-.verify-listen-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--color-primary);
-  animation: verify-listen 1.6s ease-in-out infinite;
-}
-
-@keyframes verify-listen {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .verify-listen-dot {
-    animation: none;
-  }
-}
-
 body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   background: transparent;
   border-color: transparent;
@@ -888,7 +854,7 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   }
 }
 
-.hero-closet {
+.hero-wardrobe {
   position: relative;
   overflow: hidden;
   display: grid;
@@ -901,7 +867,7 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
 }
 
 @media (min-width: 768px) {
-  .hero-closet {
+  .hero-wardrobe {
     grid-template-columns: minmax(18rem, 1.25fr) minmax(0, 1fr);
     padding: 2.75rem 3rem;
   }
@@ -1884,7 +1850,6 @@ button.badge:active {
   .skin-bone-silhouette,
   .studio-piece-search-pop,
   .studio-eye-dock,
-  .editor-bone,
   .editor-frame,
   .profile-bone,
   .piece-sheet,

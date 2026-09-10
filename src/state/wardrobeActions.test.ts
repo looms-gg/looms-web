@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest"
 import { pieces } from "../data/catalog"
 import { persistDefaults } from "./persist"
-import { addAndWearPiece, addPiece, setBodyPersist, wearOwned } from "./closetActions"
+import { addAndWearPiece, addPiece, setBodyPersist, wearOwned } from "./wardrobeActions"
 
 const testPiece = pieces[0]
 
-describe("closetActions", () => {
+describe("wardrobeActions", () => {
   it("adds a piece to wardrobe", () => {
     const { next, message } = addPiece(persistDefaults, testPiece.id)
     expect(next.owned).toContain(testPiece.id)

@@ -178,7 +178,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
     updated: "2026-09-07",
     sections: [
       {
-        heading: "Be cool in the closet",
+        heading: "Be cool in the wardrobe",
         paragraphs: [
           "looms is for sharing wearable Minecraft layers and outfits. Keep uploads original or properly licensed, and treat other players with respect.",
         ],

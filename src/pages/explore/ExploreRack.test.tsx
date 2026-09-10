@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { pieces } from "../../data/catalog"
 import { AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
 import { ExploreRack } from "./ExploreRack"
 
@@ -57,7 +57,7 @@ describe("ExploreRack", () => {
           <LikesProvider>
             <CatalogProvider>
               <MemoryRouter>
-                <ClosetProvider>
+                <WardrobeProvider>
                   <ExploreRack
                     loading={false}
                     error={null}
@@ -68,7 +68,7 @@ describe("ExploreRack", () => {
                     query="zzz"
                     onReset={onReset}
                   />
-                </ClosetProvider>
+                </WardrobeProvider>
               </MemoryRouter>
             </CatalogProvider>
           </LikesProvider>
@@ -88,7 +88,7 @@ describe("ExploreRack", () => {
           <LikesProvider>
             <CatalogProvider>
               <MemoryRouter>
-                <ClosetProvider>
+                <WardrobeProvider>
                   <ExploreRack
                     loading={false}
                     error={null}
@@ -99,7 +99,7 @@ describe("ExploreRack", () => {
                     query=""
                     onReset={() => {}}
                   />
-                </ClosetProvider>
+                </WardrobeProvider>
               </MemoryRouter>
             </CatalogProvider>
           </LikesProvider>

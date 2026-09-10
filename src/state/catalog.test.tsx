@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { replaceCatalog, type Piece } from "../data/catalog"
 import { fixturePieces } from "../data/catalogSeed"
 import { piecesFromEquipped } from "../data/outfit"
-import { ClosetProvider, useCloset } from "./closet"
+import { WardrobeProvider, useWardrobe } from "./wardrobe"
 import { CatalogProvider, mapGarmentEmbed } from "./catalog"
 import * as authModule from "./auth"
 import type { AuthContextValue } from "./auth"
@@ -135,9 +135,9 @@ describe("catalog hydration race", () => {
     const upload: Piece = mapGarmentEmbed(makeGarmentRow())
     replaceCatalog(fixturePieces().filter((piece) => piece.id !== upload.id))
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
@@ -148,9 +148,9 @@ describe("catalog hydration race", () => {
         root.render(
           <authModule.AuthContext.Provider value={stubAuth("user-a")}>
             <CatalogProvider>
-              <ClosetProvider>
+              <WardrobeProvider>
                 <Consumer />
-              </ClosetProvider>
+              </WardrobeProvider>
             </CatalogProvider>
           </authModule.AuthContext.Provider>,
         )

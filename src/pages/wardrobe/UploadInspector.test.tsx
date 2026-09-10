@@ -4,7 +4,7 @@ import { flushSync } from "react-dom"
 import { MemoryRouter, useLocation } from "react-router-dom"
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { type Piece } from "../../data/catalog"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { CatalogProvider } from "../../state/catalog"
 import { AuthContext, type AuthContextValue } from "../../state/auth"
 import { UploadInspector } from "./UploadInspector"
@@ -81,9 +81,9 @@ describe("UploadInspector", () => {
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
             <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadInspector piece={mockPiece} />
-            </ClosetProvider>
+            </WardrobeProvider>
             </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
@@ -120,9 +120,9 @@ describe("UploadInspector", () => {
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
             <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadInspector piece={mockPiece} />
-            </ClosetProvider>
+            </WardrobeProvider>
             </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
@@ -172,9 +172,9 @@ describe("UploadInspector", () => {
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
             <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadInspector piece={mockPiece} />
-            </ClosetProvider>
+            </WardrobeProvider>
             </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
@@ -201,10 +201,10 @@ describe("UploadInspector", () => {
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
             <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadInspector piece={mockPiece} />
               <PathPeek />
-            </ClosetProvider>
+            </WardrobeProvider>
             </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
@@ -244,9 +244,9 @@ describe("UploadInspector", () => {
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
             <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadInspector piece={mockPiece} />
-            </ClosetProvider>
+            </WardrobeProvider>
             </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
@@ -296,9 +296,9 @@ describe("UploadInspector", () => {
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={stubAuth()}>
             <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadInspector piece={mockPiece} />
-            </ClosetProvider>
+            </WardrobeProvider>
             </CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,

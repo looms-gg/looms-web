@@ -9,7 +9,7 @@ Deep-dive companion to [master-briefing.md](master-briefing.md). The voice, visu
 - **Name:** looms (lowercase always, except sentence start). Not LOOMS, not Looms.
 - **Category:** "Free modular wardrobe for Minecraft skins", the canonical one-liner.
 - **Personality:** warm, playful, collectible, **plaza-bright**: Nintendo-adjacent charm. The visual grammar borrows Mii-plaza energy (via ShareMii.net), and the voice follows: friendly console-era delight, rounded tiles, pill buttons, everyone's-invited optimism. Charming and polished, never snarky, edgy, or hype-y.
-- **Voice:** short, inviting, concrete, and kind. Real nouns (piece names, layer slots, wear, export), simple sentences, gentle encouragement, small celebrations. looms copy should feel like a cheerful friend showing you their closet, not a brand selling something, not a meme account.
+- **Voice:** short, inviting, concrete, and kind. Real nouns (piece names, layer slots, wear, export), simple sentences, gentle encouragement, small celebrations. looms copy should feel like a cheerful friend showing you their wardrobe, not a brand selling something, not a meme account.
 - **Values:** free forever, community-shaped (Discord-first), creativity without art skills, safety without bureaucracy.
 
 ### Platform voice vs. UGC voice (important)
@@ -23,7 +23,7 @@ looms is a **UGC platform**. Piece names and blurbs are written by makers and ca
 > "Wardrobe's still empty."
 > "Add a hat, a coat, or an accessory in Explore to build your wardrobe."
 > "You're in."
-> "The closet is yours."
+> "The wardrobe is yours."
 > "Wear a few layers in Studio and save the combo. It lands here."
 > "This screen watches on its own, you can keep browsing while it waits."
 > "Thank you for helping keep looms safe and creative."
@@ -40,7 +40,7 @@ looms is a **UGC platform**. Piece names and blurbs are written by makers and ca
 | Hero sub | "Mix and match layered clothing, hair, and accessories into custom Minecraft skins. Free to style, export, and wear." |
 | README | "Free modular wardrobe for Minecraft skins. Browse clothing layers, stack outfits in Studio, export a vanilla PNG." |
 | Wardrobe tagline | "Saved characters and pieces you own." |
-| Email confirmed | "You're in, the closet is yours." |
+| Email confirmed | "You're in, the wardrobe is yours." |
 | Footer | "Free to style, export, and wear. Unofficial Minecraft fan project." |
 | Community invite | "Got an idea? Join the Discord and tell us what you want to wear, browse, or fix!" |
 
@@ -121,19 +121,19 @@ Hard rules for any generated content: stay in **platform voice** (warm, wholesom
 >
 > See an outfit you like in Explore? One tap loads it into your Studio with every layer ready. Swap the shoes, keep the coat, export your look.
 >
-> Your next favorite outfit might be hanging in someone else's closet.
+> Your next favorite outfit might be hanging in someone else's wardrobe.
 
 > 22 starter clothing pieces. 70+ eye styles with a height slider. 8 skin tones with a hue dial.
 >
 > Everything free, no ads, and your export is a vanilla PNG that works in Minecraft right away.
 >
-> looms, the modular closet for Minecraft skins.
+> looms, the modular wardrobe for Minecraft skins.
 
 ### Example Discord announcement
 
 > **🧥 Your wardrobe follows you now**
 >
-> Save a look on your laptop, wear it from your phone, pieces and looks live on your account, so your closet is always with you.
+> Save a look on your laptop, wear it from your phone, pieces and looks live on your account, so your wardrobe is always with you.
 >
 > Also new: public looks and trending on the home page, profile pages at /u/yourname, and a light theme for daytime dressing.
 >
@@ -160,4 +160,4 @@ Title: *How to get custom clothes on your Minecraft skin without learning pixel 
 - **Discord** is the town square, feature ideas, piece requests, UX feedback, bug chatter. Announcements can be casual and frequent.
 - **GitHub** is developer-facing: PRs, code review, reproducible bugs. Keep marketing out.
 - **Social (X/Twitter etc.)**: lead with the visual (tiles/renders are the brand), one idea per post, always the free hook. The isometric renders and the three-friend hero are the highest-signal images.
-- **In-app** copy: sentence case, plain verbs, warm and encouraging, celebrate the small wins ("You're in." "The closet is yours.") and keep errors kind and specific ("Couldn't export that skin.", with a retry, never a stack trace). The platform is the cheerful host; UGC carries its own personality.
+- **In-app** copy: sentence case, plain verbs, warm and encouraging, celebrate the small wins ("You're in." "The wardrobe is yours.") and keep errors kind and specific ("Couldn't export that skin.", with a retry, never a stack trace). The platform is the cheerful host; UGC carries its own personality.

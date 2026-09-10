@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react"
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom"
-import { useCloset } from "../state/closet"
+import { useWardrobe } from "../state/wardrobe"
 import {
   DEFAULT_FEATURED_LOOKS,
   fetchLookById,
@@ -33,7 +33,7 @@ export function LookPage() {
   const navigate = useNavigate()
   const auth = useAuthOptional()
   const user = auth?.user ?? null
-  const { loadLook, notify } = useCloset()
+  const { loadLook, notify } = useWardrobe()
 
   const [look, setLook] = useState<PublicLook | null>(null)
   const [loading, setLoading] = useState(true)

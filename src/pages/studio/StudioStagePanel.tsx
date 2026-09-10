@@ -3,7 +3,7 @@ import type { Piece } from "../../data/catalog"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
 import { SkinStage } from "../../components/iso/SkinStage"
 import type { SkinModel } from "../../skin/convert"
-import type { Look } from "../../state/closet"
+import type { Look } from "../../state/wardrobe"
 import { MAX_LIMITS } from "../../lib/sanitize"
 
 export function StudioStagePanel({

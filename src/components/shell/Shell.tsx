@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom"
 import { MagicWand, Package, Sparkle, TShirt } from "@phosphor-icons/react"
-import { useCloset } from "../../state/closet"
+import { useWardrobe } from "../../state/wardrobe"
 import { useAuth } from "../../state/auth"
 import { useLikes } from "../../state/likes"
 import { CookieConsentProvider } from "../../state/cookieConsent"
@@ -76,7 +76,7 @@ export function Shell() {
 }
 
 function ShellFrame() {
-  const { notice, dismissNotice } = useCloset()
+  const { notice, dismissNotice } = useWardrobe()
   const {
     user,
     profile,

@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthContext, type AuthContextValue } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
 import { supabase } from "../../lib/supabase"
 import {
@@ -105,11 +105,11 @@ function renderReplayHarness(auth: AuthContextValue, path: { current: string }) 
         <AuthContext.Provider value={auth}>
           <LikesProvider>
             <CatalogProvider>
-              <ClosetProvider>
+              <WardrobeProvider>
                 <MemoryRouter initialEntries={["/piece/winter-coat"]}>
                   <Harness auth={auth} path={path} />
                 </MemoryRouter>
-              </ClosetProvider>
+              </WardrobeProvider>
             </CatalogProvider>
           </LikesProvider>
         </AuthContext.Provider>,
@@ -130,11 +130,11 @@ async function reAuth(
         <AuthContext.Provider value={auth}>
           <LikesProvider>
             <CatalogProvider>
-              <ClosetProvider>
+              <WardrobeProvider>
                 <MemoryRouter initialEntries={["/piece/winter-coat"]}>
                   <Harness auth={auth} path={path} />
                 </MemoryRouter>
-              </ClosetProvider>
+              </WardrobeProvider>
             </CatalogProvider>
           </LikesProvider>
         </AuthContext.Provider>,

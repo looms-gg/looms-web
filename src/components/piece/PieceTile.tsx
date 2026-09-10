@@ -4,7 +4,7 @@ import { Bookmark, Check, PlusCircle } from "@phosphor-icons/react"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
 import { useAuthOptional } from "../../state/auth"
 import { useCatalog } from "../../state/catalog"
-import { useCloset } from "../../state/closet"
+import { useWardrobe } from "../../state/wardrobe"
 import { AuthModal } from "../auth/AuthModal"
 import { Icon } from "../ui/Icon"
 import { IsoThumb } from "../iso/IsoThumb"
@@ -19,7 +19,7 @@ export const PieceTile = memo(function PieceTile({
 }) {
   const auth = useAuthOptional()
   const { upsert } = useCatalog()
-  const { owns, addToWardrobe } = useCloset()
+  const { owns, addToWardrobe } = useWardrobe()
   const location = useLocation()
   const navigate = useNavigate()
   const from = location.pathname + location.search

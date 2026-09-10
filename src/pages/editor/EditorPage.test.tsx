@@ -35,7 +35,7 @@ describe("EditorPage", () => {
 
   it("states it is under construction, coming soon, and what will ship", () => {
     const host = renderEditor()
-    expect(host.textContent).toMatch(/being built/i)
+    expect(host.textContent).toMatch(/skin creation/i)
     expect(host.textContent).toMatch(/Under construction/i)
     expect(host.textContent).toMatch(/Coming soon/i)
     expect(host.textContent).toMatch(/Check back soon/i)

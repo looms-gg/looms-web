@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { pieces } from "../../data/catalog"
 import { AuthProvider } from "../../state/auth"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
 import { PieceSheet } from "./PieceSheet"
 
@@ -21,7 +21,7 @@ describe("PieceSheet", () => {
         <AuthProvider>
           <LikesProvider>
             <MemoryRouter>
-              <ClosetProvider>
+              <WardrobeProvider>
                 <PieceSheet
                   piece={pieces[0]}
                   owned
@@ -33,7 +33,7 @@ describe("PieceSheet", () => {
                   onAddToWardrobe={() => {}}
                   onAddAndWear={() => {}}
                 />
-              </ClosetProvider>
+              </WardrobeProvider>
             </MemoryRouter>
           </LikesProvider>
         </AuthProvider>,

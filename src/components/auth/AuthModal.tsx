@@ -47,6 +47,9 @@ export function AuthModal({
   const captchaEnabled = isTurnstileEnabled()
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [captchaError, setCaptchaError] = useState<string | null>(null)
+  // Bumped to force TurnstileWidget to mint a fresh token. A consumed token
+  // replayed on retry is rejected as "timeout-or-duplicate".
+  const [captchaResetCount, setCaptchaResetCount] = useState(0)
 
   useEffect(() => {
     if (!isOpen) return
@@ -70,6 +73,7 @@ export function AuthModal({
   function resetCaptcha() {
     setCaptchaToken(null)
     setCaptchaError(null)
+    setCaptchaResetCount((count) => count + 1)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -80,6 +84,9 @@ export function AuthModal({
     const formData = new FormData(event.currentTarget)
     const email = String(formData.get("email") ?? "").trim()
     const password = String(formData.get("password") ?? "").trim()
+    // Captured before the await: this token (if any) is consumed server-side
+    // during this attempt and must not be replayed afterwards.
+    const spentCaptchaToken = captchaEnabled && Boolean(captchaToken)
 
     try {
       if (!signInWithPassword || !signUpWithPassword || !signInWithOtp) {
@@ -139,6 +146,9 @@ export function AuthModal({
       setErrorMsg(formatErrorMessage(err))
     } finally {
       setLoading(false)
+      // Every auth attempt consumes the captcha token server-side (success or
+      // failure), so force a fresh one for whatever the user does next.
+      if (spentCaptchaToken) resetCaptcha()
     }
   }
 
@@ -324,6 +334,7 @@ export function AuthModal({
         {captchaEnabled ? (
           <div>
             <TurnstileWidget
+              resetKey={captchaResetCount}
               onToken={(token) => {
                 setCaptchaToken(token)
                 if (token) setCaptchaError(null)

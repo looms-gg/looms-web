@@ -58,7 +58,7 @@ export function ExploreRack({
   if (mode === "looks") {
     if (loading && looks.length === 0) {
       return (
-        <EmptyPanel title="Opening the closet" body="Gathering community published looks." />
+        <EmptyPanel title="Opening the wardrobe" body="Gathering community published looks." />
       )
     }
     if (error && looks.length === 0) {

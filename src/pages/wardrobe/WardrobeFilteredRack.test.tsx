@@ -6,7 +6,7 @@ import { replaceCatalog, type Piece } from "../../data/catalog"
 import { fixturePieces } from "../../data/catalogSeed"
 import { AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { WardrobeFilteredRack } from "./WardrobeFilteredRack"
 
 vi.mock("../../components/iso/IsoThumb", () => ({
@@ -69,7 +69,7 @@ function renderRack(pieces: Piece[]) {
       <MemoryRouter>
         <AuthProvider>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <WardrobeFilteredRack
                 pieces={pieces}
                 listLabel="Filter by layer"
@@ -77,7 +77,7 @@ function renderRack(pieces: Piece[]) {
                 searchPlaceholder="Search clothing..."
                 emptyFilterCopy="No owned pieces match the selected filter."
               />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </AuthProvider>
       </MemoryRouter>,

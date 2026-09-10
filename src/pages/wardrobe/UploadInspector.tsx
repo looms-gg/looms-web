@@ -12,7 +12,7 @@ import { SLOT_LABEL, type Piece } from "../../data/catalog"
 import { validateDimensions } from "../../components/piece/UploadPieceModal"
 import { MAX_LIMITS, sanitizeText, validateFileSize } from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
-import { useCloset } from "../../state/closet"
+import { useWardrobe } from "../../state/wardrobe"
 import { useCatalog } from "../../state/catalog"
 import { useAuthOptional } from "../../state/auth"
 import { supabase } from "../../lib/supabase"
@@ -29,7 +29,7 @@ export function UploadInspector({
 }) {
   const auth = useAuthOptional()
   const user = auth?.user ?? null
-  const { wear, notify } = useCloset()
+  const { wear, notify } = useWardrobe()
   const { upsert, reload } = useCatalog()
   const navigate = useNavigate()
 

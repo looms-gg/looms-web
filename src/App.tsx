@@ -7,7 +7,7 @@ import { AdminGuard } from "./components/auth/AdminGuard"
 import { routerBasename } from "./lib/basePath"
 import { ExplorePage } from "./pages/ExplorePage"
 import { LegalDocument } from "./pages/legal/LegalDocument"
-import { ClosetProvider } from "./state/closet"
+import { WardrobeProvider } from "./state/wardrobe"
 import { ThemeProvider } from "./state/theme"
 import { AuthProvider } from "./state/auth"
 import { CatalogProvider } from "./state/catalog"
@@ -64,7 +64,7 @@ export default function App() {
       <AuthProvider>
         <LikesProvider>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <BrowserRouter basename={routerBasename()}>
                 <Routes>
                   <Route element={<Shell />}>
@@ -154,7 +154,7 @@ export default function App() {
                   </Route>
                 </Routes>
               </BrowserRouter>
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </LikesProvider>
       </AuthProvider>

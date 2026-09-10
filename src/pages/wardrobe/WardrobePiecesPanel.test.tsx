@@ -6,7 +6,7 @@ import { pieces, replaceCatalog } from "../../data/catalog"
 import { fixturePieces } from "../../data/catalogSeed"
 import { AuthContext } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
-import { ClosetProvider, useCloset } from "../../state/closet"
+import { WardrobeProvider, useWardrobe } from "../../state/wardrobe"
 import { supabase } from "../../lib/supabase"
 import { WardrobePiecesPanel } from "./WardrobePiecesPanel"
 
@@ -103,9 +103,9 @@ function setInputValue(input: HTMLInputElement, value: string) {
 function renderPieces(options: { signedIn?: boolean; ownedIds?: string[] } = {}) {
   const { signedIn = false, ownedIds = [] } = options
   mockCloudSession(ownedIds)
-  let session!: ReturnType<typeof useCloset>
+  let session!: ReturnType<typeof useWardrobe>
   function Capture() {
-    session = useCloset()
+    session = useWardrobe()
     return null
   }
   const host = document.createElement("div")
@@ -117,17 +117,17 @@ function renderPieces(options: { signedIn?: boolean; ownedIds?: string[] } = {})
         {signedIn ? (
           <AuthContext.Provider value={signedInAuth}>
             <CatalogProvider>
-              <ClosetProvider>
+              <WardrobeProvider>
                 <Capture />
                 <WardrobePiecesPanel />
-              </ClosetProvider>
+              </WardrobeProvider>
             </CatalogProvider>
           </AuthContext.Provider>
         ) : (
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <WardrobePiecesPanel />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         )}
       </MemoryRouter>,
@@ -137,7 +137,7 @@ function renderPieces(options: { signedIn?: boolean; ownedIds?: string[] } = {})
 }
 
 describe("WardrobePiecesPanel", () => {
-  it("shows empty CTA linking to explore when closet has no owned pieces", () => {
+  it("shows empty CTA linking to explore when wardrobe has no owned pieces", () => {
     const { host } = renderPieces()
     expect(host.textContent).toMatch(/Wardrobe’s still empty/)
     expect(host.textContent).toMatch(/Explore pieces/)

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useAuthOptional } from "../../state/auth"
-import { useCloset } from "../../state/closet"
+import { useWardrobe } from "../../state/wardrobe"
 import { fetchLookById, publicLookToLook } from "../../state/publicLooks"
 import { clearPendingAction } from "../../lib/pendingAction"
 import { runPendingAction } from "../../lib/pendingActionExecutor"
@@ -16,12 +16,12 @@ import { runPendingAction } from "../../lib/pendingActionExecutor"
  */
 export function usePendingActionReplay() {
   const auth = useAuthOptional()
-  const closet = useCloset()
+  const wardrobe = useWardrobe()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const closetRef = useRef(closet)
-  closetRef.current = closet
+  const wardrobeRef = useRef(wardrobe)
+  wardrobeRef.current = wardrobe
   const navigateRef = useRef(navigate)
   navigateRef.current = navigate
   const locationRef = useRef(location)
@@ -49,11 +49,11 @@ export function usePendingActionReplay() {
     if (verifiedPart !== "verified") return
 
     void runPendingAction({
-      owns: (pieceId) => closetRef.current.owns(pieceId),
-      addToWardrobe: (pieceId) => closetRef.current.addToWardrobe(pieceId),
-      wear: (pieceId) => closetRef.current.wear(pieceId),
-      addAndWear: (pieceId) => closetRef.current.addAndWear(pieceId),
-      loadLook: (look) => closetRef.current.loadLook(look),
+      owns: (pieceId) => wardrobeRef.current.owns(pieceId),
+      addToWardrobe: (pieceId) => wardrobeRef.current.addToWardrobe(pieceId),
+      wear: (pieceId) => wardrobeRef.current.wear(pieceId),
+      addAndWear: (pieceId) => wardrobeRef.current.addAndWear(pieceId),
+      loadLook: (look) => wardrobeRef.current.loadLook(look),
       getLook: async (lookId) => {
         const publicLook = await fetchLookById(lookId)
         return publicLook ? publicLookToLook(publicLook) : null

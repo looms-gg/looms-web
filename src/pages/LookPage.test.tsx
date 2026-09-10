@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { LookPage } from "./LookPage"
 import { AuthContext, type AuthContextValue } from "../state/auth"
 import { CatalogProvider } from "../state/catalog"
-import { ClosetProvider } from "../state/closet"
+import { WardrobeProvider } from "../state/wardrobe"
 import { LikesProvider } from "../state/likes"
 import { supabase } from "../lib/supabase"
 import * as publicLooksModule from "../state/publicLooks"
@@ -106,14 +106,14 @@ async function renderLook(userId: string | null) {
         <AuthContext.Provider value={stubAuth(userId)}>
           <LikesProvider>
             <CatalogProvider>
-              <ClosetProvider>
+              <WardrobeProvider>
                 <MemoryRouter initialEntries={["/look/look-winter"]}>
                   <Routes>
                     <Route path="/look/:id" element={<LookPage />} />
                     <Route path="/studio" element={<div data-testid="studio-dest" />} />
                   </Routes>
                 </MemoryRouter>
-              </ClosetProvider>
+              </WardrobeProvider>
             </CatalogProvider>
           </LikesProvider>
         </AuthContext.Provider>,

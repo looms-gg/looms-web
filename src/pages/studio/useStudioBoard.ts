@@ -10,7 +10,7 @@ import { bodies, bodyOrDefault } from "../../data/bodies"
 import { parseEyeId, formatEyeId, clampEyeOffset } from "../../data/eyes"
 import { tryDownloadSkinFile } from "../../skin/compose"
 import { shiftHex } from "../../skin/hue"
-import { useCloset, type Look } from "../../state/closet"
+import { useWardrobe, type Look } from "../../state/wardrobe"
 import { useCatalog } from "../../state/catalog"
 import { emptyOwnedBySlot, type StudioRackTab } from "./studioOwned"
 import type { SkinModel } from "../../skin/convert"
@@ -65,16 +65,16 @@ export async function exportLook(
 }
 
 export function useStudioBoard() {
-  const closet = useCloset()
+  const wardrobe = useWardrobe()
   const { pieces: catalogPieces } = useCatalog()
   const matchingSavedLook =
-    closet.activeLook ??
+    wardrobe.activeLook ??
     findMatchingLook(
-      closet.looks,
-      closet.equipped,
-      closet.bodyId,
-      closet.bodyHue,
-      closet.model,
+      wardrobe.looks,
+      wardrobe.equipped,
+      wardrobe.bodyId,
+      wardrobe.bodyHue,
+      wardrobe.model,
     )
   const [prevLookId, setPrevLookId] = useState<string | null>(matchingSavedLook?.id ?? null)
   const [name, setName] = useState(matchingSavedLook?.name ?? "")
@@ -89,30 +89,30 @@ export function useStudioBoard() {
 
   const [rack, setRack] = useState<StudioRackTab>("all")
   const [hueOpen, setHueOpen] = useState(false)
-  const outfit = piecesFromEquipped(closet.equipped, closet.stack)
-  const ownedBySlot = ownedBySlotMap(closet.owned, catalogPieces)
+  const outfit = piecesFromEquipped(wardrobe.equipped, wardrobe.stack)
+  const ownedBySlot = ownedBySlotMap(wardrobe.owned, catalogPieces)
   const racks = filledSlots(ownedBySlot)
-  const body = bodyOrDefault(closet.bodyId)
-  const bodyTint = shiftHex(body.swatch, closet.bodyHue)
+  const body = bodyOrDefault(wardrobe.bodyId)
+  const bodyTint = shiftHex(body.swatch, wardrobe.bodyHue)
 
-  const parsedEye = closet.equipped.eyes ? parseEyeId(closet.equipped.eyes) : null
+  const parsedEye = wardrobe.equipped.eyes ? parseEyeId(wardrobe.equipped.eyes) : null
   const eyeOffset = parsedEye?.offset ?? 0
 
   const setEyeOffset = (offset: number) => {
-    if (!closet.equipped.eyes) return
-    const { baseId } = parseEyeId(closet.equipped.eyes)
+    if (!wardrobe.equipped.eyes) return
+    const { baseId } = parseEyeId(wardrobe.equipped.eyes)
     const clamped = clampEyeOffset(offset)
-    closet.wear(formatEyeId(baseId, clamped))
+    wardrobe.wear(formatEyeId(baseId, clamped))
   }
 
   const wearEye = (id: string, offset?: number) => {
     const targetOffset = offset !== undefined ? offset : eyeOffset
     const { baseId } = parseEyeId(id)
-    closet.wear(formatEyeId(baseId, targetOffset))
+    wardrobe.wear(formatEyeId(baseId, targetOffset))
   }
 
   return {
-    ...closet,
+    ...wardrobe,
     name,
     setName,
     rack,
@@ -129,33 +129,33 @@ export function useStudioBoard() {
     setEyeOffset,
     wearEye,
     pickTone: (id: string) =>
-      pickBodyTone(id, closet.bodyId, closet.setBody, setHueOpen),
+      pickBodyTone(id, wardrobe.bodyId, wardrobe.setBody, setHueOpen),
     confirmOverwriteLook,
     onSave: (event: FormEvent) => {
       event.preventDefault()
       const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
-      const existing = closet.looks.find(
+      const existing = wardrobe.looks.find(
         (l) => l.name.trim().toLowerCase() === clean.toLowerCase(),
       )
       if (existing) {
         setConfirmOverwriteLook(existing)
         return
       }
-      void closet.saveLook(clean)
+      void wardrobe.saveLook(clean)
       setName(clean)
     },
     onConfirmOverwrite: () => {
       if (confirmOverwriteLook) {
         const clean =
           sanitizeText(name, MAX_LIMITS.LOOK_NAME) || confirmOverwriteLook.name
-        void closet.overwriteLook(confirmOverwriteLook.id, clean)
+        void wardrobe.overwriteLook(confirmOverwriteLook.id, clean)
         setName(clean)
         setConfirmOverwriteLook(null)
       }
     },
     onSaveAsNew: () => {
       const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
-      void closet.saveLook(clean)
+      void wardrobe.saveLook(clean)
       setName(clean)
       setConfirmOverwriteLook(null)
     },
@@ -163,6 +163,6 @@ export function useStudioBoard() {
       setConfirmOverwriteLook(null)
     },
     downloadSkin: () =>
-      exportLook(outfit, closet.bodyId, closet.bodyHue, name, closet.model, closet.notify),
+      exportLook(outfit, wardrobe.bodyId, wardrobe.bodyHue, name, wardrobe.model, wardrobe.notify),
   }
 }

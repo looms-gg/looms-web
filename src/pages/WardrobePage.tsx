@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom"
 import { CloudArrowUp } from "@phosphor-icons/react"
 import { Icon } from "../components/ui/Icon"
 import { UploadPieceModal } from "../components/piece/UploadPieceModal"
-import { useCloset } from "../state/closet"
+import { useWardrobe } from "../state/wardrobe"
 import { useCatalog } from "../state/catalog"
 import { useAuth } from "../state/auth"
 import { parseWardrobeTab, type WardrobeTab } from "./wardrobeTab"
@@ -19,7 +19,7 @@ const TABS: { id: WardrobeTab; label: string }[] = [
 
 export function WardrobePage() {
   const { user } = useAuth()
-  const { looks } = useCloset()
+  const { looks } = useWardrobe()
   const { pieces } = useCatalog()
   const [params, setParams] = useSearchParams()
   const urlTab = parseWardrobeTab(params.toString())

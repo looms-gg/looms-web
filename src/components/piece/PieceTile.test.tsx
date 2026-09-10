@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { pieces } from "../../data/catalog"
 import { AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
-import { ClosetProvider, useCloset } from "../../state/closet"
+import { WardrobeProvider, useWardrobe } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
 import { PieceTile } from "./PieceTile"
 
@@ -17,7 +17,7 @@ function renderTile(ui: React.ReactNode) {
         <CatalogProvider>
           <LikesProvider>
             <MemoryRouter>
-              <ClosetProvider>{ui}</ClosetProvider>
+              <WardrobeProvider>{ui}</WardrobeProvider>
             </MemoryRouter>
           </LikesProvider>
         </CatalogProvider>
@@ -43,7 +43,7 @@ describe("PieceTile", () => {
   it("opens auth when signed-out user clicks add to wardrobe", () => {
     let owned = false
     function Probe() {
-      owned = useCloset().owns(pieces[0].id)
+      owned = useWardrobe().owns(pieces[0].id)
       return <PieceTile piece={pieces[0]} />
     }
 
@@ -54,9 +54,9 @@ describe("PieceTile", () => {
           <CatalogProvider>
             <LikesProvider>
               <MemoryRouter>
-                <ClosetProvider>
+                <WardrobeProvider>
                   <Probe />
-                </ClosetProvider>
+                </WardrobeProvider>
               </MemoryRouter>
             </LikesProvider>
           </CatalogProvider>

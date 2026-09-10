@@ -4,7 +4,7 @@ import { flushSync } from "react-dom"
 import { MemoryRouter, useLocation } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { pieces, upsertPiece } from "../data/catalog"
-import { ClosetProvider, useCloset } from "../state/closet"
+import { WardrobeProvider, useWardrobe } from "../state/wardrobe"
 import { AuthContext } from "../state/auth"
 import { CatalogProvider } from "../state/catalog"
 import { supabase } from "../lib/supabase"
@@ -83,9 +83,9 @@ function renderWardrobe(path = "/wardrobe", authValue: unknown = signedInAuth) {
       <MemoryRouter initialEntries={[path]}>
         <AuthContext.Provider value={authValue as never}>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <WardrobePage />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </AuthContext.Provider>
       </MemoryRouter>,
@@ -120,9 +120,9 @@ function openTileModal(host: HTMLElement, name: string) {
 
 function renderWardrobeWithLooks(...names: string[]) {
   mockCloudSession()
-  let session!: ReturnType<typeof useCloset>
+  let session!: ReturnType<typeof useWardrobe>
   function Capture() {
-    session = useCloset()
+    session = useWardrobe()
     return null
   }
   const host = document.createElement("div")
@@ -133,11 +133,11 @@ function renderWardrobeWithLooks(...names: string[]) {
       <MemoryRouter initialEntries={["/wardrobe"]}>
         <AuthContext.Provider value={signedInAuth}>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <Capture />
               <WardrobePage />
               <PathPeek />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </AuthContext.Provider>
       </MemoryRouter>,
@@ -293,9 +293,9 @@ describe("WardrobePage", () => {
       } as never
     })
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Capture() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
     const host = document.createElement("div")
@@ -325,11 +325,11 @@ describe("WardrobePage", () => {
               } as never
             }
           >
-            <CatalogProvider><ClosetProvider>
+            <CatalogProvider><WardrobeProvider>
               <Capture />
               <WardrobePage />
               <PathPeek />
-            </ClosetProvider></CatalogProvider>
+            </WardrobeProvider></CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -380,9 +380,9 @@ describe("WardrobePage", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={authValue as never}>
-            <CatalogProvider><ClosetProvider>
+            <CatalogProvider><WardrobeProvider>
               <WardrobePage />
-            </ClosetProvider></CatalogProvider>
+            </WardrobeProvider></CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )
@@ -425,9 +425,9 @@ describe("WardrobePage", () => {
       createRoot(host).render(
         <MemoryRouter initialEntries={["/wardrobe?tab=uploads"]}>
           <AuthContext.Provider value={authValue as never}>
-            <CatalogProvider><ClosetProvider>
+            <CatalogProvider><WardrobeProvider>
               <WardrobePage />
-            </ClosetProvider></CatalogProvider>
+            </WardrobeProvider></CatalogProvider>
           </AuthContext.Provider>
         </MemoryRouter>,
       )

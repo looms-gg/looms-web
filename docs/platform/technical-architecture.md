@@ -23,7 +23,7 @@ Deep-dive companion to [master-briefing.md](master-briefing.md). Covers the stac
 **Monorepo layout (conceptual):**
 - `src/data`: domain model. Pieces, slots, bodies, eyes, outfit/stack logic, seed catalog JSON
 - `src/skin`: the rendering engine. Compositing, UV maps, model conversion, hue/wash, 3D camera & posing
-- `src/state`: React contexts. Auth, closet (wardrobe/looks), catalog, likes, comments, theme, cookie consent
+- `src/state`: React contexts. Auth, wardrobe (wardrobe/looks), catalog, likes, comments, theme, cookie consent
 - `src/pages` + `src/components`: routes and UI, grouped per surface (explore, wardrobe, studio, profile, piece, look, admin, moderation, auth, shell, ui, iso)
 - `supabase/migrations`: 17 ordered SQL migrations; the DB is the security boundary
 - `scripts`: asset pipeline (OG prerender is a build step; iso-saver is a dev-server plugin)
@@ -96,8 +96,8 @@ Everything sensitive happens in **Postgres triggers + RLS**, never client-side:
 
 ## 4. Frontend architecture patterns
 
-- **Providers**: Theme → Auth → Likes → Catalog → Closet wrap the router. Closet is the heart: it merges server state (owned pieces, looks) with optimistic local updates and detects the "active look" by matching equipped layers.
-- **Offline-first touches**: signed-out users get a local-only closet session; theme and cookie consent persist in localStorage; iso thumbnails persist in IndexedDB.
+- **Providers**: Theme → Auth → Likes → Catalog → Wardrobe wrap the router. Wardrobe is the heart: it merges server state (owned pieces, looks) with optimistic local updates and detects the "active look" by matching equipped layers.
+- **Offline-first touches**: signed-out users get a local-only wardrobe session; theme and cookie consent persist in localStorage; iso thumbnails persist in IndexedDB.
 - **Auth flows**: unconfirmed sign-ins open a listening modal that polls `getUser()` every 4s and auto-unlocks; magic links; resend with 45s cooldown; `absoluteAppUrl()` bakes the Pages base path into every email redirect.
 - **Routing**: basename derived from Vite `BASE_URL` so the same build works at `/` (prod custom domain) or a subdirectory (`VITE_BASE=/looms-web/` for project Pages); canonical/share URLs re-add the origin + base.
 - **Testing**: colocated `*.test.ts(x)`; `happy-dom` environment; a shared setup seeds the catalog registry; pure domain logic (stack math, sanitizers, error formatting, quotas mapping) is heavily unit-tested; contexts and pages are component-tested.

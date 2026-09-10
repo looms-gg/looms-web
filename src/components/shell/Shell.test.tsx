@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { MemoryRouter } from "react-router-dom"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
 import { ThemeProvider } from "../../state/theme"
 import * as authModule from "../../state/auth"
@@ -40,7 +40,7 @@ function renderWithProviders(ui: React.ReactNode, initialEntries: string[] = ["/
       <ThemeProvider>
         <LikesProvider>
           <MemoryRouter initialEntries={initialEntries}>
-            <ClosetProvider>{ui}</ClosetProvider>
+            <WardrobeProvider>{ui}</WardrobeProvider>
           </MemoryRouter>
         </LikesProvider>
       </ThemeProvider>,

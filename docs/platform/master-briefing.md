@@ -6,7 +6,7 @@
 
 ## 1. What looms is
 
-looms is a **100% free modular character creator for Minecraft skins**. Think "dress-up closet for Minecraft": instead of hand-painting a skin in Photoshop, players browse community-made clothing layers, hair, hats, face pieces, eyes, shirts, coats, pants, shoes, add any of them to their wardrobe for free, stack them onto a base skin in a 3D Studio, and export a **vanilla 64×64 PNG** that works instantly on Minecraft Java and Bedrock.
+looms is a **100% free modular character creator for Minecraft skins**. Think "dress-up wardrobe for Minecraft": instead of hand-painting a skin in Photoshop, players browse community-made clothing layers, hair, hats, face pieces, eyes, shirts, coats, pants, shoes, add any of them to their wardrobe for free, stack them onto a base skin in a 3D Studio, and export a **vanilla 64×64 PNG** that works instantly on Minecraft Java and Bedrock.
 
 - **Live site:** https://looms.gg/
 - **Discord:** https://discord.gg/UNTRgHBBPb
@@ -44,13 +44,13 @@ Minecraft players who already make or wear custom skins. They open looms between
 - Creator tools: the maker can rename/describe the piece inline, toggle public/private, upload a new texture version (cache-busted), or delete it.
 
 ### Wardrobe (`/wardrobe`, sign-in required)
-The user's closet, three tabs:
+The user's wardrobe, three tabs:
 - **Looks**: saved outfits as outfit tiles with layer counts; search; open an inspector to rename, describe, toggle public/private, download the skin, copy the share link, or jump back into Studio.
 - **Pieces**: every owned piece, filterable by layer, searchable, with one-click wear.
 - **My Uploads**: pieces the user created, with edit/delete/version-upload shortcuts.
 
 ### Studio (`/studio`, sign-in required)
-The creator. Full-viewport three-panel layout (closet rack · 3D stage · layer list):
+The creator. Full-viewport three-panel layout (wardrobe rack · 3D stage · layer list):
 - **Pick a base body**: 8 skin-tone bodies (Fair → Deepest) that are real vanilla-compatible base skins.
 - **Tone shift**: an OKLCH hue-rotate slider (±120°) re-tints the body in real time, so one body becomes dozens of tones.
 - **Wear layers from the rack**: tabs auto-build from the slots you own; eyes are bundled system pieces (70+ built-in eye styles with per-style height offsets).
@@ -109,7 +109,7 @@ This is the product's moat, worth understanding:
 ## 6. Brand & voice
 
 - **Personality:** warm, playful, collectible, "plaza-bright". Nintendo-adjacent charm. The visual grammar borrows Mii-plaza energy (rounded tiles, pill buttons, bright accent), and the voice matches: friendly, inviting, polished, wholesome. Encouraging without hype; cheerful without snark.
-- **Voice:** short, inviting, and concrete: piece names, layer slots, wear and export, with small celebrations built in ("You're in." "The closet is yours.").
+- **Voice:** short, inviting, and concrete: piece names, layer slots, wear and export, with small celebrations built in ("You're in." "The wardrobe is yours.").
 - **Platform vs. UGC (important):** looms is a UGC platform. Piece names and blurbs are written by makers in *their own* voices (often quirky/dry) and are not brand voice. Official copy stays warm, simple, and wholesome. The brand is the friendly host; the community supplies the personality.
 - **Look:** dark charcoal UI ("night plaza") with a **neon-pink/magenta primary** (#cf4878) in the shipped theme; Nunito 800 headlines; 18px tiles; pill buttons; isometric character tiles with pastel washes. A light theme (`looms-light`) ships too. (The design-source doc describes an earlier cyan palette; the shipped CSS moved to the pink/magenta system.)
 - **Anti-references:** catalogue-density skin sites, Roblox-shop neon + fake scarcity, Bedrock paid cosmetics, SaaS dashboards, pixel-font "gamer" templates, Creeper-green branding, glassmorphism.

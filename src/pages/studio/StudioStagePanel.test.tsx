@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { describe, expect, it, vi } from "vitest"
 import { StudioStagePanel } from "./StudioStagePanel"
-import type { Look } from "../../state/closet"
+import type { Look } from "../../state/wardrobe"
 
 vi.mock("../../components/iso/SkinStage", () => ({
   SkinStage: () => <div data-testid="mock-skin-stage" />,

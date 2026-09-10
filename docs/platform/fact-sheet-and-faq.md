@@ -109,7 +109,7 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 
 **Can kids use it?** The privacy policy says looms is not directed at children under 13 (or the regional minimum), and requests contact to remove underage accounts.
 
-**Why "looms"?** The name frames the closet/weaving metaphor, layers woven into a look. (The docs don't state an origin story; don't invent one in public copy.)
+**Why "looms"?** The name frames the wardrobe/weaving metaphor, layers woven into a look. (The docs don't state an origin story; don't invent one in public copy.)
 
 ## 4. Honest gaps & known caveats (so AI output stays truthful)
 

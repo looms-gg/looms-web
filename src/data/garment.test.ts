@@ -20,7 +20,7 @@ const row: GarmentRow = {
 }
 
 describe("garmentToPiece", () => {
-  it("maps a garment row onto a closet piece", () => {
+  it("maps a garment row onto a wardrobe piece", () => {
     const piece = garmentToPiece(row, "ser0th")
     expect(piece.id).toBe("ink-fall")
     expect(piece.maker).toBe("ser0th")

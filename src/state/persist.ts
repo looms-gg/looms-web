@@ -42,7 +42,7 @@ export const persistDefaults: Persist = {
   activeLookId: null,
 }
 
-/** Fresh Persist copy for ClosetProvider seed/reset (mutable arrays/objects). */
+/** Fresh Persist copy for WardrobeProvider seed/reset (mutable arrays/objects). */
 export function freshPersist(): Persist {
   return {
     ...persistDefaults,

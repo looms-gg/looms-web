@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { describe, expect, it, vi } from "vitest"
 import { pieces } from "../data/catalog"
-import { ClosetProvider, useCloset, type Look } from "./closet"
+import { WardrobeProvider, useWardrobe, type Look } from "./wardrobe"
 import * as authModule from "./auth"
 import { supabase } from "../lib/supabase"
 import type { AuthContextValue } from "./auth"
@@ -74,16 +74,16 @@ function mockLooksTable(options?: { wardrobeIds?: string[] }) {
 
 describe("session module", () => {
   it("exports the provider and hook", () => {
-    expect(typeof ClosetProvider).toBe("function")
-    expect(typeof useCloset).toBe("function")
+    expect(typeof WardrobeProvider).toBe("function")
+    expect(typeof useWardrobe).toBe("function")
   })
 
   it("handles loadLook, saveLook, and overwriteLook with activeLook tracking", async () => {
     mockLooksTable()
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
 
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
@@ -91,9 +91,9 @@ describe("session module", () => {
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -145,9 +145,9 @@ describe("session module", () => {
 
   it("sanitizes look name and limits length in saveLook and overwriteLook", async () => {
     mockLooksTable()
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
@@ -155,9 +155,9 @@ describe("session module", () => {
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -179,18 +179,18 @@ describe("session module", () => {
 
   it("saves looks as private with empty description", async () => {
     mockLooksTable()
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
     const host = document.createElement("div")
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -206,18 +206,18 @@ describe("session module", () => {
 
   it("updates look meta without dropping layers", async () => {
     mockLooksTable()
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
     const host = document.createElement("div")
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -247,18 +247,18 @@ describe("session module", () => {
 
   it("keeps description and visibility when overwriting a look", async () => {
     mockLooksTable()
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
     const host = document.createElement("div")
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -305,9 +305,9 @@ describe("session module", () => {
     const mockAuthVal = stubAuth("user-test-1")
     vi.spyOn(authModule, "useAuth").mockReturnValue(mockAuthVal)
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
@@ -315,9 +315,9 @@ describe("session module", () => {
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={mockAuthVal}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -340,18 +340,18 @@ describe("session module", () => {
     mockLooksTable({ wardrobeIds: [pieceId] })
     localStorage.clear()
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
     function Harness({ userId }: { userId: string | null }) {
       return (
         <authModule.AuthContext.Provider value={stubAuth(userId)}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>
       )
     }
@@ -389,18 +389,18 @@ describe("session module", () => {
       JSON.stringify({ ...persistDefaults, owned: [pieceId] }),
     )
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
     function Harness({ userId }: { userId: string | null }) {
       return (
         <authModule.AuthContext.Provider value={stubAuth(userId)}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>
       )
     }
@@ -427,9 +427,9 @@ describe("session module", () => {
     localStorage.clear()
     const pieceId = pieces[0].id
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
@@ -437,9 +437,9 @@ describe("session module", () => {
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth(null)}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -455,9 +455,9 @@ describe("session module", () => {
     const fromSpy = mockLooksTable({ wardrobeIds: [] })
     localStorage.clear()
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
@@ -465,9 +465,9 @@ describe("session module", () => {
     flushSync(() => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })
@@ -486,18 +486,18 @@ describe("session module", () => {
     mockLooksTable()
     localStorage.clear()
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
     function Harness({ userId }: { userId: string | null }) {
       return (
         <authModule.AuthContext.Provider value={stubAuth(userId)}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>
       )
     }
@@ -531,18 +531,18 @@ describe("session module", () => {
     mockLooksTable({ wardrobeIds: [pieceId] })
     localStorage.clear()
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
     function Harness() {
       return (
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>
       )
     }
@@ -602,9 +602,9 @@ describe("session module", () => {
       }),
     } as never)
 
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
     function Consumer() {
-      session = useCloset()
+      session = useWardrobe()
       return null
     }
 
@@ -614,9 +614,9 @@ describe("session module", () => {
     flushSync(() => {
       root.render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
-          <ClosetProvider>
+          <WardrobeProvider>
             <Consumer />
-          </ClosetProvider>
+          </WardrobeProvider>
         </authModule.AuthContext.Provider>,
       )
     })

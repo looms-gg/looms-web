@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import {
   CloudArrowUp,
@@ -9,7 +9,7 @@ import { SLOT_LABEL } from "../data/catalog"
 import { ExploreRail } from "../components/explore/ExploreRail"
 import { HeadMeta } from "../components/shell/HeadMeta"
 import { Icon } from "../components/ui/Icon"
-import { useCloset } from "../state/closet"
+import { useWardrobe } from "../state/wardrobe"
 import { useAuth } from "../state/auth"
 import { useCatalog } from "../state/catalog"
 import { UploadPieceModal } from "../components/piece/UploadPieceModal"
@@ -30,6 +30,8 @@ import { ExploreHero } from "./explore/ExploreHero"
 import { ExploreRack } from "./explore/ExploreRack"
 import { MAX_LIMITS } from "../lib/sanitize"
 import { formatErrorMessage } from "../lib/errorFormat"
+
+const RAIL_STICKY_OFFSET = 88
 
 export function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -58,8 +60,26 @@ export function ExplorePage() {
   const [authOpen, setAuthOpen] = useState(false)
   const { user } = useAuth()
   const { pieces, loading: piecesLoading, error: piecesError } = useCatalog()
-  const { loadLook } = useCloset()
+  const { loadLook } = useWardrobe()
   const navigate = useNavigate()
+  const resultsRef = useRef<HTMLDivElement>(null)
+  const lastSlot = useRef(slot)
+
+  useLayoutEffect(() => {
+    if (lastSlot.current === slot) return
+    lastSlot.current = slot
+    const grid = resultsRef.current
+    if (!grid) return
+    const top = grid.getBoundingClientRect().top + window.scrollY - RAIL_STICKY_OFFSET
+    if (top > 0 && window.scrollY > top) {
+      window.scrollTo({
+        top,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      })
+    }
+  }, [slot])
 
   useEffect(() => {
     let active = true
@@ -190,7 +210,7 @@ export function ExplorePage() {
       ) : null}
 
       <section
-        id="closet"
+        id="wardrobe"
         className="flex flex-col gap-4 rounded-[22px] bg-base-200 p-5 md:flex-row md:items-center md:justify-between"
       >
         <div>
@@ -260,7 +280,10 @@ export function ExplorePage() {
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <div
+        ref={resultsRef}
+        className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]"
+      >
         <ExploreRail
           mode={mode}
           onModeChange={setMode}

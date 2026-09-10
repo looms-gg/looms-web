@@ -46,7 +46,7 @@ export function ExploreHero({
     : looks
 
   return (
-    <section className="plaza-panel hero-closet rounded-[22px] overflow-hidden">
+    <section className="plaza-panel hero-wardrobe rounded-[22px] overflow-hidden">
       <div className="hero-dots-container" aria-hidden="true">
         <svg
           className="hero-polka-svg"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { CheckCircle } from "@phosphor-icons/react"
+import { CheckCircle, CircleNotch, EnvelopeSimple } from "@phosphor-icons/react"
 import { useAuth } from "../../state/auth"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { Icon } from "../ui/Icon"
@@ -54,7 +54,7 @@ export function VerifyEmailModal() {
       dismissible={false}
       labelledBy="verify-email-title"
       scrimClassName="auth-scrim"
-      panelClassName="auth-scrim-panel verify-email-panel relative w-full max-w-md rounded-2xl border border-white/10 bg-base-300 p-7 sm:p-8"
+      panelClassName="auth-scrim-panel relative w-full max-w-[22rem] rounded-[18px] border border-base-content/10 bg-base-200 p-6"
       portal
     >
       {emailVerified ? (
@@ -66,29 +66,35 @@ export function VerifyEmailModal() {
             You're in
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-base-content/65">
-            {email} is confirmed. The closet is yours.
+            {email} is confirmed. The wardrobe is yours.
           </p>
         </div>
       ) : (
-        <>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-primary">
-            Mail check
-          </p>
+        <div className="text-center">
+          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <Icon icon={EnvelopeSimple} className="size-6" />
+          </span>
           <h2
             id="verify-email-title"
-            className="mt-2 text-2xl font-black tracking-tight text-balance"
+            className="mt-4 text-2xl font-black tracking-tight text-balance"
           >
-            Confirm your inbox
+            Check your inbox
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-base-content/65">
-            Open the link we sent to{" "}
-            <span className="font-extrabold text-base-content">{email}</span>. This screen
-            watches on its own — you can keep browsing while it waits.
+            We sent a confirmation link to{" "}
+            <span className="font-extrabold text-base-content">{email}</span>. Open it in a
+            new tab and you'll be signed in here automatically.
           </p>
 
-          <div className="verify-listen mt-5" aria-live="polite">
-            <span className="verify-listen-dot" aria-hidden />
-            <span className="text-sm font-bold">Listening for confirmation</span>
+          <div
+            className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-base-content/70"
+            aria-live="polite"
+          >
+            <Icon
+              icon={CircleNotch}
+              className="size-4 animate-spin text-primary motion-reduce:animate-none"
+            />
+            <span>Waiting for confirmation</span>
           </div>
 
           {resendError ? (
@@ -100,7 +106,7 @@ export function VerifyEmailModal() {
           <div className="mt-6 flex flex-col gap-2">
             <button
               type="button"
-              className="btn btn-primary rounded-full font-extrabold"
+              className="btn btn-primary min-h-11 w-full rounded-full font-extrabold tabular-nums"
               disabled={sending || resendWait > 0}
               onClick={() => void sendAgain()}
             >
@@ -112,13 +118,13 @@ export function VerifyEmailModal() {
             </button>
             <button
               type="button"
-              className="btn btn-ghost rounded-full font-bold text-base-content/70"
+              className="btn btn-ghost min-h-11 w-full rounded-full font-bold text-base-content/70"
               onClick={dismissEmailVerify}
             >
               I'll confirm later
             </button>
           </div>
-        </>
+        </div>
       )}
     </ModalOverlay>
   )

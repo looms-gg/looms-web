@@ -49,7 +49,7 @@ function makeBoard() {
     setModel: vi.fn(),
     setBody: vi.fn(),
     setBodyHue: vi.fn(),
-    // useStudioBoard spreads the full useCloset context into its return; the
+    // useStudioBoard spreads the full useWardrobe context into its return; the
     // shell only reads the fields listed above, so the rest stays unstubbed.
   } as unknown as ReturnType<typeof import("./useStudioBoard").useStudioBoard>
 }

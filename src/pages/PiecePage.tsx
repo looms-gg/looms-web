@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from "react-route
 import { getPiece } from "../data/catalog"
 import { AuthModal } from "../components/auth/AuthModal"
 import { PieceComments } from "../components/piece/PieceComments"
-import { useCloset } from "../state/closet"
+import { useWardrobe } from "../state/wardrobe"
 import { useCatalog } from "../state/catalog"
 import { useAuthOptional } from "../state/auth"
 import { HeadMeta } from "../components/shell/HeadMeta"
@@ -32,7 +32,7 @@ export function PiecePage() {
   const user = auth?.user ?? null
   const { loading, upsert } = useCatalog()
   const piece = id ? getPiece(id) : undefined
-  const { owns, addToWardrobe, wear, addAndWear, equipped } = useCloset()
+  const { owns, addToWardrobe, wear, addAndWear, equipped } = useWardrobe()
   const [editing, setEditing] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
 

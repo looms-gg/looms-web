@@ -3,7 +3,7 @@ import { flushSync } from "react-dom"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { pieces, upsertPiece } from "../data/catalog"
-import { ClosetProvider } from "../state/closet"
+import { WardrobeProvider } from "../state/wardrobe"
 import { AuthContext } from "../state/auth"
 import { CatalogProvider } from "../state/catalog"
 import * as catalogState from "../state/catalog"
@@ -75,11 +75,11 @@ function renderPiece(
         <AuthContext.Provider value={stubAuth(userId) as never}>
           <LikesProvider>
             <CatalogProvider>
-              <ClosetProvider>
+              <WardrobeProvider>
                 <Routes>
                   <Route path="/piece/:id" element={<PiecePage />} />
                 </Routes>
-              </ClosetProvider>
+              </WardrobeProvider>
             </CatalogProvider>
           </LikesProvider>
         </AuthContext.Provider>

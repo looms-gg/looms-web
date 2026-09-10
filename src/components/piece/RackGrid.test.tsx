@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest"
 import { RACK_GRID_CLASS, RackGrid } from "./RackGrid"
 
 describe("RackGrid", () => {
-  it("applies the shared Closet column and gap classes", () => {
+  it("applies the shared Wardrobe column and gap classes", () => {
     const host = document.createElement("div")
     flushSync(() => {
       createRoot(host).render(

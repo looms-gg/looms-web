@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest"
 import type { GarmentRow, LookRow } from "../../lib/supabase"
 import { AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
 import type { LikedContent } from "./profileApi"
 import { ProfileTabs } from "./ProfileTabs"
@@ -52,7 +52,7 @@ function renderTabs(props: Partial<React.ComponentProps<typeof ProfileTabs>> = {
         <LikesProvider>
           <CatalogProvider>
             <MemoryRouter>
-              <ClosetProvider>
+              <WardrobeProvider>
                 <ProfileTabs
                   tab="uploads"
                   username="PixelWeaver"
@@ -63,7 +63,7 @@ function renderTabs(props: Partial<React.ComponentProps<typeof ProfileTabs>> = {
                   onTab={onTab}
                   {...props}
                 />
-              </ClosetProvider>
+              </WardrobeProvider>
             </MemoryRouter>
           </CatalogProvider>
         </LikesProvider>

@@ -7,7 +7,7 @@ import {
   pickBodyTone,
   useStudioBoard,
 } from "./useStudioBoard"
-import { ClosetProvider, useCloset, type Look } from "../../state/closet"
+import { WardrobeProvider, useWardrobe, type Look } from "../../state/wardrobe"
 import { CatalogProvider } from "../../state/catalog"
 import * as authModule from "../../state/auth"
 import type { AuthContextValue } from "../../state/auth"
@@ -99,10 +99,10 @@ describe("useStudioBoard name loading", () => {
 
   it("loads previously saved look name when a look is saved", async () => {
     let board!: ReturnType<typeof useStudioBoard>
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
 
     function Harness() {
-      session = useCloset()
+      session = useWardrobe()
       board = useStudioBoard()
       return null
     }
@@ -112,9 +112,9 @@ describe("useStudioBoard name loading", () => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <Harness />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </authModule.AuthContext.Provider>,
       )
@@ -133,10 +133,10 @@ describe("useStudioBoard name loading", () => {
 
   it("loads the previous name when loading a saved look", () => {
     let board!: ReturnType<typeof useStudioBoard>
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
 
     function Harness() {
-      session = useCloset()
+      session = useWardrobe()
       board = useStudioBoard()
       return null
     }
@@ -146,9 +146,9 @@ describe("useStudioBoard name loading", () => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <Harness />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </authModule.AuthContext.Provider>,
       )
@@ -176,10 +176,10 @@ describe("useStudioBoard name loading", () => {
 
   it("keeps the matching look name when activeLook is cleared but outfit still matches", async () => {
     let board!: ReturnType<typeof useStudioBoard>
-    let session!: ReturnType<typeof useCloset>
+    let session!: ReturnType<typeof useWardrobe>
 
     function Harness() {
-      session = useCloset()
+      session = useWardrobe()
       board = useStudioBoard()
       return null
     }
@@ -189,9 +189,9 @@ describe("useStudioBoard name loading", () => {
       createRoot(host).render(
         <authModule.AuthContext.Provider value={stubAuth("user-a")}>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <Harness />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </authModule.AuthContext.Provider>,
       )

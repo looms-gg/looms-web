@@ -65,7 +65,7 @@ Good replacements, looms-flavored: "harness" → "use"; "seamless" → name what
 
 **After:**
 
-> looms is a free closet for Minecraft skins. You browse clothing layers, stack them onto a character in Studio, and export a vanilla PNG that works in the game right away. No art skills needed. Free forever.
+> looms is a free wardrobe for Minecraft skins. You browse clothing layers, stack them onto a character in Studio, and export a vanilla PNG that works in the game right away. No art skills needed. Free forever.
 
 Diff: cut the false contrast, the "Whether you're" false breadth, the stacked intensifiers (comprehensive, seamless, robust, vibrant), the Moreover opener, and the generic conclusion. Four short sentences now carry the same facts. Facts went from zero to three.
 

@@ -3,7 +3,7 @@ import { fixturePieces } from "./catalogSeed"
 import { getPiece, replaceCatalog } from "./catalog"
 
 describe("catalogSeed", () => {
-  it("keeps the lofted closet ids", () => {
+  it("keeps the lofted wardrobe ids", () => {
     const seeded = fixturePieces()
     replaceCatalog(seeded)
     expect(seeded).toHaveLength(22)

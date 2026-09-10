@@ -6,7 +6,7 @@ import { Icon } from "../../components/ui/Icon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { RackGrid } from "../../components/piece/RackGrid"
 import { MAX_LIMITS } from "../../lib/sanitize"
-import { useCloset, type Look } from "../../state/closet"
+import { useWardrobe, type Look } from "../../state/wardrobe"
 import { LookInspector } from "./LookInspector"
 import { InspectorModal } from "./InspectorModal"
 import { WardrobeEmpty } from "./WardrobeEmpty"
@@ -17,7 +17,7 @@ function outfitOf(look: Look) {
 }
 
 export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
-  const { loadLook } = useCloset()
+  const { loadLook } = useWardrobe()
   const navigate = useNavigate()
   const [lookQuery, setLookQuery] = useState("")
   const [inspectedLookId, setInspectedLookId] = useState<string | null>(null)

@@ -4,7 +4,7 @@ import { Icon } from "../../components/ui/Icon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { piecesFromEquipped } from "../../data/outfit"
 import { tryDownloadSkinFile } from "../../skin/compose"
-import { useCloset, type Look } from "../../state/closet"
+import { useWardrobe, type Look } from "../../state/wardrobe"
 import { committedLookName } from "../../state/lookMeta"
 import { MAX_LIMITS, sanitizeText } from "../../lib/sanitize"
 import { copyShareLink, getLookShareUrl } from "../../lib/share"
@@ -19,7 +19,7 @@ export function LookInspector({
   onEditOutfit: () => void
   className?: string
 }) {
-  const { updateLookMeta, notify } = useCloset()
+  const { updateLookMeta, notify } = useWardrobe()
   const [copied, setCopied] = useState(false)
 
   const outfit = piecesFromEquipped(look.equipped, look.stack)

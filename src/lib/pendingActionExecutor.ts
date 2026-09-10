@@ -28,7 +28,7 @@ export async function runPendingAction(deps: PendingActionDeps): Promise<void> {
         if (pending.pieceId) await deps.addToWardrobe(pending.pieceId)
         return
       case "wear":
-        // The guest closet is wiped on sign-in, so "wear" usually means the
+        // The guest wardrobe is wiped on sign-in, so "wear" usually means the
         // piece needs adding first; addAndWear is dup-safe.
         if (pending.pieceId && deps.owns(pending.pieceId)) {
           deps.wear(pending.pieceId)

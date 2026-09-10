@@ -1,12 +1,12 @@
 import { useMemo } from "react"
 import { getPiece } from "../../data/catalog"
-import { useCloset } from "../../state/closet"
+import { useWardrobe } from "../../state/wardrobe"
 import { useCatalog } from "../../state/catalog"
 import { WardrobeEmpty } from "./WardrobeEmpty"
 import { WardrobeFilteredRack } from "./WardrobeFilteredRack"
 
 export function WardrobePiecesPanel() {
-  const { owned } = useCloset()
+  const { owned } = useWardrobe()
   const { pieces } = useCatalog()
 
   const ownedPieces = useMemo(

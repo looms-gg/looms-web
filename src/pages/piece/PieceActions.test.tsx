@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { pieces } from "../../data/catalog"
 import { AuthProvider } from "../../state/auth"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
 import { PieceActions } from "./PieceActions"
 
@@ -19,7 +19,7 @@ function renderActions(props: Partial<React.ComponentProps<typeof PieceActions>>
       <AuthProvider>
         <LikesProvider>
           <MemoryRouter>
-            <ClosetProvider>
+            <WardrobeProvider>
               <PieceActions
                 piece={pieces[0]}
                 owned={false}
@@ -30,7 +30,7 @@ function renderActions(props: Partial<React.ComponentProps<typeof PieceActions>>
                 onAddAndWear={() => {}}
                 {...props}
               />
-            </ClosetProvider>
+            </WardrobeProvider>
           </MemoryRouter>
         </LikesProvider>
       </AuthProvider>,

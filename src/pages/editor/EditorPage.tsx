@@ -17,16 +17,15 @@ function Bone({ className = "", rounded = "rounded-lg" }: { className?: string; 
 /**
  * Editor — under construction.
  *
- * A teaser, not a workspace: a static skeleton preview of the planned tool
- * (pure blobs, no text/icons inside it) beside a short note on what will ship,
- * with a pair of ways to stay involved until it lands.
+ * A teaser, not a workspace: a blank skeleton preview of the planned tool
+ * (pure blobs, no text/icons inside it), beside a short note on what will ship.
  */
 export function EditorPage() {
   return (
     <div className="mx-auto w-full max-w-5xl py-2 sm:py-6">
       <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-12">
         {/* Skeleton mockup of the future editor workspace (4:3) */}
-        <div className="relative">
+        <div className="relative pb-12">
           <div
             className="editor-frame mx-auto aspect-[4/3] w-full rounded-[18px] bg-base-200 p-3"
             role="img"
@@ -78,7 +77,7 @@ export function EditorPage() {
           </div>
 
           <span
-            className="badge badge-warning badge-sm absolute left-4 top-4 h-5 gap-1 rounded-full border-0 px-2 font-extrabold text-[10px] uppercase tracking-[0.06em]"
+            className="badge badge-warning badge-sm absolute -top-3 right-4 z-10 h-5 gap-1 rounded-full border-0 px-2 font-extrabold text-[10px] uppercase tracking-[0.06em]"
             aria-label="Under construction"
           >
             <MagicWand className="size-2.5" aria-hidden />
@@ -89,10 +88,10 @@ export function EditorPage() {
         {/* Left-aligned note: what this is and how to stay involved */}
         <section className="flex flex-col items-start gap-4 text-left">
           <h1 className="text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">
-            The Editor is being built
+            The Editor, skin creation in the modern era
           </h1>
           <p className="max-w-[46ch] text-sm leading-relaxed text-base-content/75">
-            A full creation suite for skins and clothing pieces — coming soon to looms.
+            A full creation suite for skins and clothing pieces. Coming soon to looms.
           </p>
 
           <ul className="flex flex-col gap-3">

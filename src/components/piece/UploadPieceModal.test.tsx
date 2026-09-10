@@ -3,7 +3,7 @@ import { flushSync } from "react-dom"
 import { describe, expect, it } from "vitest"
 import { AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { coversForSlot, uploadCovers, UploadPieceModal, validateDimensions } from "./UploadPieceModal"
 
 describe("UploadPieceModal and garment validation", () => {
@@ -25,9 +25,9 @@ describe("UploadPieceModal and garment validation", () => {
       createRoot(host).render(
         <AuthProvider>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadPieceModal isOpen={true} onClose={() => {}} />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </AuthProvider>,
       )
@@ -45,9 +45,9 @@ describe("UploadPieceModal and garment validation", () => {
       createRoot(host).render(
         <AuthProvider>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadPieceModal isOpen={true} onClose={() => {}} />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </AuthProvider>,
       )
@@ -74,9 +74,9 @@ describe("UploadPieceModal and garment validation", () => {
       createRoot(host).render(
         <AuthProvider>
           <CatalogProvider>
-            <ClosetProvider>
+            <WardrobeProvider>
               <UploadPieceModal isOpen={true} onClose={() => {}} />
-            </ClosetProvider>
+            </WardrobeProvider>
           </CatalogProvider>
         </AuthProvider>,
       )

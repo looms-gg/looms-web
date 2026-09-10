@@ -6,7 +6,7 @@ import {
   CheckCircle,
 } from "@phosphor-icons/react"
 import { useAuthOptional } from "../../state/auth"
-import { useCloset } from "../../state/closet"
+import { useWardrobe } from "../../state/wardrobe"
 import { useCatalog } from "../../state/catalog"
 import { supabase, type GarmentRow } from "../../lib/supabase"
 import { CLOTHING_SLOTS, GROUPS, SLOT_GROUP, type Group, type Slot } from "../../data/catalog"
@@ -50,7 +50,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
   const auth = useAuthOptional()
   const user = auth?.user ?? null
   const profile = auth?.profile ?? null
-  const { addToWardrobe, notify } = useCloset()
+  const { addToWardrobe, notify } = useWardrobe()
   const { upsert } = useCatalog()
 
   const [file, setFile] = useState<File | null>(null)

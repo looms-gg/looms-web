@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { ExplorePage } from "./ExplorePage"
 import { AuthProvider } from "../state/auth"
 import { CatalogProvider } from "../state/catalog"
-import { ClosetProvider } from "../state/closet"
+import { WardrobeProvider } from "../state/wardrobe"
 import { LikesProvider } from "../state/likes"
 import * as publicLooksModule from "../state/publicLooks"
 
@@ -44,11 +44,11 @@ describe("ExplorePage", () => {
           <AuthProvider>
             <LikesProvider>
               <CatalogProvider>
-                <ClosetProvider>
+                <WardrobeProvider>
                   <MemoryRouter initialEntries={["/"]}>
                     <ExplorePage />
                   </MemoryRouter>
-                </ClosetProvider>
+                </WardrobeProvider>
               </CatalogProvider>
             </LikesProvider>
           </AuthProvider>,
@@ -105,11 +105,11 @@ describe("ExplorePage", () => {
           <AuthProvider>
             <LikesProvider>
               <CatalogProvider>
-                <ClosetProvider>
+                <WardrobeProvider>
                   <MemoryRouter initialEntries={["/"]}>
                     <ExplorePage />
                   </MemoryRouter>
-                </ClosetProvider>
+                </WardrobeProvider>
               </CatalogProvider>
             </LikesProvider>
           </AuthProvider>,

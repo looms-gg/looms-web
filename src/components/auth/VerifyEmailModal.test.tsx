@@ -61,11 +61,11 @@ afterEach(() => {
 })
 
 describe("VerifyEmailModal", () => {
-  it("shows the pending inbox address and listening status", () => {
+  it("shows the pending inbox address and waiting status", () => {
     const body = renderModal(authValue())
     expect(body.querySelector(".auth-scrim")).not.toBeNull()
     expect(body.textContent).toMatch(/weaver@looms\.dev/)
-    expect(body.textContent).toMatch(/Listening/i)
+    expect(body.textContent).toMatch(/Waiting for confirmation/i)
     expect(body.textContent).toMatch(/Send another link/i)
   })
 

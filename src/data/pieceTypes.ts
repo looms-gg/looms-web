@@ -48,7 +48,7 @@ export type Piece = {
   skin: string
   /**
    * Body regions this garment actually paints.
-   * Closet rack still uses `group`; iso and live previews honor this list.
+   * Wardrobe rack still uses `group`; iso and live previews honor this list.
    */
   covers?: Group[]
   userId?: string

@@ -3,7 +3,7 @@ import { flushSync } from "react-dom"
 import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { type Piece } from "../../data/catalog"
-import { ClosetProvider } from "../../state/closet"
+import { WardrobeProvider } from "../../state/wardrobe"
 import { CatalogProvider } from "../../state/catalog"
 import { LikesProvider } from "../../state/likes"
 import { AuthProvider } from "../../state/auth"
@@ -77,13 +77,13 @@ function renderUploads(props: {
         <AuthProvider>
         <LikesProvider>
         <CatalogProvider>
-        <ClosetProvider>
+        <WardrobeProvider>
           <WardrobeUploadsPanel
             user={props.user}
             myUploads={props.myUploads ?? []}
             onUpload={props.onUpload ?? (() => {})}
           />
-        </ClosetProvider>
+        </WardrobeProvider>
         </CatalogProvider>
         </LikesProvider>
         </AuthProvider>

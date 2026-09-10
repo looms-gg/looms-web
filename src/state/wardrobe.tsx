@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { addAndWearPiece, addPiece, setBodyPersist, wearOwned } from "./closetActions"
+import { addAndWearPiece, addPiece, setBodyPersist, wearOwned } from "./wardrobeActions"
 import { bodyOrDefault } from "../data/bodies"
 import { findMatchingLook, mergeStack, moveStackId, resolveLookLayers } from "../data/outfit"
 import { getPiece, type Slot } from "../data/catalog"
@@ -32,28 +32,28 @@ import {
 
 export type { Look, Persist }
 
-export type ClosetMutationResult = {
+export type WardrobeMutationResult = {
   error: Error | null
   inserted?: boolean
 }
 
-type ClosetContextValue = Persist & {
+type WardrobeContextValue = Persist & {
   notice: string | null
   activeLook: Look | null
   setActiveLook: (look: Look | null) => void
-  addToWardrobe: (pieceId: string) => Promise<ClosetMutationResult>
+  addToWardrobe: (pieceId: string) => Promise<WardrobeMutationResult>
   wear: (pieceId: string) => void
-  addAndWear: (pieceId: string) => Promise<ClosetMutationResult>
+  addAndWear: (pieceId: string) => Promise<WardrobeMutationResult>
   clearSlot: (slot: Slot) => void
   moveStack: (pieceId: string, steps: number) => void
   setBody: (bodyId: string) => void
   setBodyHue: (hue: number) => void
   setModel: (model: SkinModel) => void
   loadLook: (look: Look) => void
-  saveLook: (name: string) => Promise<ClosetMutationResult>
-  overwriteLook: (id: string, name: string) => Promise<ClosetMutationResult>
-  renameLook: (id: string, name: string) => Promise<ClosetMutationResult>
-  updateLookMeta: (id: string, patch: LookMetaPatch) => Promise<ClosetMutationResult>
+  saveLook: (name: string) => Promise<WardrobeMutationResult>
+  overwriteLook: (id: string, name: string) => Promise<WardrobeMutationResult>
+  renameLook: (id: string, name: string) => Promise<WardrobeMutationResult>
+  updateLookMeta: (id: string, patch: LookMetaPatch) => Promise<WardrobeMutationResult>
   setPlayerName: (name: string) => void
   clearPlayerName: () => void
   owns: (pieceId: string) => boolean
@@ -61,7 +61,7 @@ type ClosetContextValue = Persist & {
   dismissNotice: () => void
 }
 
-const ClosetContext = createContext<ClosetContextValue | null>(null)
+const WardrobeContext = createContext<WardrobeContextValue | null>(null)
 
 type PatchResult = {
   next: Persist
@@ -72,7 +72,7 @@ type PatchResult = {
 
 type WardrobeRowStatus = "ok" | "dup" | "fail"
 
-export function ClosetProvider({ children }: { children: ReactNode }) {
+export function WardrobeProvider({ children }: { children: ReactNode }) {
   const auth = useContext(AuthContext)
   const user = auth?.user ?? null
   const userId = user?.id ?? null
@@ -187,7 +187,7 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   const runLookWrite = useCallback(
     async (
       promise: PromiseLike<{ error: { message: string } | null }>,
-    ): Promise<ClosetMutationResult> => {
+    ): Promise<WardrobeMutationResult> => {
       const { error } = await promise
       if (error) {
         flash(formatErrorMessage(error))
@@ -227,7 +227,7 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   )
 
   const addToWardrobe = useCallback(
-    async (pieceId: string): Promise<ClosetMutationResult> => {
+    async (pieceId: string): Promise<WardrobeMutationResult> => {
       if (!userId) return { error: new Error("Not authenticated"), inserted: false }
       const piece = getPiece(pieceId)
       if (!piece || piece.slot === "eyes") return { error: null, inserted: false }
@@ -250,7 +250,7 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   )
 
   const addAndWear = useCallback(
-    async (pieceId: string): Promise<ClosetMutationResult> => {
+    async (pieceId: string): Promise<WardrobeMutationResult> => {
       const piece = getPiece(pieceId)
       if (!piece) return { error: null, inserted: false }
       if (piece.slot === "eyes") {
@@ -337,7 +337,7 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   )
 
   const saveLook = useCallback(
-    async (name: string): Promise<ClosetMutationResult> => {
+    async (name: string): Promise<WardrobeMutationResult> => {
       if (!user) return { error: new Error("Not authenticated") }
       const lookName = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
       const lookId = crypto.randomUUID()
@@ -375,7 +375,7 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   )
 
   const overwriteLook = useCallback(
-    async (id: string, name: string): Promise<ClosetMutationResult> => {
+    async (id: string, name: string): Promise<WardrobeMutationResult> => {
       if (!user) return { error: new Error("Not authenticated") }
       const targetName = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
       const ownerId = user.id
@@ -421,7 +421,7 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
   )
 
   const updateLookMeta = useCallback(
-    async (id: string, meta: LookMetaPatch): Promise<ClosetMutationResult> => {
+    async (id: string, meta: LookMetaPatch): Promise<WardrobeMutationResult> => {
       if (!user) return { error: new Error("Not authenticated") }
       const ownerId = user.id
       let updated: Look | undefined
@@ -529,11 +529,11 @@ export function ClosetProvider({ children }: { children: ReactNode }) {
     ],
   )
 
-  return <ClosetContext value={value}>{children}</ClosetContext>
+  return <WardrobeContext value={value}>{children}</WardrobeContext>
 }
 
-export function useCloset() {
-  const ctx = useContext(ClosetContext)
-  if (!ctx) throw new Error("useCloset must be used in ClosetProvider")
+export function useWardrobe() {
+  const ctx = useContext(WardrobeContext)
+  if (!ctx) throw new Error("useWardrobe must be used in WardrobeProvider")
   return ctx
 }

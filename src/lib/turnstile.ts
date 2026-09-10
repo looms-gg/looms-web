@@ -22,9 +22,7 @@ let scriptPromise: Promise<void> | null = null
 
 function loadTurnstileScript(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"))
-  const globalWindow = window as Window & {
-    turnstile?: { ready: (cb: () => void) => void }
-  }
+  const globalWindow = window as Window & { turnstile?: unknown }
   if (globalWindow.turnstile) return Promise.resolve()
   if (scriptPromise) return scriptPromise
 
@@ -32,8 +30,11 @@ function loadTurnstileScript(): Promise<void> {
     const script = document.createElement("script")
     script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
     script.async = true
+    // `render=explicit` defines window.turnstile synchronously, so the script's
+    // load event guarantees the API is ready. Cloudflare's turnstile.ready()
+    // throws on async-injected scripts, so we resolve directly instead.
     script.addEventListener("load", () => {
-      globalWindow.turnstile?.ready(() => resolve())
+      resolve()
     })
     script.addEventListener("error", () => {
       scriptPromise = null

@@ -24,15 +24,36 @@ function getTurnstile(): TurnstileApi | undefined {
 interface TurnstileWidgetProps {
   onToken: (token: string | null) => void
   onError?: (message: string | null) => void
+  // Bump to force the widget to issue a fresh token (e.g. after a failed
+  // submit — spent tokens are rejected by siteverify as timeout-or-duplicate).
+  resetKey?: number
 }
 
 // Renders an explicit Turnstile checkbox and reports the token upward.
-// Resets (clearing the token) whenever `resetKey` changes, e.g. switching
-// auth modes inside the modal.
-export function TurnstileWidget({ onToken, onError }: TurnstileWidgetProps) {
+// Resets (clearing the token) whenever `resetKey` changes, e.g. after a
+// failed submit or when switching auth modes inside the modal.
+export function TurnstileWidget({ onToken, onError, resetKey }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const widgetIdRef = useRef<string | null>(null)
+  const onTokenRef = useRef(onToken)
+  const prevResetKeyRef = useRef<number | undefined>(undefined)
   const [failed, setFailed] = useState(false)
+
+  onTokenRef.current = onToken
+
+  useEffect(() => {
+    if (prevResetKeyRef.current === undefined) {
+      prevResetKeyRef.current = resetKey
+      return
+    }
+    if (resetKey === prevResetKeyRef.current) return
+    prevResetKeyRef.current = resetKey
+    const turnstile = getTurnstile()
+    if (widgetIdRef.current && turnstile) {
+      turnstile.reset(widgetIdRef.current)
+    }
+    onTokenRef.current(null)
+  }, [resetKey])
 
   useEffect(() => {
     const siteKey = resolveTurnstileSiteKey()
