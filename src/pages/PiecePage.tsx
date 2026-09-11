@@ -32,7 +32,7 @@ export function PiecePage() {
   const user = auth?.user ?? null
   const { loading, upsert } = useCatalog()
   const piece = id ? getPiece(id) : undefined
-  const { owns, addToWardrobe, wear, addAndWear, equipped } = useWardrobe()
+  const { owns, addToWardrobe, removeFromWardrobe, wear, addAndWear, equipped } = useWardrobe()
   const [editing, setEditing] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
 
@@ -80,6 +80,11 @@ export function PiecePage() {
   function bumpSaved() {
     const latest = getPiece(currentPiece.id) ?? currentPiece
     upsert({ ...latest, savedCount: latest.savedCount + 1 })
+  }
+
+  function dropSaved() {
+    const latest = getPiece(currentPiece.id) ?? currentPiece
+    upsert({ ...latest, savedCount: Math.max(0, latest.savedCount - 1) })
   }
 
   function requireAuth(
@@ -148,6 +153,11 @@ export function PiecePage() {
             })
           })
         }
+        onRemoveFromWardrobe={() => {
+          void removeFromWardrobe(currentPiece.id).then(({ error }) => {
+            if (!error) dropSaved()
+          })
+        }}
       />
 
       <PieceComments

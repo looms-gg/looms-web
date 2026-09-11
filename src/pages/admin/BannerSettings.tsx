@@ -145,7 +145,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
             <div className="flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
               <div className="flex flex-1 items-center justify-center gap-2 text-center md:gap-3">
                 <span className={`shrink-0 ${preview.iconColor}`}>
-                  <Icon icon={preview.icon} className="size-4" />
+                  <Icon icon={preview.icon} size="md" />
                 </span>
                 <span className="leading-snug">{text.trim() || "Your announcement text will show here."}</span>
                 {linkUrl.trim() ? (
@@ -153,14 +153,14 @@ export function BannerSettings({ adminId }: { adminId: string }) {
                     className={`btn btn-xs rounded-full font-extrabold gap-1 shrink-0 ${preview.btnClass}`}
                   >
                     {linkLabel.trim() || "Learn more"}
-                    <Icon icon={ArrowRight} className="size-2.5" />
+                    <Icon icon={ArrowRight} size="xs" />
                   </span>
                 ) : null}
               </div>
 
               {dismissible ? (
                 <span className="opacity-40">
-                  <Icon icon={X} className="size-3.5" />
+                  <Icon icon={X} size="sm" />
                 </span>
               ) : null}
             </div>
@@ -183,8 +183,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
             checked={isActive}
             onChange={(e) => setIsActive(e.target.checked)}
             className="toggle toggle-primary"
-            aria-label="Toggle active banner"
-          />
+            aria-label="Toggle active banner" />
         </div>
 
         {/* Text Input */}
@@ -202,8 +201,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
             placeholder="e.g. 🚀 Welcome to looms! Try out the new 3D Studio layers."
             maxLength={MAX_LIMITS.SITE_BANNER_TEXT}
             value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
+            onChange={(e) => setText(e.target.value)} />
         </div>
 
         {/* Style Selection */}
@@ -252,8 +250,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
               className="input input-bordered w-full text-sm font-medium focus:outline-none focus:border-primary"
               placeholder="https://... or /studio"
               value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-            />
+              onChange={(e) => setLinkUrl(e.target.value)} />
           </div>
 
           <div className="space-y-1.5">
@@ -267,8 +264,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
               className="input input-bordered w-full text-sm font-medium focus:outline-none focus:border-primary"
               placeholder="e.g. Check it out"
               value={linkLabel}
-              onChange={(e) => setLinkLabel(e.target.value)}
-            />
+              onChange={(e) => setLinkLabel(e.target.value)} />
           </div>
         </div>
 
@@ -285,8 +281,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
             checked={dismissible}
             onChange={(e) => setDismissible(e.target.checked)}
             className="toggle toggle-primary"
-            aria-label="Toggle dismissible"
-          />
+            aria-label="Toggle dismissible" />
         </div>
 
         {error ? (
@@ -297,7 +292,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
 
         {success ? (
           <div className="alert alert-success text-sm font-bold text-success-content flex items-center gap-2" role="alert">
-            <Icon icon={Check} className="size-4" />
+            <Icon icon={Check} size="md" />
             Announcement banner settings saved successfully!
           </div>
         ) : null}
@@ -308,7 +303,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
             disabled={saving}
             className="btn btn-primary min-h-11 rounded-full font-black px-6 gap-2 shadow-sm transition-colors active:scale-[0.96] transition-transform"
           >
-            <Icon icon={FloppyDisk} className={`size-3.5 ${saving ? "animate-spin" : ""}`} />
+            <Icon icon={FloppyDisk} className={saving ? "animate-spin" : ""} />
             {saving ? "Saving..." : "Save Banner"}
           </button>
         </div>

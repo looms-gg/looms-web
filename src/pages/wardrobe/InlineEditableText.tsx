@@ -79,8 +79,7 @@ export function InlineEditableText({
             placeholder={placeholder}
             aria-label={ariaLabel}
             autoFocus
-            rows={2}
-          />
+            rows={2} />
         </div>
       )
     }
@@ -96,8 +95,7 @@ export function InlineEditableText({
           onKeyDown={handleKeyDown}
           className="input input-bordered input-sm h-9 w-full font-extrabold text-lg"
           aria-label={ariaLabel}
-          autoFocus
-        />
+          autoFocus />
       </div>
     )
   }
@@ -123,7 +121,7 @@ export function InlineEditableText({
             onClick={startEditing}
             className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-base-content"
           >
-            <Icon icon={Pencil} className="size-2.5" />
+            <Icon icon={Pencil} size="xs" />
           </button>
         </div>
       </div>
@@ -143,7 +141,7 @@ export function InlineEditableText({
         onClick={startEditing}
         className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-base-content"
       >
-        <Icon icon={Pencil} className="size-3" />
+        <Icon icon={Pencil} size="xs" />
       </button>
     </div>
   )

@@ -4,10 +4,10 @@ import {
   Info,
   Warning,
   Sparkle,
-  X,
   ArrowRight,
 } from "@phosphor-icons/react"
 import { Icon } from "../ui/Icon"
+import { CloseButton } from "../ui/CloseButton"
 import type { SiteBannerRow } from "../../lib/supabase"
 import {
   dismissBanner,
@@ -105,7 +105,7 @@ export function SiteBanner() {
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
         <div className="flex flex-1 items-center justify-center gap-2 text-center md:gap-3">
           <span className={`shrink-0 ${style.iconColor}`}>
-            <Icon icon={style.icon} className="size-4" />
+            <Icon icon={style.icon} size="md" />
           </span>
           <span className="leading-snug text-pretty">{banner.text}</span>
           {banner.link_url ? (
@@ -116,20 +116,13 @@ export function SiteBanner() {
               className={`btn btn-xs rounded-full font-extrabold gap-1 shrink-0 ${style.btnClass}`}
             >
               {banner.link_label || "Learn more"}
-              <Icon icon={ArrowRight} className="size-2.5" />
+              <Icon icon={ArrowRight} size="xs" />
             </a>
           ) : null}
         </div>
 
         {banner.dismissible ? (
-          <button
-            type="button"
-            onClick={handleDismiss}
-            aria-label="Dismiss banner"
-            className="btn btn-ghost btn-circle btn-xs shrink-0 opacity-60 hover:opacity-100"
-          >
-            <Icon icon={X} className="size-3.5" />
-          </button>
+          <CloseButton onClick={handleDismiss} label="Dismiss banner" size="size-3.5" className="shrink-0 opacity-60 hover:opacity-100" />
         ) : null}
       </div>
     </aside>

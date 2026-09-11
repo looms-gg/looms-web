@@ -61,6 +61,11 @@ function mockCloudSession(ownedIds: string[] = []) {
           }),
         }),
         insert: vi.fn().mockResolvedValue({ error: null }),
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }),
       } as never
     }
     if (table === "garments") {
@@ -219,5 +224,42 @@ describe("WardrobePiecesPanel", () => {
 
     expect(host.querySelector(`a[href="/piece/${coat.id}"]`)).not.toBeNull()
     expect(host.querySelector(`a[href="/piece/${shirt.id}"]`)).toBeNull()
+  })
+
+  it("removes a piece from the wardrobe via two-tap confirm", async () => {
+    const coat = pieces.find((p) => p.slot === "coat")!
+    const { host, getSession } = renderPieces({
+      signedIn: true,
+      ownedIds: [coat.id],
+    })
+    await vi.waitFor(() => {
+      expect(getSession().owns(coat.id)).toBe(true)
+    })
+    expect(host.textContent).toMatch(new RegExp(coat.name))
+
+    const removeBtn = host.querySelector(
+      `[aria-label="Remove ${coat.name} from wardrobe"]`,
+    ) as HTMLButtonElement
+    expect(removeBtn).toBeTruthy()
+
+    // First tap arms confirmation; piece stays.
+    flushSync(() => {
+      removeBtn.click()
+    })
+    expect(getSession().owns(coat.id)).toBe(true)
+
+    // Second tap confirms removal.
+    const confirmBtn = host.querySelector(
+      `[aria-label="Confirm removing ${coat.name} from wardrobe"]`,
+    ) as HTMLButtonElement
+    expect(confirmBtn).toBeTruthy()
+    flushSync(() => {
+      confirmBtn.click()
+    })
+
+    await vi.waitFor(() => {
+      expect(getSession().owns(coat.id)).toBe(false)
+    })
+    expect(host.textContent).toMatch(/Wardrobe’s still empty/)
   })
 })

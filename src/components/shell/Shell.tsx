@@ -60,7 +60,7 @@ function DockLinks({ pathname, from }: { pathname: string; from?: string }) {
         data-nav-on={on}
         className={`plaza-dock-link ${on ? "plaza-dock-link-on" : ""}`}
       >
-        <Icon icon={link.icon} className="size-4" />
+        <Icon icon={link.icon} size="md" />
         {link.label}
       </NavLink>
     )
@@ -125,8 +125,7 @@ function ShellFrame() {
               <span
                 className="nav-thumb"
                 aria-hidden
-                style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }}
-              />
+                style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }} />
             ) : null}
             <HeaderPills pathname={location.pathname} from={from} />
           </nav>
@@ -140,8 +139,7 @@ function ShellFrame() {
               avatarUrl={avatarUrl}
               emailVerified={emailVerified}
               onOpenEmailVerify={openEmailVerify}
-              onSignOut={() => signOut()}
-            />
+              onSignOut={() => signOut()} />
           </div>
         </div>
       </header>
@@ -164,8 +162,7 @@ function ShellFrame() {
           <span
             className="plaza-dock-thumb"
             aria-hidden
-            style={{ transform: `translateX(${dockThumb.x}px)`, width: dockThumb.w }}
-          />
+            style={{ transform: `translateX(${dockThumb.x}px)`, width: dockThumb.w }} />
         ) : null}
         <DockLinks pathname={location.pathname} from={from} />
       </nav>

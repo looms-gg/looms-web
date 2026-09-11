@@ -12,7 +12,7 @@ import {
 } from "three"
 import { FunctionAnimation, SkinViewer, type PlayerObject } from "skinview3d"
 import type { SkinModel } from "./convert"
-import type { Group, Piece } from "../data/catalog"
+import type { Group } from "../data/catalog"
 import { flattenSkinMaterials } from "./materials"
 
 export { flattenSkinMaterials } from "./materials"
@@ -111,11 +111,36 @@ export function lightSkinViewer(viewer: SkinViewer) {
 
 const fitBox = new Box3()
 const meshBox = new Box3()
-const fitSize = new Vector3()
 const fitCenter = new Vector3()
-const ndcNow = new Vector3()
-const ndcWant = new Vector3()
-const ndcOrigin = new Vector3()
+const ndcCorner = new Vector3()
+
+// Still thumbs fill this fraction of the render canvas on the binding axis;
+// the rest is clean viewport margin the normalized fx bake keeps.
+const VIEW_FILL = 0.72
+
+/**
+ * Full painted NDC span at the current camera: 2 fills the whole canvas axis,
+ * so w/2 (resp. h/2) is the fraction of the canvas width (height) the box
+ * occupies. Overflows (>1) are fine — that is exactly what we zoom out of.
+ */function ndcFill(viewer: SkinViewer, box: Box3): { w: number; h: number } {
+  const camera = viewer.camera
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (let i = 0; i < 8; i++) {
+    ndcCorner.set(
+      i & 1 ? box.max.x : box.min.x,
+      i & 2 ? box.max.y : box.min.y,
+      i & 4 ? box.max.z : box.min.z,
+    ).project(camera)
+    if (ndcCorner.x < minX) minX = ndcCorner.x
+    if (ndcCorner.x > maxX) maxX = ndcCorner.x
+    if (ndcCorner.y < minY) minY = ndcCorner.y
+    if (ndcCorner.y > maxY) maxY = ndcCorner.y
+  }
+  return { w: maxX - minX, h: maxY - minY }
+}
 
 function expandVisible(obj: Object3D, box: Box3) {
   if (!obj.visible) return
@@ -131,111 +156,56 @@ function expandVisible(obj: Object3D, box: Box3) {
   for (const child of obj.children) expandVisible(child, box)
 }
 
-/** Put the chest in the middle of the frame. Posed arms throw off a full-mesh center. */
-function centerBodyX(viewer: SkinViewer) {
-  const camera = viewer.camera
-  const wrapper = viewer.playerWrapper
-  const body = viewer.playerObject.skin.body
-  wrapper.updateWorldMatrix(true, true)
-  camera.updateMatrixWorld()
-  fitBox.makeEmpty()
-  expandVisible(body, fitBox)
-  if (fitBox.isEmpty()) return
-  fitBox.getCenter(fitCenter)
-  fitCenter.project(camera)
-  ndcOrigin.set(0, 0, 0).project(camera)
-  ndcNow.set(fitCenter.x, fitCenter.y, ndcOrigin.z).unproject(camera)
-  ndcWant.set(0, fitCenter.y, ndcOrigin.z).unproject(camera)
-  wrapper.position.addScaledVector(ndcWant.sub(ndcNow), 0.4)
-}
-
-export type IsoStillShot = "fit" | "coat" | "long" | "shoes" | "pants"
-
-/** Shirt/coat that paints legs but not a hood: chest in the middle, hems hang below. */
-export function isoStillShot(
-  outfit: Piece[],
-  shown: { head: boolean; body: boolean; legs: boolean },
-): IsoStillShot {
-  if (outfit.length > 0 && outfit.every((piece) => piece.slot === "shoes")) return "shoes"
-  if (outfit.length === 1 && outfit[0]?.slot === "pants") return "pants"
-  const top =
-    outfit.length === 1 &&
-    (outfit[0]?.slot === "coat" || outfit[0]?.slot === "shirt")
-  if (top && shown.body && shown.legs && !shown.head) return "long"
-  if (top) return "coat"
-  return "fit"
-}
-
-/** Center visible meshes at the origin and zoom from their bounds. */
-function frameVisible(viewer: SkinViewer, shot: IsoStillShot) {
+/** Center the visible silhouette and zoom so it fits the viewport with margin. */
+function frameVisible(viewer: SkinViewer) {
   const wrapper = viewer.playerWrapper
   wrapper.position.set(0, 0, 0)
   wrapper.updateWorldMatrix(true, true)
+
+  // Frame every visible mesh, so nothing (posed legs, long hair, splayed
+  // arms) can fall outside the viewport no matter which shot the piece
+  // nominally is. normalizeFigure handles the final crop/scale per piece.
   fitBox.makeEmpty()
   expandVisible(viewer.playerObject.skin, fitBox)
   if (fitBox.isEmpty()) {
     viewer.zoom = 0.8
     return
   }
-  if (shot === "pants") {
-    const skin = viewer.playerObject.skin
-    fitBox.makeEmpty()
-    expandVisible(skin.rightLeg, fitBox)
-    expandVisible(skin.leftLeg, fitBox)
-    if (fitBox.isEmpty()) {
-      viewer.zoom = 0.8
-      return
-    }
-  }
-  if (shot === "long") {
-    const skin = viewer.playerObject.skin
-    fitBox.makeEmpty()
-    expandVisible(skin.body, fitBox)
-    expandVisible(skin.rightArm, fitBox)
-    expandVisible(skin.leftArm, fitBox)
-    if (fitBox.isEmpty()) {
-      viewer.zoom = 0.8
-      return
-    }
-  }
 
+  // Center the whole silhouette at the origin, then translate the measured
+  // box with it. Measuring the *old* box after moving the wrapper projects
+  // the figure from its previous position and produces nonsense zoom values.
   fitBox.getCenter(fitCenter)
-  fitBox.getSize(fitSize)
-
-  if (shot === "shoes") {
-    const footH = fitSize.y * 0.34
-    fitCenter.y = fitBox.min.y + footH * 0.55
-    fitSize.y = footH
-  }
-
   wrapper.position.set(-fitCenter.x, -fitCenter.y, -fitCenter.z)
+  wrapper.updateWorldMatrix(true, true)
+  fitBox.translate(fitCenter.clone().negate())
+  viewer.camera.updateMatrixWorld()
 
-  if (shot === "coat") {
-    viewer.zoom = 1.02
-    centerBodyX(viewer)
-    return
+  // Solve zoom so the projected silhouette fills VIEW_FILL of the canvas on
+  // its binding axis. Measure the real projection at each candidate instead of
+  // inverting skinview3d's distance formula: the viewer clamps camera distance
+  // to [10, 256], which the closed form ignores, so pieces needing very tight
+  // or very wide framing came out tiny or clipped. A monotonic search respects
+  // the clamp and the perspective projection exactly.
+  const target = VIEW_FILL * 2
+  const spanAt = (zoom: number) => {
+    viewer.zoom = zoom
+    viewer.camera.updateMatrixWorld()
+    const fill = ndcFill(viewer, fitBox)
+    return Math.max(fill.w, fill.h)
   }
-
-  if (shot === "long") {
-    viewer.zoom = 1.02
-    centerBodyX(viewer)
-    return
+  let lo = 0.02
+  let hi = 8
+  if (spanAt(hi) > target) {
+    for (let i = 0; i < 32; i++) {
+      const mid = (lo + hi) / 2
+      if (spanAt(mid) > target) hi = mid
+      else lo = mid
+    }
+  } else {
+    lo = hi
   }
-
-  if (shot === "pants") {
-    const span = Math.max(fitSize.x, fitSize.y)
-    viewer.zoom = Math.min(1.62, Math.max(1.18, 11.8 / span))
-    return
-  }
-
-  if (shot === "shoes") {
-    const span = Math.max(fitSize.x, fitSize.y)
-    viewer.zoom = Math.min(1.62, Math.max(1.28, 16.5 / span))
-    return
-  }
-
-  const span = Math.max(fitSize.x, fitSize.y)
-  viewer.zoom = Math.min(1.28, Math.max(0.74, 20 / span))
+  viewer.zoom = lo
 }
 
 /**
@@ -254,7 +224,9 @@ export function resumeViewerLoop(viewer: SkinViewer) {
 /** Live previews (studio + piece pages). Stills keep a separate iso tilt. */
 export const LIVE_VIEW = {
   fov: 38,
-  zoom: 0.78,
+  // Set back from 0.78: full-height characters touched the stage edges; this
+  // leaves breathing room around the standing figure.
+  zoom: 0.62,
   tilt: 0,
   yaw: Math.PI / 4,
 } as const
@@ -295,7 +267,6 @@ export function mountLiveViewer(
 export function applyGroupFocus(
   viewer: SkinViewer,
   group: Group | "full",
-  outfit: Piece[] = [],
   covers?: Group[],
   live = false,
 ) {
@@ -335,13 +306,6 @@ export function applyGroupFocus(
   skin.rightLeg.outerLayer.visible = true
   skin.leftLeg.outerLayer.visible = true
 
-  frameVisible(
-    viewer,
-    isoStillShot(outfit, {
-      head: show.head,
-      body: show.body,
-      legs: show.rightLeg || show.leftLeg,
-    }),
-  )
+  frameVisible(viewer)
   if (live) lockTurntable(viewer)
 }

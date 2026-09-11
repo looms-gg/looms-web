@@ -257,7 +257,7 @@ export function UploadInspector({
       <div className="mt-4 space-y-4">
         {errorMsg && (
           <div className="alert alert-error text-xs p-2.5 rounded-xl flex items-center gap-2">
-            <Icon icon={Warning} className="size-4 shrink-0" />
+            <Icon icon={Warning} size="md" className="shrink-0" />
             <span className="leading-snug">{errorMsg}</span>
           </div>
         )}
@@ -269,8 +269,7 @@ export function UploadInspector({
             onCommit={commitName}
             ariaLabel="Garment name"
             editAriaLabel="Edit garment name"
-            title={piece.name}
-          />
+            title={piece.name} />
           <p className="mt-1 text-xs font-semibold text-base-content/60">
             Added {new Date(piece.added).toLocaleDateString()}
           </p>
@@ -284,8 +283,7 @@ export function UploadInspector({
             onCommit={commitDescription}
             ariaLabel="Garment description"
             editAriaLabel="Edit garment description"
-            placeholder="Add a description"
-          />
+            placeholder="Add a description" />
         </div>
 
         <div className="flex items-center justify-between border-t border-base-content/10 pt-3">
@@ -299,8 +297,7 @@ export function UploadInspector({
               aria-label="Public garment"
               checked={isPublic}
               onChange={(e) => void handleTogglePublic(e.target.checked)}
-              className="toggle toggle-primary toggle-sm"
-            />
+              className="toggle toggle-primary toggle-sm" />
           </label>
         </div>
 
@@ -311,15 +308,14 @@ export function UploadInspector({
             onChange={handleReplaceTexture}
             accept="image/png"
             className="hidden"
-            aria-label="Upload new garment texture version"
-          />
+            aria-label="Upload new garment texture version" />
           <button
             type="button"
             className="btn btn-outline btn-sm rounded-full font-bold w-full"
             onClick={handleTriggerFileInput}
             disabled={replacing}
           >
-            <Icon icon={CloudArrowUp} className="size-3.5 mr-1.5" />
+            <Icon icon={CloudArrowUp} size="sm" className="mr-1.5" />
             {replacing ? "Uploading version..." : "Upload new version"}
           </button>
 
@@ -331,7 +327,7 @@ export function UploadInspector({
               void navigate("/studio")
             }}
           >
-            <Icon icon={TShirt} className="size-3.5 mr-1.5" />
+            <Icon icon={TShirt} size="sm" className="mr-1.5" />
             Wear in Studio
           </button>
 
@@ -344,7 +340,7 @@ export function UploadInspector({
             }`}
             onClick={() => void handleDelete()}
           >
-            <Icon icon={Trash} className="size-3 mr-1" />
+            <Icon icon={Trash} size="xs" className="mr-1" />
             {confirmDelete ? "Confirm delete upload?" : "Delete upload"}
           </button>
         </div>

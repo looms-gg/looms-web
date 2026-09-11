@@ -44,7 +44,7 @@ export function WardrobeFilterBar({
       </div>
       <div className="w-full sm:max-w-xs">
         <label className="input input-bordered flex h-10 items-center gap-2 rounded-full bg-base-100">
-          <Icon icon={MagnifyingGlass} className="size-3.5 opacity-50" />
+          <Icon icon={MagnifyingGlass} size="sm" className="opacity-50" />
           <input
             type="search"
             maxLength={MAX_LIMITS.SEARCH_QUERY}
@@ -52,8 +52,7 @@ export function WardrobeFilterBar({
             placeholder={searchPlaceholder}
             aria-label={searchLabel}
             value={query}
-            onChange={(event) => onQuery(event.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))}
-          />
+            onChange={(event) => onQuery(event.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))} />
         </label>
       </div>
     </div>

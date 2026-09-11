@@ -1,7 +1,7 @@
 import { getPiece } from "../data/catalog"
 import { parseEyeId } from "../data/eyes"
 import { bodyOrDefault } from "../data/bodies"
-import { wearInStack } from "../data/outfit"
+import { wearInStack, mergeStack } from "../data/outfit"
 import type { Persist } from "./persist"
 
 export function setBodyPersist(prev: Persist, bodyId: string) {
@@ -77,5 +77,21 @@ export function addAndWearPiece(prev: Persist, pieceId: string) {
     message: ownedAlready
       ? `Wearing ${piece.name}.`
       : `Added and wearing ${piece.name}.`,
+  }
+}
+
+export function removePiece(prev: Persist, pieceId: string) {
+  const piece = getPiece(pieceId)
+  if (!piece || !prev.owned.includes(pieceId)) return { next: prev }
+  const equipped = { ...prev.equipped }
+  if (equipped[piece.slot] === pieceId) delete equipped[piece.slot]
+  return {
+    next: {
+      ...prev,
+      owned: prev.owned.filter((id) => id !== pieceId),
+      equipped,
+      stack: mergeStack(prev.stack, equipped),
+    },
+    message: `Removed ${piece.name} from wardrobe.`,
   }
 }

@@ -128,8 +128,7 @@ export function ProfileSection() {
               src={avatarUrl}
               alt=""
               className="size-14 rounded-full object-cover"
-              style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }}
-            />
+              style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
           ) : (
             <span className="grid size-14 shrink-0 place-items-center rounded-full bg-primary/25 text-primary text-base font-black">
               {initialsFromUsername(profile?.username ?? "?")}
@@ -143,7 +142,7 @@ export function ProfileSection() {
               disabled={busy}
               onClick={() => avatarInputRef.current?.click()}
             >
-              <Icon icon={Camera} className="size-3.5" />
+              <Icon icon={Camera} size="sm" />
               {uploading === "avatar" ? "Uploading…" : "Change"}
             </button>
           </div>
@@ -151,7 +150,7 @@ export function ProfileSection() {
 
         <div className="flex items-center gap-3 rounded-xl bg-base-100/80 px-4 py-3">
           <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-base-300 text-base-content/60">
-            <Icon icon={ImageSquare} className="size-6" />
+            <Icon icon={ImageSquare} size="lg" />
           </span>
           <div className="min-w-0">
             <p className="text-sm font-bold">Banner</p>
@@ -161,7 +160,7 @@ export function ProfileSection() {
               disabled={busy}
               onClick={() => bannerInputRef.current?.click()}
             >
-              <Icon icon={ImageSquare} className="size-3.5" />
+              <Icon icon={ImageSquare} size="sm" />
               {uploading === "banner" ? "Uploading…" : "Change"}
             </button>
           </div>
@@ -174,26 +173,24 @@ export function ProfileSection() {
         accept="image/png,image/jpeg,image/webp"
         className="hidden"
         aria-label="Upload avatar"
-        onChange={(e) => void onImagePicked("avatar", e)}
-      />
+        onChange={(e) => void onImagePicked("avatar", e)} />
       <input
         ref={bannerInputRef}
         type="file"
         accept="image/png,image/jpeg,image/webp"
         className="hidden"
         aria-label="Upload banner"
-        onChange={(e) => void onImagePicked("banner", e)}
-      />
+        onChange={(e) => void onImagePicked("banner", e)} />
 
       <ImageCropModal
         open={cropState !== null}
         file={cropState?.file ?? null}
         aspect={cropState?.kind === "banner" ? 3 : 1}
+        shape={cropState?.kind === "banner" ? "rect" : "circle"}
         title={cropState?.kind === "banner" ? "Crop banner" : "Crop avatar"}
         busy={uploading !== null}
         onClose={() => setCropState(null)}
-        onConfirm={(crop) => void handleCropConfirm(crop)}
-      />
+        onConfirm={(crop) => void handleCropConfirm(crop)} />
 
       <div className="mt-3 space-y-3">
         <FieldRow
@@ -213,8 +210,7 @@ export function ProfileSection() {
             disabled={busy || usernameLocked}
             onChange={(e) => setDraftUsername(e.target.value)}
             className="input input-bordered input-sm w-full rounded-xl bg-base-200/60 font-bold"
-            aria-label="Username"
-          />
+            aria-label="Username" />
         </FieldRow>
 
         <FieldRow
@@ -229,8 +225,7 @@ export function ProfileSection() {
             onChange={(e) => setDraftMc(e.target.value)}
             className="input input-bordered input-sm w-full rounded-xl bg-base-200/60 font-bold"
             aria-label="Minecraft username"
-            placeholder="Optional"
-          />
+            placeholder="Optional" />
         </FieldRow>
 
         <FieldRow label="Bio" hint="A short public blurb on your profile.">
@@ -241,8 +236,7 @@ export function ProfileSection() {
             onChange={(e) => setDraftBio(e.target.value)}
             className="textarea textarea-bordered w-full min-h-24 rounded-xl bg-base-200/60"
             aria-label="Bio"
-            placeholder="Tell the plaza who you are…"
-          />
+            placeholder="Tell the plaza who you are…" />
         </FieldRow>
       </div>
 

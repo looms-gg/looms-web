@@ -77,8 +77,7 @@ function RailList<T extends string>({
       <span
         className="rail-thumb"
         aria-hidden
-        style={{ transform: `translateY(${index * 100}%)` }}
-      />
+        style={{ transform: `translateY(${index * 100}%)` }} />
       {items.map((item) => {
         const on = item.id === selected
         return (
@@ -90,7 +89,7 @@ function RailList<T extends string>({
             onClick={() => onPick(item.id)}
             className={`rail-row ${on ? "rail-row-on" : ""}`}
           >
-            <Icon icon={item.icon} className="size-3.5 shrink-0" />
+            <Icon icon={item.icon} size="sm" className="shrink-0" />
             <span>{item.label}</span>
           </button>
         )
@@ -155,7 +154,7 @@ export function ExploreRail({
           }`}
           onClick={() => onModeChange("pieces")}
         >
-          <Icon icon={TShirt} className="size-3" />
+          <Icon icon={TShirt} size="xs" />
           <span>Pieces</span>
           {pieceCount > 0 ? (
             <span className="opacity-65 tabular-nums text-[10px]">({pieceCount})</span>
@@ -172,7 +171,7 @@ export function ExploreRail({
           }`}
           onClick={() => onModeChange("looks")}
         >
-          <Icon icon={Sparkle} className="size-3" />
+          <Icon icon={Sparkle} size="xs" />
           <span>Looks</span>
           {lookCount > 0 ? (
             <span className="opacity-65 tabular-nums text-[10px]">({lookCount})</span>
@@ -198,17 +197,16 @@ export function ExploreRail({
             id: item,
             icon: LOOK_SORT_ICON[item],
             label: item,
-          }))}
-        />
+          }))} />
 
         <p className="mb-2 mt-5 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
           Skin model
         </p>
         <details ref={combo} className="cat-combo lg:hidden">
           <summary className="rail-row rail-row-on">
-            <Icon icon={currentModel.icon} className="size-3.5 shrink-0" />
+            <Icon icon={currentModel.icon} size="sm" className="shrink-0" />
             <span className="min-w-0 flex-1 truncate">{currentModel.label}</span>
-            <Icon icon={CaretDown} className="cat-chevron size-3 shrink-0 opacity-80" />
+            <Icon icon={CaretDown} size="xs" className="cat-chevron shrink-0 opacity-80" />
           </summary>
           <div className="cat-combo-panel">
             <RailList
@@ -218,8 +216,7 @@ export function ExploreRail({
                 onModel?.(id)
                 combo.current?.removeAttribute("open")
               }}
-              items={MODEL_ITEMS}
-            />
+              items={MODEL_ITEMS} />
           </div>
         </details>
         <div className="max-lg:hidden">
@@ -227,8 +224,7 @@ export function ExploreRail({
             label="Skin model"
             selected={model}
             onPick={(id) => onModel?.(id)}
-            items={MODEL_ITEMS}
-          />
+            items={MODEL_ITEMS} />
         </div>
       </aside>
     )
@@ -249,17 +245,16 @@ export function ExploreRail({
           id: item,
           icon: PIECE_SORT_ICON[item],
           label: item,
-        }))}
-      />
+        }))} />
 
       <p className="mb-2 mt-5 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
         Categories
       </p>
       <details ref={combo} className="cat-combo lg:hidden">
         <summary className="rail-row rail-row-on">
-          <Icon icon={SLOT_ICON[currentSlot.id]} className="size-3.5 shrink-0" />
+          <Icon icon={SLOT_ICON[currentSlot.id]} size="sm" className="shrink-0" />
           <span className="min-w-0 flex-1 truncate">{currentSlot.label}</span>
-          <Icon icon={CaretDown} className="cat-chevron size-3 shrink-0 opacity-80" />
+          <Icon icon={CaretDown} size="xs" className="cat-chevron shrink-0 opacity-80" />
         </summary>
         <div className="cat-combo-panel">
           <RailList
@@ -273,8 +268,7 @@ export function ExploreRail({
               id: item.id,
               icon: SLOT_ICON[item.id],
               label: item.label,
-            }))}
-          />
+            }))} />
         </div>
       </details>
       <div className="max-lg:hidden">
@@ -286,8 +280,7 @@ export function ExploreRail({
             id: item.id,
             icon: SLOT_ICON[item.id],
             label: item.label,
-          }))}
-        />
+          }))} />
       </div>
     </aside>
   )

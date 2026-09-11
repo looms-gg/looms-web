@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Check, X } from "@phosphor-icons/react"
+import { ArrowsOutCardinal, ArrowCounterClockwise, Check } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
+import { CloseButton } from "../../components/ui/CloseButton"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
 
 export type CropRect = {
@@ -13,19 +14,23 @@ export type CropRect = {
 
 type DragMode = "move" | "zoom" | null
 
+const DEFAULT_CROP: CropRect = { cx: 0.5, cy: 0.5, zoom: 1 }
+
 /**
  * Interactive crop editor for avatar (square) and banner (3:1) uploads.
  * Returns the chosen crop rect through onConfirm; renders nothing when closed.
  *
  * The image is object-fit inside a fixed preview box; the crop window is the
  * box itself, and the user drags the image and uses a zoom slider to choose
- * which part shows through.
+ * which part shows through. The mask previews the real output shape (circle
+ * for avatars, rounded rect for banners).
  */
 export function ImageCropModal({
   open,
   file,
   aspect,
   title,
+  shape = "rect",
   busy,
   onClose,
   onConfirm,
@@ -34,13 +39,15 @@ export function ImageCropModal({
   file: File | null
   aspect: number
   title: string
+  /** Mask shown over the preview; avatars use "circle". */
+  shape?: "rect" | "circle"
   busy?: boolean
   onClose: () => void
   onConfirm: (crop: CropRect) => void
 }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null)
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null)
-  const [crop, setCrop] = useState<CropRect>({ cx: 0.5, cy: 0.5, zoom: 1 })
+  const [crop, setCrop] = useState<CropRect>(DEFAULT_CROP)
   const dragState = useRef<{ mode: DragMode; startX: number; startY: number } | null>(null)
 
   // Load the picked file into an object URL for previewing.
@@ -62,7 +69,7 @@ export function ImageCropModal({
 
   // Reset the crop whenever a new image arrives.
   useEffect(() => {
-    if (open) setCrop({ cx: 0.5, cy: 0.5, zoom: 1 })
+    if (open) setCrop(DEFAULT_CROP)
   }, [open, objectUrl])
 
   const onPointerDown = useCallback(
@@ -96,6 +103,7 @@ export function ImageCropModal({
   }
 
   const canConfirm = Boolean(file && imgSize)
+  const circle = shape === "circle"
 
   return (
     <ModalOverlay
@@ -104,20 +112,18 @@ export function ImageCropModal({
       label={title}
       panelClassName="modal-panel relative w-full max-w-sm rounded-2xl border border-white/10 bg-base-300 p-5 shadow-2xl"
     >
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm btn-circle absolute right-2 top-2 text-base-content/70 hover:text-base-content"
-        aria-label="Close"
-        onClick={onClose}
-      >
-        <Icon icon={X} className="size-4" />
-      </button>
+      <div className="flex items-center gap-3 pr-8">
+        <h2 className="text-lg font-extrabold tracking-tight text-balance">{title}</h2>
+      </div>
+      <p className="mt-0.5 text-xs text-pretty text-base-content/60">
+        Drag to reposition, then zoom until it fits.
+      </p>
 
-      <h2 className="pr-8 text-lg font-extrabold">{title}</h2>
+      <CloseButton onClick={onClose} className="absolute right-0 top-0" />
 
       {/* Preview + drag surface */}
       <div
-        className="mt-4 select-none overflow-hidden rounded-xl border border-white/10 bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px]"
+        className="group relative mt-4 select-none overflow-hidden rounded-xl border border-white/10 bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px]"
         style={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE / aspect }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -133,12 +139,29 @@ export function ImageCropModal({
               alt="Crop preview"
               draggable={false}
               className="pointer-events-none absolute left-1/2 top-1/2 max-w-none"
-              style={imgStyle(imgSize, aspect, crop)}
-            />
+              style={imgStyle(imgSize, aspect, crop)} />
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-0 border-2 border-white/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
-            />
+              className={`pointer-events-none absolute inset-0 border-2 border-white/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] ${
+                circle ? "rounded-[50%]" : ""
+              }`} />
+            {circle ? null : (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-white/25" />
+            )}
+            {circle ? null : (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-1/2 border-l border-dashed border-white/25" />
+            )}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-bold text-white/85 opacity-100 transition-opacity duration-150 group-active:opacity-0"
+            >
+              <Icon icon={ArrowsOutCardinal} size="sm" />
+              Drag to reposition
+            </span>
           </div>
         ) : (
           <div className="grid h-full place-items-center">
@@ -148,10 +171,10 @@ export function ImageCropModal({
       </div>
 
       {/* Zoom controls */}
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex items-center gap-1.5">
         <button
           type="button"
-          className="btn btn-ghost btn-xs btn-circle font-black"
+          className="btn btn-ghost btn-xs size-9 rounded-full font-black transition-transform duration-150 ease-out active:scale-[0.96]"
           aria-label="Zoom out"
           disabled={!canConfirm || busy}
           onPointerDown={(e) => e.preventDefault()}
@@ -167,12 +190,11 @@ export function ImageCropModal({
           value={crop.zoom}
           disabled={!canConfirm || busy}
           aria-label="Zoom"
-          className="range range-primary range-xs flex-1"
-          onChange={(e) => setCrop((c) => ({ ...c, zoom: Number(e.target.value) }))}
-        />
+          className="range range-primary range-xs h-9 flex-1"
+          onChange={(e) => setCrop((c) => ({ ...c, zoom: Number(e.target.value) }))} />
         <button
           type="button"
-          className="btn btn-ghost btn-xs btn-circle font-black"
+          className="btn btn-ghost btn-xs size-9 rounded-full font-black transition-transform duration-150 ease-out active:scale-[0.96]"
           aria-label="Zoom in"
           disabled={!canConfirm || busy}
           onPointerDown={(e) => e.preventDefault()}
@@ -180,20 +202,40 @@ export function ImageCropModal({
         >
           +
         </button>
+        <span
+          className="min-w-10 text-right text-xs font-bold tabular-nums text-base-content/60"
+          aria-hidden
+        >
+          {Math.round(crop.zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs size-9 rounded-full transition-transform duration-150 ease-out active:scale-[0.96]"
+          aria-label="Reset crop"
+          title="Reset crop"
+          disabled={!canConfirm || busy || (crop.cx === 0.5 && crop.cy === 0.5 && crop.zoom === 1)}
+          onClick={() => setCrop(DEFAULT_CROP)}
+        >
+          <Icon icon={ArrowCounterClockwise} size="sm" />
+        </button>
       </div>
 
-      <div className="mt-4 flex justify-end gap-2">
-        <button type="button" className="btn btn-ghost btn-sm rounded-full font-bold" onClick={onClose}>
+      <div className="mt-5 flex justify-end gap-2 border-t border-white/10 pt-4">
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm rounded-full font-bold transition-transform duration-150 ease-out active:scale-[0.96]"
+          onClick={onClose}
+        >
           Cancel
         </button>
         <button
           type="button"
-          className="btn btn-primary btn-sm rounded-full font-extrabold"
+          className="btn btn-primary btn-sm rounded-full font-extrabold transition-transform duration-150 ease-out active:scale-[0.96]"
           disabled={!canConfirm || busy}
           onClick={() => onConfirm(crop)}
         >
           {busy ? <span className="loading loading-spinner loading-xs" /> : null}
-          <Icon icon={Check} className="size-3.5" />
+          <Icon icon={Check} size="sm" />
           Apply crop
         </button>
       </div>

@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { Link } from "react-router-dom"
 import { MagicWand, PaintBrush, Stack, UploadSimple } from "@phosphor-icons/react"
 import { Icon, type IconType } from "../../components/ui/Icon"
@@ -21,6 +22,18 @@ function Bone({ className = "", rounded = "rounded-lg" }: { className?: string; 
  * (pure blobs, no text/icons inside it), beside a short note on what will ship.
  */
 export function EditorPage() {
+  // The editor is a fresh destination: navigating to it from a scrolled page
+  // (Explore/wardrobe) should start at the top, not mid-document.
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" })
+    } catch {
+      window.scrollTo(0, 0)
+    }
+    if (document.documentElement) document.documentElement.scrollTop = 0
+    if (document.body) document.body.scrollTop = 0
+  }, [])
+
   return (
     <div className="mx-auto w-full max-w-5xl py-2 sm:py-6">
       <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-12">
@@ -80,7 +93,7 @@ export function EditorPage() {
             className="badge badge-warning badge-sm absolute -top-3 right-4 z-10 h-5 gap-1 rounded-full border-0 px-2 font-extrabold text-[10px] uppercase tracking-[0.06em]"
             aria-label="Under construction"
           >
-            <MagicWand className="size-2.5" aria-hidden />
+            <Icon icon={MagicWand} size="xs" />
             Under construction
           </span>
         </div>
@@ -98,7 +111,7 @@ export function EditorPage() {
             {FEATURES.map((feature) => (
               <li key={feature.label} className="flex items-center gap-3">
                 <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-primary/12 text-primary">
-                  <Icon icon={feature.icon} className="size-4" />
+                  <Icon icon={feature.icon} size="md" />
                 </span>
                 <span className="text-sm font-semibold text-base-content/80">
                   {feature.label}

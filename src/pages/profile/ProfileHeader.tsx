@@ -45,8 +45,7 @@ export function ProfileHeader({
               : undefined
           }
           role="img"
-          aria-label="Profile banner"
-        />
+          aria-label="Profile banner" />
 
         <div className="absolute -bottom-10 left-5 sm:left-6">
           <div
@@ -86,7 +85,7 @@ export function ProfileHeader({
               title="Edit profile"
               aria-label="Edit profile"
             >
-              <Icon icon={Gear} className="size-4" />
+              <Icon icon={Gear} size="md" />
             </Link>
           ) : (
             <button
@@ -102,7 +101,7 @@ export function ProfileHeader({
                 setReportOpen(true)
               }}
             >
-              <Icon icon={Flag} className="size-4" />
+              <Icon icon={Flag} size="md" />
             </button>
           )}
         </div>
@@ -122,8 +121,7 @@ export function ProfileHeader({
           targetType="profile"
           targetId={profile.id}
           targetLabel={`Profile: @${profile.username}`}
-          reporterId={user.id}
-        />
+          reporterId={user.id} />
       ) : null}
     </section>
   )

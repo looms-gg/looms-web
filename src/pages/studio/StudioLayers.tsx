@@ -30,8 +30,7 @@ function StackRow({
           <img
             src={eyeThumbUrl(eye)}
             alt=""
-            className="size-7 [image-rendering:pixelated]"
-          />
+            className="size-7 [image-rendering:pixelated]" />
         </div>
       ) : (
         <IsoThumb piece={piece} alt="" chip />
@@ -50,7 +49,7 @@ function StackRow({
               disabled={outside}
               onClick={() => onMove(piece.id, 1)}
             >
-              <Icon icon={CaretUp} className="size-3" />
+              <Icon icon={CaretUp} size="xs" />
             </button>
             <button
               type="button"
@@ -59,7 +58,7 @@ function StackRow({
               disabled={inside}
               onClick={() => onMove(piece.id, -1)}
             >
-              <Icon icon={CaretDown} className="size-3" />
+              <Icon icon={CaretDown} size="xs" />
             </button>
           </div>
         ) : null}
@@ -69,7 +68,7 @@ function StackRow({
           aria-label={`Take off ${piece.name}`}
           onClick={() => onClear(piece.slot)}
         >
-          <Icon icon={X} className="size-3.5" />
+          <Icon icon={X} size="sm" />
         </button>
       </div>
     </li>
@@ -147,8 +146,7 @@ export function StudioLayers({
             inside={visual === stackTopFirst.length - 1}
             canShift={canShift}
             onMove={onMove}
-            onClear={onClear}
-          />
+            onClear={onClear} />
         ))}
         <li
           className={`studio-stack-row studio-stack-body ${

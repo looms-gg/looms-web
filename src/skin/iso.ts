@@ -1,8 +1,6 @@
 import { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../data/bodies"
-import { isoPieceStaticThumb } from "../data/isoThumbs"
 import { preparePreview, type Group, type Piece } from "../data/catalog"
-import { bakeIsoThumbFx } from "./thumbFx"
 import { composePieceSkin, composeSkin, groupsFromAtlas } from "./compose"
 import {
   applyGroupFocus,
@@ -25,7 +23,6 @@ type Prepared = {
   wash: string
   group: Group | "full"
   covers: Group[]
-  outfit: Piece[]
   model: "slim" | "default"
   bakeFx: boolean
 }
@@ -105,8 +102,11 @@ function getIsoViewer() {
   try {
     const next = new SkinViewer({
       canvas: document.createElement("canvas"),
-      width: 180,
-      height: 210,
+      // 2× the display size so the normalization crop still has real detail to
+      // sample — a 180×210 canvas magnified by the figure crop then again by
+      // the CSS tile scale turned small items mushy.
+      width: 360,
+      height: 420,
       renderPaused: true,
     })
     lightSkinViewer(next)
@@ -169,7 +169,7 @@ function captureJob(job: Job, prepared: Prepared) {
   // doesn't run three render loops behind everyone's back.
   pauseViewerLoop(v)
   v.loadSkin(prepared.skin, { model: prepared.model })
-  applyGroupFocus(v, prepared.group, prepared.outfit, prepared.covers, false)
+  applyGroupFocus(v, prepared.group, prepared.covers, false)
   crispSkinTexture(v)
   v.render()
 
@@ -221,25 +221,12 @@ export async function isoPieceThumb(
   priority = false,
   bakeFx = true,
 ): Promise<IsoThumbResult> {
-  // v59: head pieces keep torso-overlay paint (long hair), so cached head-only
-  // thumbs from v58 must regenerate. Thumbs still bake the shadow+rim fx.
-  const key = `piece:v59:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
+  // v66: figure-relative rim mask (uniform outline weight across piece sizes).
+  const key = `piece:v66:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)
   if (pending) return pending
-
-  // Pre-rendered PNG shipped with the site beats re-rendering in WebGL.
-  // Static thumbs ship fx-less; bake the shadow+rim once and cache the result.
-  const staticThumb = isoPieceStaticThumb(piece.id)
-  if (staticThumb) {
-    const res: IsoThumbResult = {
-      url: bakeFx ? await bakeIsoThumbFx(staticThumb.url) : staticThumb.url,
-      wash: staticThumb.wash,
-    }
-    memCache.set(key, res)
-    return res
-  }
 
   const work = (async () => {
     const stored = await getStoredThumb(key)
@@ -259,7 +246,6 @@ export async function isoPieceThumb(
           wash,
           group,
           covers: covers ?? ["head", "torso", "legs"],
-          outfit: [piece],
           model: skinviewModel(model),
           bakeFx,
         }
@@ -285,7 +271,8 @@ export async function isoOutfitThumb(
   bakeFx = true,
 ): Promise<IsoThumbResult> {
   const outfitKey = pieces.map((piece) => piece.id).join("|") || "empty"
-  const key = `outfit:v58:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
+  // v64: figure-relative rim mask (uniform outline weight across piece sizes).
+  const key = `outfit:v64:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)
@@ -307,7 +294,6 @@ export async function isoOutfitThumb(
           wash,
           group: "full" as const,
           covers: ["head", "torso", "legs"] satisfies Group[],
-          outfit: pieces,
           model: skinviewModel(model),
           bakeFx,
         }

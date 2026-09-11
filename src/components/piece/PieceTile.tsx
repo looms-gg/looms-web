@@ -1,6 +1,6 @@
 import { memo, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
-import { Bookmark, Check, PlusCircle } from "@phosphor-icons/react"
+import { Bookmark, Check, PlusCircle, Trash, TShirt } from "@phosphor-icons/react"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
 import { useAuthOptional } from "../../state/auth"
 import { useCatalog } from "../../state/catalog"
@@ -19,13 +19,14 @@ export const PieceTile = memo(function PieceTile({
 }) {
   const auth = useAuthOptional()
   const { upsert } = useCatalog()
-  const { owns, addToWardrobe } = useWardrobe()
+  const { owns, addToWardrobe, removeFromWardrobe, wear } = useWardrobe()
   const location = useLocation()
   const navigate = useNavigate()
   const from = location.pathname + location.search
   const owned = owns(piece.id)
   const wearMode = action === "wear"
   const [authOpen, setAuthOpen] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   function handleTileClick(e: React.MouseEvent) {
     const target = e.target as HTMLElement | null
@@ -69,18 +70,85 @@ export const PieceTile = memo(function PieceTile({
                 className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold tabular-nums text-base-content/55"
                 title={`${piece.savedCount} saved`}
               >
-                <Icon icon={Bookmark} className="size-2.5" />
+                <Icon icon={Bookmark} size="xs" />
                 {piece.savedCount}
               </span>
             </span>
-            {wearMode ? null : owned ? (
-              <span
-                className="grid size-11 place-items-center rounded-full bg-primary text-primary-content shadow-sm"
-                title="In wardrobe"
-                aria-label={`${piece.name} in wardrobe`}
-              >
-                <Icon icon={Check} className="size-3" />
+            {wearMode ? (
+              <span className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className={`grid size-8 place-items-center rounded-full transition-colors duration-150 active:scale-[0.96] ${
+                    confirmRemove
+                      ? "bg-error text-white"
+                      : "text-base-content/50 hover:text-error"
+                  }`}
+                  title={confirmRemove ? "Confirm remove" : "Remove from wardrobe"}
+                  aria-label={
+                    confirmRemove
+                      ? `Confirm removing ${piece.name} from wardrobe`
+                      : `Remove ${piece.name} from wardrobe`
+                  }
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    if (!confirmRemove) {
+                      setConfirmRemove(true)
+                      return
+                    }
+                    setConfirmRemove(false)
+                    void removeFromWardrobe(piece.id)
+                  }}
+                  onBlur={() => setConfirmRemove(false)}
+                >
+                  <Icon icon={confirmRemove ? Check : Trash} size="md" />
+                </button>
+                <button
+                  type="button"
+                  className="grid size-8 place-items-center rounded-full text-base-content/70 transition-[color,transform] duration-150 hover:text-primary active:scale-[0.96]"
+                  title={`Wear ${piece.name}`}
+                  aria-label={`Wear ${piece.name}`}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    wear(piece.id)
+                  }}
+                >
+                  <Icon icon={TShirt} size="md" />
+                </button>
               </span>
+            ) : owned ? (
+              <button
+                type="button"
+                className={`grid size-11 place-items-center rounded-full transition-colors duration-150 active:scale-[0.96] ${
+                  confirmRemove
+                    ? "bg-error text-white"
+                    : "bg-primary text-primary-content shadow-sm hover:bg-error hover:text-white"
+                }`}
+                title={confirmRemove ? "Confirm remove" : "In wardrobe — click to remove"}
+                aria-label={
+                  confirmRemove
+                    ? `Confirm removing ${piece.name} from wardrobe`
+                    : `Remove ${piece.name} from wardrobe`
+                }
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  if (!confirmRemove) {
+                    setConfirmRemove(true)
+                    return
+                  }
+                  setConfirmRemove(false)
+                  void removeFromWardrobe(piece.id).then(({ error }) => {
+                    if (!error) {
+                      upsert({ ...piece, savedCount: Math.max(0, piece.savedCount - 1) })
+                    }
+                  })
+                }}
+                onBlur={() => setConfirmRemove(false)}
+              >
+                <Icon icon={confirmRemove ? Trash : Check} size="xs" />
+              </button>
             ) : (
               <button
                 type="button"
@@ -101,7 +169,7 @@ export const PieceTile = memo(function PieceTile({
                   })
                 }}
               >
-                <Icon icon={PlusCircle} className="size-7" />
+                <Icon icon={PlusCircle} size="lg" />
               </button>
             )}
           </div>

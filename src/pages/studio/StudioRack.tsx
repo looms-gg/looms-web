@@ -167,10 +167,9 @@ export function StudioRack({
           >
             <Icon
               icon={Palette}
-              className={`size-3.5 ${
+              className={
                 isAppearance ? "text-primary" : "text-base-content/40"
-              }`}
-            />
+              } />
             Appearance
           </button>
         </div>
@@ -210,7 +209,7 @@ export function StudioRack({
                 className="badge badge-neutral h-8 shrink-0 rounded-full border-0 px-2.5 font-bold cursor-pointer hover:bg-base-content/20"
                 onClick={() => setPieceSearchOpen(true)}
               >
-                <Icon icon={MagnifyingGlass} className="size-3.5" />
+                <Icon icon={MagnifyingGlass} size="sm" />
               </button>
               {racks.map((slot) => (
                 <button
@@ -234,7 +233,7 @@ export function StudioRack({
                 {/* Same pill-search pattern as Explore and the Wardrobe:
                     label.input wrapper with the icon inside. */}
                 <label className="input input-bordered flex h-8 w-full items-center gap-2 rounded-full bg-base-100 pl-3">
-                  <Icon icon={MagnifyingGlass} className="size-3.5 shrink-0 opacity-50" />
+                  <Icon icon={MagnifyingGlass} size="sm" className="shrink-0 opacity-50" />
                   <input
                     autoFocus
                     type="search"
@@ -252,8 +251,7 @@ export function StudioRack({
                         setPieceQuery("")
                       }
                     }}
-                    className="grow border-none bg-transparent text-xs font-medium shadow-none outline-none focus:border-none focus:shadow-none focus:outline-none focus:ring-0"
-                  />
+                    className="grow border-none bg-transparent text-xs font-medium shadow-none outline-none focus:border-none focus:shadow-none focus:outline-none focus:ring-0" />
                   {pieceQuery ? (
                     <button
                       type="button"
@@ -262,7 +260,7 @@ export function StudioRack({
                       className="shrink-0 cursor-pointer text-base-content/40 hover:text-base-content"
                       onClick={() => setPieceQuery("")}
                     >
-                      <Icon icon={X} className="size-3.5" />
+                      <Icon icon={X} size="sm" />
                     </button>
                   ) : null}
                 </label>
@@ -276,7 +274,7 @@ export function StudioRack({
                     setPieceQuery("")
                   }}
                 >
-                  <Icon icon={X} className="size-4" />
+                  <Icon icon={X} size="md" />
                 </button>
               </div>
             ) : null}
@@ -295,8 +293,7 @@ export function StudioRack({
                   <div className="flex items-center gap-2">
                     <span
                       className="size-4 rounded-full shadow-xs ring-1 ring-white/20"
-                      style={{ background: currentTint }}
-                    />
+                      style={{ background: currentTint }} />
                     <span className="text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/70">
                       Skin Tone
                     </span>
@@ -325,8 +322,7 @@ export function StudioRack({
                       style={{
                         background: on ? currentTint : tone.swatch,
                       }}
-                      onClick={() => onPickTone?.(tone.id)}
-                    />
+                      onClick={() => onPickTone?.(tone.id)} />
                   )
                 })}
               </div>
@@ -335,7 +331,7 @@ export function StudioRack({
               <div className="mt-3 pt-2.5 border-t border-white/5">
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="font-extrabold text-base-content/60 flex items-center gap-1.5">
-                    <Icon icon={SlidersHorizontal} className="size-3 text-base-content/40" />
+                    <Icon icon={SlidersHorizontal} size="xs" className="text-base-content/40" />
                     Hue Shift
                   </span>
                   <div className="flex items-center gap-2">
@@ -349,7 +345,7 @@ export function StudioRack({
                         onClick={() => onBodyHue?.(0)}
                         title="Reset hue"
                       >
-                        <Icon icon={ArrowCounterClockwise} className="size-2.5" />
+                        <Icon icon={ArrowCounterClockwise} size="xs" />
                       </button>
                     ) : null}
                   </div>
@@ -365,8 +361,7 @@ export function StudioRack({
                     value={bodyHue}
                     aria-label={`Hue shift for ${currentBody.name}`}
                     className="studio-hue-range"
-                    onChange={(event) => onBodyHue?.(Number(event.target.value))}
-                  />
+                    onChange={(event) => onBodyHue?.(Number(event.target.value))} />
                 </span>
               </div>
             </div>
@@ -396,7 +391,7 @@ export function StudioRack({
 
               {/* Eye Filter — same pill-search pattern as Explore/Wardrobe */}
               <label className="input input-bordered flex h-8 mb-2.5 items-center gap-2 rounded-full bg-base-100 pl-3">
-                <Icon icon={MagnifyingGlass} className="size-3.5 shrink-0 opacity-50" />
+                <Icon icon={MagnifyingGlass} size="sm" className="shrink-0 opacity-50" />
                 <input
                   type="search"
                   maxLength={MAX_LIMITS.SEARCH_QUERY}
@@ -404,8 +399,7 @@ export function StudioRack({
                   aria-label="Filter eyes"
                   value={eyeFilter}
                   onChange={(e) => setEyeFilter(e.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))}
-                  className="grow border-none bg-transparent text-xs font-medium shadow-none outline-none focus:border-none focus:shadow-none focus:outline-none focus:ring-0"
-                />
+                  className="grow border-none bg-transparent text-xs font-medium shadow-none outline-none focus:border-none focus:shadow-none focus:outline-none focus:ring-0" />
                 {eyeFilter ? (
                   <button
                     type="button"
@@ -413,7 +407,7 @@ export function StudioRack({
                     className="shrink-0 cursor-pointer text-base-content/40 hover:text-base-content"
                     onClick={() => setEyeFilter("")}
                   >
-                    <Icon icon={X} className="size-3.5" />
+                    <Icon icon={X} size="sm" />
                   </button>
                 ) : null}
               </label>
@@ -433,7 +427,7 @@ export function StudioRack({
                   }`}
                 >
                   <div className="size-11 rounded-lg bg-base-300 flex items-center justify-center">
-                    <Icon icon={Prohibit} className="size-5 text-base-content/40" />
+                    <Icon icon={Prohibit} size="lg" className="text-base-content/40" />
                   </div>
                   <span className="text-xs font-extrabold">Default</span>
                 </button>
@@ -460,8 +454,7 @@ export function StudioRack({
                         <img
                           src={eyeThumbUrl(eye)}
                           alt=""
-                          className="size-8 [image-rendering:pixelated] group-hover:scale-110 transition-transform"
-                        />
+                          className="size-8 [image-rendering:pixelated] group-hover:scale-110 transition-transform" />
                       </div>
                       <span className="text-xs font-extrabold truncate max-w-full">
                         {eye.name}
@@ -479,7 +472,7 @@ export function StudioRack({
               <div className="rounded-[14px] bg-base-300/85 p-3 shadow-xs border border-white/5">
                 <div className="flex items-center justify-between text-xs mb-1.5 min-h-5">
                   <span className="font-extrabold text-base-content/60 flex items-center gap-1.5">
-                    <Icon icon={SlidersHorizontal} className="size-3 text-base-content/40" />
+                    <Icon icon={SlidersHorizontal} size="xs" className="text-base-content/40" />
                     Eye height
                   </span>
                   <div className="flex items-center gap-2">
@@ -500,7 +493,7 @@ export function StudioRack({
                       title="Reset eye height"
                       aria-label="Reset eye height"
                     >
-                      <Icon icon={ArrowCounterClockwise} className="size-2.5" />
+                      <Icon icon={ArrowCounterClockwise} size="xs" />
                     </button>
                   </div>
                 </div>
@@ -513,8 +506,7 @@ export function StudioRack({
                     value={eyeOffset}
                     aria-label="Eye height on face"
                     className="studio-hue-range"
-                    onChange={(event) => onEyeOffset?.(Number(event.target.value))}
-                  />
+                    onChange={(event) => onEyeOffset?.(Number(event.target.value))} />
                 </span>
               </div>
             </div>
@@ -544,8 +536,7 @@ export function StudioRack({
                         piece={piece}
                         on={equipped[slot] === piece.id}
                         onWear={onWear}
-                        onClear={onClear}
-                      />
+                        onClear={onClear} />
                     ))}
                   </ul>
                 </div>
@@ -565,7 +556,7 @@ export function StudioRack({
               className="btn btn-secondary rounded-full font-extrabold btn-sm"
               onClick={() => onRack("appearance")}
             >
-              <Icon icon={Palette} className="size-3.5 mr-1" />
+              <Icon icon={Palette} size="sm" className="mr-1" />
               Appearance
             </button>
             <Link to="/" className="btn btn-primary rounded-full font-extrabold btn-sm">
@@ -590,8 +581,7 @@ export function StudioRack({
                       piece={piece}
                       on={equipped[slot] === piece.id}
                       onWear={onWear}
-                      onClear={onClear}
-                    />
+                      onClear={onClear} />
                   ))}
                 </ul>
               </div>

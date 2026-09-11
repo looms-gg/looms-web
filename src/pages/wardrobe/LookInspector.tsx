@@ -47,8 +47,7 @@ export function LookInspector({
           bodyId={look.bodyId}
           bodyHue={look.bodyHue}
           model={look.model}
-          alt={look.name}
-        />
+          alt={look.name} />
       </div>
 
       <div className="mt-4 space-y-4">
@@ -58,8 +57,7 @@ export function LookInspector({
             maxLength={MAX_LIMITS.LOOK_NAME}
             onCommit={commitName}
             ariaLabel="Look name"
-            editAriaLabel="Edit name"
-          />
+            editAriaLabel="Edit name" />
           <p className="mt-1 text-xs font-semibold text-base-content/60">
             <span className="tabular-nums font-bold text-primary">{layerCount}</span> layers
             {look.savedAt ? ` · ${new Date(look.savedAt).toLocaleDateString()}` : ""}
@@ -74,8 +72,7 @@ export function LookInspector({
             onCommit={commitDescription}
             ariaLabel="Look description"
             editAriaLabel="Edit description"
-            placeholder="Add a description"
-          />
+            placeholder="Add a description" />
         </div>
 
         <div className="flex items-center justify-between border-t border-base-content/10 pt-3">
@@ -93,8 +90,7 @@ export function LookInspector({
                   visibility: e.target.checked ? "public" : "private",
                 })
               }
-              className="toggle toggle-primary toggle-sm"
-            />
+              className="toggle toggle-primary toggle-sm" />
           </label>
         </div>
 
@@ -122,7 +118,7 @@ export function LookInspector({
               })()
             }}
           >
-            <Icon icon={Download} className="size-3.5 mr-1.5" />
+            <Icon icon={Download} size="sm" className="mr-1.5" />
             Download skin
           </button>
           <button
@@ -142,7 +138,7 @@ export function LookInspector({
             title={copied ? "Link copied to clipboard!" : `Share ${look.name}`}
             aria-label={copied ? "Link copied" : `Share ${look.name}`}
           >
-            <Icon icon={copied ? Check : Link} className="size-3.5 mr-1.5" />
+            <Icon icon={copied ? Check : Link} size="sm" className="mr-1.5" />
             {copied ? "Copied!" : "Share outfit link"}
           </button>
         </div>

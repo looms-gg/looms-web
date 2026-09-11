@@ -1,10 +1,11 @@
 import { useEffect, useId, useState, type FormEvent } from "react"
-import { Warning, X } from "@phosphor-icons/react"
+import { Warning } from "@phosphor-icons/react"
 import { useAuthOptional } from "../../state/auth"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { MAX_LIMITS, sanitizeMinecraftUsername, sanitizeUsername } from "../../lib/sanitize"
 import { isTurnstileEnabled } from "../../lib/turnstile"
 import { Icon } from "../ui/Icon"
+import { CloseButton } from "../ui/CloseButton"
 import { LoomsLogo } from "../ui/LoomsLogo"
 import { ModalOverlay } from "../ui/ModalOverlay"
 import { TurnstileWidget } from "./TurnstileWidget"
@@ -202,14 +203,7 @@ export function AuthModal({
       <div className="relative mb-6 flex items-center justify-center">
         <LoomsLogo variant="wordmark" className="h-8" decorative />
         {!isGate && onClose ? (
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm btn-circle absolute right-0 top-1/2 -translate-y-1/2 text-base-content/55 hover:text-base-content"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            <Icon icon={X} className="size-4" />
-          </button>
+          <CloseButton onClick={onClose} className="absolute right-0 top-1/2 -translate-y-1/2 text-base-content/55" />
         ) : null}
       </div>
 
@@ -235,7 +229,7 @@ export function AuthModal({
           role="alert"
           className="mt-4 flex items-start gap-2 text-sm font-semibold text-error"
         >
-          <Icon icon={Warning} className="mt-0.5 size-3.5 shrink-0" />
+          <Icon icon={Warning} size="sm" className="mt-0.5 shrink-0" />
           <span>{errorMsg}</span>
         </p>
       ) : null}
@@ -262,8 +256,7 @@ export function AuthModal({
             maxLength={100}
             autoComplete="email"
             className={fieldClass}
-            placeholder="you@looms.gg"
-          />
+            placeholder="you@looms.gg" />
         </div>
 
         {mode !== "magic_link" && mode !== "forgot" ? (
@@ -283,8 +276,7 @@ export function AuthModal({
               maxLength={100}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
               className={fieldClass}
-              placeholder="At least 6 characters"
-            />
+              placeholder="At least 6 characters" />
             <div className="mt-2 flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -328,8 +320,7 @@ export function AuthModal({
                 maxLength={MAX_LIMITS.USERNAME}
                 autoComplete="username"
                 className={fieldClass}
-                placeholder="PixelWeaver"
-              />
+                placeholder="PixelWeaver" />
             </div>
 
             <div>
@@ -345,8 +336,7 @@ export function AuthModal({
                   <img
                     src={mcAvatarUrl}
                     alt=""
-                    className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 rounded-sm border border-base-content/15 [image-rendering:pixelated]"
-                  />
+                    className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 rounded-sm border border-base-content/15 [image-rendering:pixelated]" />
                 ) : null}
                 <input
                   id={mcId}
@@ -356,8 +346,7 @@ export function AuthModal({
                   className={`${fieldClass}${mcAvatarUrl ? " pl-11" : ""}`}
                   placeholder="Java IGN"
                   value={mcUsername}
-                  onChange={(e) => setMcUsername(e.target.value)}
-                />
+                  onChange={(e) => setMcUsername(e.target.value)} />
               </div>
               <p className="mt-1.5 text-xs leading-relaxed text-base-content/50">
                 Sets your studio avatar helm from your skin.
@@ -374,8 +363,7 @@ export function AuthModal({
                 setCaptchaToken(token)
                 if (token) setCaptchaError(null)
               }}
-              onError={setCaptchaError}
-            />
+              onError={setCaptchaError} />
             {captchaError ? (
               <p role="alert" className="mt-1.5 text-xs font-bold text-error">
                 {captchaError}
@@ -454,8 +442,7 @@ export function AuthButtons() {
         isOpen={open}
         initialMode={initialMode}
         isGate={false}
-        onClose={() => setOpen(false)}
-      />
+        onClose={() => setOpen(false)} />
     </>
   )
 }

@@ -2,8 +2,7 @@ import { useState, useRef, type ChangeEvent, type FormEvent } from "react"
 import {
   CloudArrowUp,
   Warning,
-  X,
-  CheckCircle,
+  Check,
 } from "@phosphor-icons/react"
 import { useAuthOptional } from "../../state/auth"
 import { useWardrobe } from "../../state/wardrobe"
@@ -15,6 +14,7 @@ import { groupsFromAtlas } from "../../skin/compose"
 import { MAX_LIMITS, sanitizeText, sanitizeUsername, validateFileSize } from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { Icon } from "../ui/Icon"
+import { CloseButton } from "../ui/CloseButton"
 import { ModalOverlay } from "../ui/ModalOverlay"
 
 export interface UploadPieceModalProps {
@@ -219,18 +219,11 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
       labelledBy="upload-piece-title"
       panelClassName="modal-panel relative w-full max-w-md rounded-2xl border border-white/10 bg-base-300 p-6 shadow-2xl sm:p-7 max-h-[90vh] overflow-y-auto"
     >
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm btn-circle absolute right-3 top-3 text-base-content/70 hover:text-base-content"
-          aria-label="Close"
-          onClick={onClose}
-        >
-          <Icon icon={X} className="size-4" />
-        </button>
+        <CloseButton onClick={onClose} className="absolute right-1.5 top-1.5" />
 
         <div className="flex items-center gap-3 mb-5">
           <span className="grid size-10 place-items-center rounded-xl bg-primary/20 text-primary">
-            <Icon icon={CloudArrowUp} className="size-5" />
+            <Icon icon={CloudArrowUp} size="lg" />
           </span>
           <div>
             <h2
@@ -250,7 +243,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
             role="alert"
             className="mb-4 flex items-center gap-2 rounded-xl bg-error/15 border border-error/30 p-3 text-xs text-error font-medium"
           >
-            <Icon icon={Warning} className="shrink-0 size-4" />
+            <Icon icon={Warning} size="md" className="shrink-0" />
             <span>{errorMsg}</span>
           </div>
         ) : null}
@@ -266,24 +259,22 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
               type="file"
               accept="image/png"
               className="hidden"
-              onChange={handleFileChange}
-            />
+              onChange={handleFileChange} />
             {previewUrl ? (
               <div className="flex flex-col items-center gap-2">
                 <img
                   src={previewUrl}
                   alt="Texture preview"
-                  className="size-24 rounded-lg bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px] object-contain p-1 border border-white/10 [image-rendering:pixelated]"
-                />
+                  className="size-24 rounded-lg bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px] object-contain p-1 border border-white/10 [image-rendering:pixelated]" />
                 <span className="text-xs font-bold text-success flex items-center gap-1">
-                  <Icon icon={CheckCircle} className="size-3" />
+                  <Icon icon={Check} size="xs" />
                   {file?.name} (64x64)
                 </span>
                 <span className="text-[11px] text-base-content/50">Click to change file</span>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-1.5 text-base-content/65">
-                <Icon icon={CloudArrowUp} className="size-8 text-primary/70 mb-1" />
+                <Icon icon={CloudArrowUp} size="xl" className="text-primary/70 mb-1" />
                 <span className="text-xs font-bold text-base-content">
                   Click or drag a 64x64 PNG here
                 </span>
@@ -306,8 +297,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Cyberpunk Bomber"
-              className="input input-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary"
-            />
+              className="input input-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -352,8 +342,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Short notes about style, palette, or inspiration..."
               rows={2}
-              className="textarea textarea-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary"
-            />
+              className="textarea textarea-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary" />
           </div>
 
           <div className="flex gap-2 pt-2">

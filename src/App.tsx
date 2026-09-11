@@ -61,9 +61,8 @@ export default function App() {
   }, [])
 
   return (
-    // Fill weight for every Phosphor icon app-wide (the outline style reads
-    // too thin against the dark theme). Individual icons can still override
-    // with an explicit `weight` prop.
+    // Solid (fill) weight for every Phosphor icon app-wide. The `Icon`
+    // wrapper enforces this too, so direct usages stay consistent.
     <IconContext.Provider value={{ weight: "fill" }}>
     <ThemeProvider>
       <AuthProvider>
@@ -82,24 +81,21 @@ export default function App() {
                         <Suspense fallback={<RouteFallback />}>
                           <PiecePage />
                         </Suspense>
-                      }
-                    />
+                      } />
                     <Route
                       path="look/:id"
                       element={
                         <Suspense fallback={<RouteFallback />}>
                           <LookPage />
                         </Suspense>
-                      }
-                    />
+                      } />
                     <Route
                       path="u/:username"
                       element={
                         <Suspense fallback={<RouteFallback />}>
                           <ProfilePage />
                         </Suspense>
-                      }
-                    />
+                      } />
                     <Route
                       path="wardrobe"
                       element={
@@ -111,8 +107,7 @@ export default function App() {
                             <WardrobePage />
                           </RequireAuth>
                         </Suspense>
-                      }
-                    />
+                      } />
                     <Route
                       path="studio"
                       element={
@@ -124,32 +119,28 @@ export default function App() {
                             <StudioPage />
                           </RequireAuth>
                         </Suspense>
-                      }
-                    />
+                      } />
                     <Route
                       path="editor"
                       element={
                         <Suspense fallback={<RouteFallback />}>
                           <EditorPage />
                         </Suspense>
-                      }
-                    />
+                      } />
                     <Route
                       path="settings"
                       element={
                         <Suspense fallback={<RouteFallback />}>
                           <SettingsRoute />
                         </Suspense>
-                      }
-                    />
+                      } />
                     <Route
                       path="reset-password"
                       element={
                         <Suspense fallback={<RouteFallback />}>
                           <ResetPasswordPage />
                         </Suspense>
-                      }
-                    />
+                      } />
                     <Route path="privacy" element={<LegalDocument docId="privacy" />} />
                     <Route path="terms" element={<LegalDocument docId="terms" />} />
                     <Route path="cookies" element={<LegalDocument docId="cookies" />} />
@@ -162,8 +153,7 @@ export default function App() {
                             <AdminPage />
                           </AdminGuard>
                         </Suspense>
-                      }
-                    />
+                      } />
                   </Route>
                 </Routes>
               </BrowserRouter>

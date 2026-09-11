@@ -20,6 +20,7 @@ export function PieceSheet({
   onWear,
   onAddToWardrobe,
   onAddAndWear,
+  onRemoveFromWardrobe,
 }: {
   piece: Piece
   owned: boolean
@@ -30,6 +31,7 @@ export function PieceSheet({
   onWear: () => void
   onAddToWardrobe: () => void
   onAddAndWear: () => void
+  onRemoveFromWardrobe: () => void
 }) {
   const coverLabels = pieceCovers(piece).map((g) => GROUP_LABEL[g])
 
@@ -43,7 +45,7 @@ export function PieceSheet({
           title={`Edit ${piece.name}`}
           onClick={onEdit}
         >
-          <Icon icon={Pencil} className="size-3.5 mr-1.5" />
+          <Icon icon={Pencil} size="sm" className="mr-1.5" />
           Edit
         </button>
       ) : null}
@@ -57,8 +59,7 @@ export function PieceSheet({
         >
           <SkinStage
             outfit={[piece]}
-            className="h-full min-h-[320px] md:min-h-[440px]"
-          />
+            className="h-full min-h-[320px] md:min-h-[440px]" />
         </div>
 
         <div className="flex flex-col justify-center gap-5 p-6 md:p-8 lg:p-10">
@@ -102,7 +103,7 @@ export function PieceSheet({
             onWear={onWear}
             onAddToWardrobe={onAddToWardrobe}
             onAddAndWear={onAddAndWear}
-          />
+            onRemoveFromWardrobe={onRemoveFromWardrobe} />
         </div>
       </div>
     </section>

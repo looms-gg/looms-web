@@ -80,7 +80,7 @@ export function WardrobePage() {
             onClick={() => setUploadOpen(true)}
             className="btn btn-outline btn-sm rounded-full font-bold"
           >
-            <Icon icon={CloudArrowUp} className="size-3.5 mr-1.5" />
+            <Icon icon={CloudArrowUp} size="sm" className="mr-1.5" />
             Upload piece
           </button>
         </div>
@@ -92,8 +92,7 @@ export function WardrobePage() {
         <WardrobeUploadsPanel
           user={user}
           myUploads={myUploads}
-          onUpload={() => setUploadOpen(true)}
-        />
+          onUpload={() => setUploadOpen(true)} />
       ) : null}
 
       <UploadPieceModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />

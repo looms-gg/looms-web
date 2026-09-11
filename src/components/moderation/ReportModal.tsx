@@ -3,9 +3,9 @@ import {
   CheckCircle,
   Flag,
   Warning,
-  X,
 } from "@phosphor-icons/react"
 import { Icon } from "../ui/Icon"
+import { CloseButton } from "../ui/CloseButton"
 import { ModalOverlay } from "../ui/ModalOverlay"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { MAX_LIMITS } from "../../lib/sanitize"
@@ -103,7 +103,7 @@ export function ReportModal({
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-error/15 text-error">
-            <Icon icon={Flag} className="size-4" />
+            <Icon icon={Flag} size="md" />
           </span>
           <div>
             <h2 className="text-xl font-extrabold tracking-tight text-base-content">
@@ -116,20 +116,16 @@ export function ReportModal({
             ) : null}
           </div>
         </div>
-        <button
-          type="button"
+        <CloseButton
           onClick={handleClose}
-          className="btn btn-ghost btn-sm btn-circle -mr-1 -mt-1 text-base-content/55 hover:text-base-content"
-          aria-label="Close report modal"
-        >
-          <Icon icon={X} className="size-4" />
-        </button>
+          className="-mr-1 -mt-1 text-base-content/55"
+          label="Close report modal" />
       </div>
 
       {success ? (
         <div className="py-8 text-center">
           <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success/15 text-success">
-            <Icon icon={CheckCircle} className="size-6" />
+            <Icon icon={CheckCircle} size="lg" />
           </span>
           <h3 className="mt-4 text-2xl font-black tracking-tight">Report Submitted</h3>
           <p className="mx-auto mt-2 max-w-[300px] text-sm leading-relaxed text-base-content/65">
@@ -168,8 +164,7 @@ export function ReportModal({
                       value={r.id}
                       checked={selected}
                       onChange={() => setReason(r.id)}
-                      className="radio radio-error radio-sm mt-0.5"
-                    />
+                      className="radio radio-error radio-sm mt-0.5" />
                     <div className="space-y-0.5">
                       <div className="text-sm font-bold leading-none">{r.label}</div>
                       <div className="text-[11px] leading-tight text-base-content/60">
@@ -202,8 +197,7 @@ export function ReportModal({
               placeholder="Provide context or timestamp to help our moderation team..."
               maxLength={MAX_LIMITS.REPORT_DETAILS}
               value={details}
-              onChange={(e) => setDetails(e.target.value)}
-            />
+              onChange={(e) => setDetails(e.target.value)} />
           </div>
 
           {error ? (
@@ -211,7 +205,7 @@ export function ReportModal({
               role="alert"
               className="flex items-start gap-2 text-sm font-semibold text-error"
             >
-              <Icon icon={Warning} className="mt-0.5 size-3.5 shrink-0" />
+              <Icon icon={Warning} size="sm" className="mt-0.5 shrink-0" />
               <span>{error}</span>
             </p>
           ) : null}

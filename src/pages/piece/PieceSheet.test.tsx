@@ -32,6 +32,7 @@ describe("PieceSheet", () => {
                   onWear={() => {}}
                   onAddToWardrobe={() => {}}
                   onAddAndWear={() => {}}
+                  onRemoveFromWardrobe={() => {}}
                 />
               </WardrobeProvider>
             </MemoryRouter>

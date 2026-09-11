@@ -1,6 +1,5 @@
 import {
   DoubleSide,
-  FrontSide,
   MeshStandardMaterial,
   type Material,
   type Mesh,
@@ -82,10 +81,10 @@ export function flattenSkinMaterials(viewer: SkinViewer) {
   const skin = viewer.playerObject.skin as unknown as SkinMaterials
 
   skin.layer1Material = ensureFlatMaterial(skin.layer1Material, currentMap, {
-    side: FrontSide,
+    side: DoubleSide,
   })
   skin.layer1MaterialBiased = ensureFlatMaterial(skin.layer1MaterialBiased, currentMap, {
-    side: FrontSide,
+    side: DoubleSide,
     polygonOffset: true,
   })
   skin.layer2Material = ensureFlatMaterial(skin.layer2Material, currentMap, {

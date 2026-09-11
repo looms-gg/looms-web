@@ -28,6 +28,7 @@ function renderActions(props: Partial<React.ComponentProps<typeof PieceActions>>
                 onWear={() => {}}
                 onAddToWardrobe={() => {}}
                 onAddAndWear={() => {}}
+                onRemoveFromWardrobe={() => {}}
                 {...props}
               />
             </WardrobeProvider>
@@ -58,5 +59,31 @@ describe("PieceActions", () => {
     })
     expect(onWear).toHaveBeenCalled()
     expect(host.textContent).toMatch(/Open studio/)
+  })
+
+  it("removes from wardrobe via two-tap confirm when owned", () => {
+    const onRemoveFromWardrobe = vi.fn()
+    const host = renderActions({ owned: true, onRemoveFromWardrobe })
+    const savedBtn = host.querySelector(
+      '[aria-label^="Remove "]',
+    ) as HTMLButtonElement
+    expect(savedBtn).toBeTruthy()
+    expect(savedBtn.textContent).toMatch(/Saved/)
+
+    // First tap arms confirmation without removing.
+    flushSync(() => {
+      savedBtn.click()
+    })
+    expect(onRemoveFromWardrobe).not.toHaveBeenCalled()
+
+    // Second tap confirms.
+    const confirmBtn = host.querySelector(
+      '[aria-label^="Confirm removing "]',
+    ) as HTMLButtonElement
+    expect(confirmBtn).toBeTruthy()
+    flushSync(() => {
+      confirmBtn.click()
+    })
+    expect(onRemoveFromWardrobe).toHaveBeenCalledOnce()
   })
 })

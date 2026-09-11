@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { Warning, X } from "@phosphor-icons/react"
+import { Warning } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
+import { CloseButton } from "../../components/ui/CloseButton"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
 import { requestAccountDeletion } from "../../lib/accountDeletion"
 import { formatErrorMessage } from "../../lib/errorFormat"
@@ -44,14 +45,7 @@ export function DangerZoneModal({
       scrimClassName="modal-scrim modal-scrim-soft"
       panelClassName="modal-panel relative w-full max-w-xs rounded-2xl border border-white/10 bg-base-300 p-5 shadow-2xl"
     >
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm btn-circle absolute right-2 top-2 text-base-content/70 hover:text-base-content"
-        aria-label="Close"
-        onClick={onClose}
-      >
-        <Icon icon={X} className="size-4" />
-      </button>
+      <CloseButton onClick={onClose} className="absolute right-0.5 top-0.5" />
 
       <h2 className="pr-8 text-lg font-extrabold text-error">Delete account</h2>
       <p className="mt-1 text-sm text-base-content/65">
@@ -59,7 +53,7 @@ export function DangerZoneModal({
       </p>
 
       <div className="mt-3 flex items-start gap-2 rounded-xl border border-error/30 bg-error/10 p-3 text-xs text-error">
-        <Icon icon={Warning} className="mt-0.5 size-3.5 shrink-0" />
+        <Icon icon={Warning} size="sm" className="mt-0.5 shrink-0" />
         <span>Type DELETE below to confirm.</span>
       </div>
 
@@ -69,8 +63,7 @@ export function DangerZoneModal({
         onChange={(event) => setConfirmText(event.target.value)}
         maxLength={10}
         aria-label="Type DELETE to confirm"
-        className="input input-bordered mt-3 w-full rounded-xl bg-base-100 text-sm font-bold"
-      />
+        className="input input-bordered mt-3 w-full rounded-xl bg-base-100 text-sm font-bold" />
 
       {errorMsg ? (
         <p className="mt-2 text-sm text-error" role="alert">

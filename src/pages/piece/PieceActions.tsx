@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react"
 import { Link } from "react-router-dom"
-import { Bookmark, Check, Flag, Link as LinkIcon, Plus } from "@phosphor-icons/react"
+import { Bookmark, Check, Flag, Link as LinkIcon, Plus, Trash } from "@phosphor-icons/react"
 import type { Piece } from "../../data/catalog"
 import { Icon } from "../../components/ui/Icon"
 import { LikeButton } from "../../components/piece/LikeButton"
@@ -18,6 +18,7 @@ export function PieceActions({
   onWear,
   onAddToWardrobe,
   onAddAndWear,
+  onRemoveFromWardrobe,
 }: {
   piece: Piece
   owned: boolean
@@ -27,11 +28,13 @@ export function PieceActions({
   onWear: () => void
   onAddToWardrobe: () => void
   onAddAndWear: () => void
+  onRemoveFromWardrobe: () => void
 }) {
   const auth = useAuthOptional()
   const [copied, setCopied] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   async function handleShare() {
     const url = getPieceShareUrl(piece.id)
@@ -51,13 +54,12 @@ export function PieceActions({
         type="garment"
         id={piece.id}
         count={piece.likeCount}
-        onCountChange={onLikeCountChange}
-      />
+        onCountChange={onLikeCountChange} />
       <span
         className="inline-flex h-11 items-center gap-1.5 rounded-full border border-base-content/15 bg-base-100 px-3 text-sm font-extrabold tabular-nums text-base-content/70"
         title={`${piece.savedCount} ${piece.savedCount === 1 ? "save" : "saves"}`}
       >
-        <Icon icon={Bookmark} className="size-3" />
+        <Icon icon={Bookmark} size="xs" />
         {piece.savedCount}
         <span className="font-bold text-base-content/45">saved</span>
       </span>
@@ -68,23 +70,51 @@ export function PieceActions({
         title={copied ? "Link copied to clipboard!" : `Share ${piece.name}`}
         aria-label={copied ? "Link copied" : `Share ${piece.name}`}
       >
-        <Icon icon={copied ? Check : LinkIcon} className="size-3.5 mr-1.5" />
+        <Icon icon={copied ? Check : LinkIcon} size="sm" className="mr-1.5" />
         {copied ? "Copied!" : "Share"}
       </button>
       {owned ? (
-        <button
-          type="button"
-          className="btn btn-primary min-h-11 rounded-full font-extrabold"
-          onClick={onWear}
-          disabled={wearing}
-          title={
-            wearing
-              ? "This piece is already on your studio character"
-              : "Put this piece on your studio character"
-          }
-        >
-          {wearing ? "Wearing" : "Wear in studio"}
-        </button>
+        <>
+          <button
+            type="button"
+            className="btn btn-primary min-h-11 rounded-full font-extrabold"
+            onClick={onWear}
+            disabled={wearing}
+            title={
+              wearing
+                ? "This piece is already on your studio character"
+                : "Put this piece on your studio character"
+            }
+          >
+            {wearing ? "Wearing" : "Wear in studio"}
+          </button>
+          <button
+            type="button"
+            className={`btn min-h-11 rounded-full font-bold border transition-colors ${
+              confirmRemove
+                ? "btn-error text-white font-extrabold"
+                : "btn-ghost border-base-content/15 text-base-content/60 hover:border-error hover:text-error"
+            }`}
+            onClick={() => {
+              if (!confirmRemove) {
+                setConfirmRemove(true)
+                return
+              }
+              setConfirmRemove(false)
+              onRemoveFromWardrobe()
+            }}
+            onBlur={() => setConfirmRemove(false)}
+            title={confirmRemove ? "Confirm remove" : "Remove this piece from your wardrobe"}
+            aria-label={
+              confirmRemove
+                ? `Confirm removing ${piece.name} from wardrobe`
+                : `Remove ${piece.name} from wardrobe`
+            }
+          >
+            <Icon icon={confirmRemove ? Trash : Check} size="sm" className="mr-1.5" />
+            {confirmRemove ? "Confirm remove?" : "Saved"}
+          </button>
+        </>
       ) : (
         <>
           <button
@@ -92,9 +122,7 @@ export function PieceActions({
             className="btn btn-primary min-h-11 rounded-full font-extrabold"
             onClick={onAddToWardrobe}
           >
-            <span className="grid size-5 place-items-center rounded-full bg-primary-content/20">
-              <Icon icon={Plus} className="size-2.5" />
-            </span>
+            <Icon icon={Plus} size="sm" />
             Add to wardrobe
           </button>
           <button
@@ -125,7 +153,7 @@ export function PieceActions({
           title={`Report ${piece.name}`}
           aria-label={`Report ${piece.name}`}
         >
-          <Icon icon={Flag} className="size-3.5 mr-1.5" />
+          <Icon icon={Flag} size="sm" className="mr-1.5" />
           Report
         </button>
       ) : null}
@@ -138,8 +166,7 @@ export function PieceActions({
           targetType="piece"
           targetId={piece.id}
           targetLabel={`Piece: ${piece.name}`}
-          reporterId={auth.user.id}
-        />
+          reporterId={auth.user.id} />
       ) : null}
     </div>
   )

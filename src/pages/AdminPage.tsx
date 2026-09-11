@@ -31,14 +31,13 @@ export function AdminPage() {
     <div className="space-y-8">
       <HeadMeta
         title="Admin Panel · looms"
-        description="Looms administrator control panel and content moderation."
-      />
+        description="Looms administrator control panel and content moderation." />
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-base-content/10 pb-6">
         <div className="flex items-center gap-3.5">
           <div className="grid size-12 place-items-center rounded-2xl bg-warning/15 text-warning">
-            <Icon icon={ShieldCheck} className="size-6" />
+            <Icon icon={ShieldCheck} size="lg" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -83,7 +82,7 @@ export function AdminPage() {
                   : "btn-ghost text-base-content/70 hover:text-base-content"
               }`}
             >
-              <Icon icon={tab.icon} className="size-3.5" />
+              <Icon icon={tab.icon} size="sm" />
               <span>{tab.label}</span>
             </button>
           )

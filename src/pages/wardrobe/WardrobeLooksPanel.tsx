@@ -41,8 +41,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
             title="No looks yet"
             body="Wear a few layers in Studio and save the combo. It lands here."
             to="/studio"
-            cta="Open studio"
-          />
+            cta="Open studio" />
         ) : (
           <div className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -52,7 +51,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
               </p>
               <div className="w-full sm:max-w-xs">
                 <label className="input input-bordered flex h-10 items-center gap-2 rounded-full bg-base-100">
-                  <Icon icon={MagnifyingGlass} className="size-3.5 opacity-50" />
+                  <Icon icon={MagnifyingGlass} size="sm" className="opacity-50" />
                   <input
                     type="search"
                     maxLength={MAX_LIMITS.SEARCH_QUERY}
@@ -62,8 +61,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
                     value={lookQuery}
                     onChange={(event) =>
                       setLookQuery(event.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))
-                    }
-                  />
+                    } />
                 </label>
               </div>
             </div>
@@ -102,8 +100,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
                         bodyId={look.bodyId}
                         bodyHue={look.bodyHue}
                         model={look.model}
-                        alt={look.name}
-                      />
+                        alt={look.name} />
                       <div className="bg-neutral px-4 py-3 min-w-0">
                         <h3
                           className="truncate whitespace-nowrap overflow-hidden text-ellipsis font-extrabold"
@@ -136,8 +133,7 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
             onEditOutfit={() => {
               loadLook(inspectedLook)
               void navigate("/studio")
-            }}
-          />
+            }} />
         ) : null}
       </InspectorModal>
     </>

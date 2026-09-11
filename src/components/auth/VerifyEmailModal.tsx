@@ -60,7 +60,7 @@ export function VerifyEmailModal() {
       {emailVerified ? (
         <div className="text-center">
           <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success/15 text-success">
-            <Icon icon={CheckCircle} className="size-6" />
+            <Icon icon={CheckCircle} size="lg" />
           </span>
           <h2 id="verify-email-title" className="mt-4 text-2xl font-black tracking-tight">
             You're in
@@ -72,7 +72,7 @@ export function VerifyEmailModal() {
       ) : (
         <div className="text-center">
           <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <Icon icon={EnvelopeSimple} className="size-6" />
+            <Icon icon={EnvelopeSimple} size="lg" />
           </span>
           <h2
             id="verify-email-title"
@@ -90,10 +90,7 @@ export function VerifyEmailModal() {
             className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-base-content/70"
             aria-live="polite"
           >
-            <Icon
-              icon={CircleNotch}
-              className="size-4 animate-spin text-primary motion-reduce:animate-none"
-            />
+            <Icon icon={CircleNotch} size="md" className="animate-spin text-primary motion-reduce:animate-none" />
             <span>Waiting for confirmation</span>
           </div>
 

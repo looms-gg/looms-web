@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
-import { X } from "@phosphor-icons/react"
-import { Icon } from "../../components/ui/Icon"
+import { CloseButton } from "../../components/ui/CloseButton"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
 
 export function InspectorModal({
@@ -21,14 +20,7 @@ export function InspectorModal({
       label={title}
       panelClassName="modal-panel relative w-full max-w-sm rounded-2xl border border-white/10 bg-base-300 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
     >
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm btn-circle absolute right-3 top-3 z-10 text-base-content/70 hover:text-base-content"
-        aria-label="Close"
-        onClick={onClose}
-      >
-        <Icon icon={X} className="size-4" />
-      </button>
+      <CloseButton onClick={onClose} className="absolute right-1.5 top-1.5 z-10" />
       {children}
     </ModalOverlay>
   )

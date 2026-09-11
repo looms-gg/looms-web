@@ -416,10 +416,8 @@ async function main() {
     const body = buildPageBody({
       h1,
       intro,
-      image: `${BASE_URL}/iso/pieces/${piece.id}.png`,
-      imageAlt: `${piece.name}, a ${slotLabel(piece.slot)} piece for Minecraft skins, drawn on a Minecraft character preview`,
-      imageWidth: 180,
-      imageHeight: 210,
+      // Thumbnails render client-side only (WebGL iso preview) — the bundled
+      // public/iso/pieces PNG system was removed.
       sections,
       links: related,
     })

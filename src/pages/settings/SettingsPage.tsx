@@ -97,8 +97,7 @@ function ToggleRow({
         disabled={disabled}
         aria-label={label}
         title={title}
-        onChange={(event) => onToggle(event.target.checked)}
-      />
+        onChange={(event) => onToggle(event.target.checked)} />
     </li>
   )
 }
@@ -125,16 +124,14 @@ function PrivacySection() {
           title="Hides your presence from other people when off"
           checked={Boolean(profile?.show_last_seen)}
           disabled={busy}
-          onToggle={(next) => void toggle({ show_last_seen: next })}
-        />
+          onToggle={(next) => void toggle({ show_last_seen: next })} />
         <ToggleRow
           label="Show likes"
           hint="Let others browse the Liked tab on your profile"
           title="Hides the Liked tab from other people when off"
           checked={Boolean(profile?.show_likes)}
           disabled={busy}
-          onToggle={(next) => void toggle({ show_likes: next })}
-        />
+          onToggle={(next) => void toggle({ show_likes: next })} />
       </ul>
       {errorMsg ? (
         <p className="mt-3 text-sm text-error" role="alert">
@@ -207,8 +204,7 @@ function AccountSection() {
               src={avatarUrl}
               alt=""
               className="size-10 rounded-xl object-cover"
-              style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }}
-            />
+              style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
           ) : (
             <span className="grid size-10 place-items-center rounded-xl bg-primary/25 text-primary text-sm font-black">
               {(profile?.username ?? "?").slice(0, 2).toUpperCase()}
@@ -267,7 +263,7 @@ function AccountSection() {
             disabled={busy}
             onClick={() => void handleSignOut()}
           >
-            <Icon icon={SignIn} className="size-3.5" />
+            <Icon icon={SignIn} size="sm" />
             Log out
           </button>
         </div>
@@ -299,8 +295,7 @@ function AccountSection() {
         onDone={async () => {
           setDangerOpen(false)
           await signOut()
-        }}
-      />
+        }} />
     </Section>
   )
 }
@@ -330,7 +325,7 @@ function SettingsTabs({
                 : "btn-ghost text-base-content/70 hover:text-base-content"
             }`}
           >
-            <Icon icon={tab.icon} className="size-3.5" />
+            <Icon icon={tab.icon} size="sm" />
             <span>{tab.label}</span>
           </button>
         )
@@ -369,7 +364,7 @@ export function SettingsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3.5 border-b border-base-content/10 pb-6">
         <div className="grid size-12 place-items-center rounded-2xl bg-primary/15 text-primary">
-          <Icon icon={Gear} className="size-6" />
+          <Icon icon={Gear} size="lg" />
         </div>
         <div>
           <h1 className="text-2xl font-black tracking-tight text-balance sm:text-3xl">Settings</h1>
@@ -384,7 +379,7 @@ export function SettingsPage() {
           aria-label="Go back"
           onClick={goBack}
         >
-          <Icon icon={ArrowLeft} className="size-4" />
+          <Icon icon={ArrowLeft} size="md" />
           Back
         </button>
       </div>

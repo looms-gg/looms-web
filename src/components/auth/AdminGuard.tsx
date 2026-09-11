@@ -20,7 +20,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
     return (
       <div className="mx-auto max-w-md py-16 text-center space-y-5">
         <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-error/10 text-error">
-          <Icon icon={ShieldCheck} className="size-8" />
+          <Icon icon={ShieldCheck} size="xl" />
         </div>
         <div className="space-y-2">
           <h1 className="text-2xl font-black tracking-tight">Access Restricted</h1>
@@ -30,7 +30,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
         </div>
         <div>
           <Link to="/" className="btn btn-primary btn-sm rounded-full font-extrabold gap-2">
-            <Icon icon={ArrowLeft} className="size-3" />
+            <Icon icon={ArrowLeft} size="xs" />
             Back to Explore
           </Link>
         </div>

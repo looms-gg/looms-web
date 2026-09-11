@@ -71,7 +71,7 @@ export function LikeButton({
           })
         }}
       >
-        <Icon icon={Heart} className="size-3 shrink-0" />
+        <Icon icon={Heart} size="xs" className="shrink-0" />
         <span className="min-w-[1ch] text-xs font-extrabold tabular-nums">
           {displayCount}
         </span>

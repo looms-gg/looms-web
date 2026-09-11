@@ -78,8 +78,7 @@ export function ShellAccountMenu({
             src={avatarUrl}
             alt=""
             className="size-5 rounded-md"
-            style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }}
-          />
+            style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
         ) : (
           <span className="grid size-5 place-items-center rounded-md bg-primary/25 text-primary text-[10px] font-black">
             {initials}
@@ -106,8 +105,7 @@ export function ShellAccountMenu({
               src={avatarUrl}
               alt=""
               className="account-menu-avatar"
-              style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }}
-            />
+              style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
           ) : (
             <span className="account-menu-avatar-fallback">{initials}</span>
           )}
@@ -233,8 +231,7 @@ export function ShellAuthControls({
           username={username}
           minecraftUsername={minecraftUsername}
           avatarUrl={avatarUrl}
-          onSignOut={onSignOut}
-        />
+          onSignOut={onSignOut} />
       ) : (
         <AuthButtons />
       )}

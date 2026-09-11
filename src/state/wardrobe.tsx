@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { addAndWearPiece, addPiece, setBodyPersist, wearOwned } from "./wardrobeActions"
+import { addAndWearPiece, addPiece, removePiece, setBodyPersist, wearOwned } from "./wardrobeActions"
 import { bodyOrDefault } from "../data/bodies"
 import { findMatchingLook, mergeStack, moveStackId, resolveLookLayers } from "../data/outfit"
 import { getPiece, type Slot } from "../data/catalog"
@@ -42,6 +42,7 @@ type WardrobeContextValue = Persist & {
   activeLook: Look | null
   setActiveLook: (look: Look | null) => void
   addToWardrobe: (pieceId: string) => Promise<WardrobeMutationResult>
+  removeFromWardrobe: (pieceId: string) => Promise<WardrobeMutationResult>
   wear: (pieceId: string) => void
   addAndWear: (pieceId: string) => Promise<WardrobeMutationResult>
   clearSlot: (slot: Slot) => void
@@ -247,6 +248,28 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
       patch((prev) => wearOwned(prev, pieceId))
     },
     [patch],
+  )
+
+  const removeFromWardrobe = useCallback(
+    async (pieceId: string): Promise<WardrobeMutationResult> => {
+      const piece = getPiece(pieceId)
+      if (!piece || piece.slot === "eyes") return { error: null }
+      if (!state.owned.includes(pieceId)) return { error: null }
+      // Optimistic: drop the piece (and unequip it) right away, then sync.
+      patch((prev) => removePiece(prev, pieceId))
+      if (!userId) return { error: null }
+      const { error } = await supabase
+        .from("wardrobe_items")
+        .delete()
+        .eq("user_id", userId)
+        .eq("garment_id", pieceId)
+      if (error) {
+        flash(formatErrorMessage(error))
+        return { error: new Error(error.message) }
+      }
+      return { error: null }
+    },
+    [flash, patch, state.owned, userId],
   )
 
   const addAndWear = useCallback(
@@ -487,6 +510,7 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
       activeLook,
       setActiveLook,
       addToWardrobe,
+      removeFromWardrobe,
       wear,
       addAndWear,
       clearSlot,
@@ -517,6 +541,7 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
       notice,
       overwriteLook,
       owns,
+      removeFromWardrobe,
       renameLook,
       saveLook,
       updateLookMeta,

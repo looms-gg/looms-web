@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest"
-import { bakeIsoThumbFx, compositeIsoThumbFx, ISO_RIM_FILL } from "./thumbFx"
+import { compositeIsoThumbFx, ISO_RIM_FILL } from "./thumbFx"
 
 // happy-dom does not implement canvas 2D rasterization; when getContext
 // returns null, thumbFx must throw (composite) or fall back (bake).
@@ -65,24 +65,6 @@ describe("thumbFx", () => {
       "throws when canvas 2D is unavailable",
       () => {
         expect(() => compositeIsoThumbFx(canvas, 10, 10)).toThrow()
-      },
-    )
-  })
-
-  describe("bakeIsoThumbFx", () => {
-    it("falls back to the original URL when the image cannot load", async () => {
-      const res = await bakeIsoThumbFx("data:image/png;base64,not-a-real-png")
-      expect(res).toBe("data:image/png;base64,not-a-real-png")
-    })
-
-    it.skipIf(!supports2d)(
-      "caches repeated bakes of the same URL",
-      async () => {
-        const tiny =
-          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
-        const first = await bakeIsoThumbFx(tiny)
-        const second = await bakeIsoThumbFx(tiny)
-        expect(second).toBe(first)
       },
     )
   })

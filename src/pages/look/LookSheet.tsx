@@ -75,8 +75,7 @@ export function LookSheet({
             bodyHue={look.bodyHue}
             model={look.model}
             fullFigure={true}
-            className="h-full min-h-[340px] md:min-h-[480px]"
-          />
+            className="h-full min-h-[340px] md:min-h-[480px]" />
         </div>
 
         {/* Right: Look Details, Actions, and Layers Breakdown */}
@@ -120,7 +119,7 @@ export function LookSheet({
                 className="btn btn-primary rounded-full font-black px-5 shadow-sm active:scale-[0.96] transition-transform"
                 onClick={onWear}
               >
-                <Icon icon={Sparkle} className="size-3.5 mr-1.5" />
+                <Icon icon={Sparkle} size="sm" className="mr-1.5" />
                 Wear in Studio
               </button>
 
@@ -130,7 +129,7 @@ export function LookSheet({
                 onClick={onDownload}
                 title="Download 64x64 Minecraft skin PNG"
               >
-                <Icon icon={Download} className="size-3.5 mr-1.5" />
+                <Icon icon={Download} size="sm" className="mr-1.5" />
                 Download Skin
               </button>
 
@@ -138,8 +137,7 @@ export function LookSheet({
                 type="look"
                 id={look.id}
                 count={look.likeCount}
-                onCountChange={onLikeCountChange}
-              />
+                onCountChange={onLikeCountChange} />
 
               <button
                 type="button"
@@ -148,7 +146,7 @@ export function LookSheet({
                 title="Copy share link"
                 aria-label="Copy share link"
               >
-                <Icon icon={copied ? Check : LinkIcon} className={`size-3.5 ${copied ? "text-success" : ""}`} />
+                <Icon icon={copied ? Check : LinkIcon} className={copied ? "text-success" : ""} />
               </button>
 
               {!isCreator ? (
@@ -165,7 +163,7 @@ export function LookSheet({
                   title="Report look"
                   aria-label="Report look"
                 >
-                  <Icon icon={Flag} className="size-3.5" />
+                  <Icon icon={Flag} size="sm" />
                 </button>
               ) : null}
             </div>
@@ -175,7 +173,7 @@ export function LookSheet({
           <div className="piece-reveal space-y-3 pt-4 border-t border-base-content/10" style={revealStyle(4)}>
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-black uppercase tracking-[0.06em] text-base-content/60 flex items-center gap-1.5">
-                <Icon icon={Stack} className="size-3" />
+                <Icon icon={Stack} size="xs" />
                 Outfit Layers ({outfit.length})
               </h2>
             </div>
@@ -217,8 +215,7 @@ export function LookSheet({
           targetType="look"
           targetId={look.id}
           targetLabel={`Look: ${look.name}`}
-          reporterId={auth.user.id}
-        />
+          reporterId={auth.user.id} />
       ) : null}
     </section>
   )

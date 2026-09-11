@@ -23,12 +23,18 @@ const SHADOW_ALPHA = 0.35
 // feComponentTransfer discrete tableValues="0 1": alpha ≥ 0.5 → fully opaque.
 const ALPHA_THRESHOLD = 128
 
-const bakedUrls = new Map<string, string>()
+// Fill fraction of the canvas the normalized figure occupies. The card CSS
+// (--iso-figure-size: 78%) displays the 6:7 canvas inside a 4:3 frame, which
+// overflows vertically: the visible part of the canvas is only 82% of its
+// height. W/H target half of the frame each way (figure = 50% of card):
+// W = 0.5/0.78, H = 0.5/1.213.
+const FIGURE_FILL_H = 0.41
+const FIGURE_FILL_W = 0.64
 
 function rimMaskAt(x: number): number {
   // mask-image on the old .iso-thumb-rim: "to right", stops 0 / 50% / 58% /
-  // 64% — expressed in tile space, where the figure image occupied the middle
-  // 78% (--iso-figure-size). Converted to image space: (stop−0.11)/0.78.
+  // 64% — expressed across the FIGURE, so every piece's rim fades over the
+  // same fraction of its own width regardless of how wide the silhouette is.
   if (x <= 0.5) return 0
   if (x <= 0.6) return ((x - 0.5) / 0.1) * 0.4
   if (x <= 0.68) return 0.4 + ((x - 0.6) / 0.08) * 0.6
@@ -40,6 +46,67 @@ function makeCanvas(width: number, height: number): HTMLCanvasElement {
   canvas.width = width
   canvas.height = height
   return canvas
+}
+
+type OpaqueRect = { x: number; y: number; w: number; h: number }
+
+/** Bounding box of non-transparent pixels (same threshold as the silhouette). */
+function opaqueBounds(src: CanvasImageSource, width: number, height: number): OpaqueRect | null {
+  const canvas = makeCanvas(width, height)
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })
+  if (!ctx) return null
+  ctx.drawImage(src, 0, 0, width, height)
+  try {
+    const data = ctx.getImageData(0, 0, width, height).data
+    let minX = width
+    let minY = height
+    let maxX = -1
+    let maxY = -1
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (data[(y * width + x) * 4 + 3] >= ALPHA_THRESHOLD) {
+          if (x < minX) minX = x
+          if (x > maxX) maxX = x
+          if (y < minY) minY = y
+          if (y > maxY) maxY = y
+        }
+      }
+    }
+    if (maxX < 0) return null
+    return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Every thumb fills the frame the same, no matter which camera shot produced
+ * it: shoes were framed against the whole leg box, coats against a wider rig,
+ * so items rendered at wildly different visual scales. Crop to the painted
+ * figure, then rescale it onto a fixed fill fraction, centered. Pixel-snapped
+ * so the crisp look survives.
+ */
+function normalizeFigure(
+  src: CanvasImageSource,
+  width: number,
+  height: number,
+): { canvas: HTMLCanvasElement; bounds: OpaqueRect } | null {
+  const bounds = opaqueBounds(src, width, height)
+  if (!bounds) return null
+  const scale = Math.min(
+    (width * FIGURE_FILL_W) / bounds.w,
+    (height * FIGURE_FILL_H) / bounds.h,
+  )
+  const normalized = makeCanvas(width, height)
+  const ctx = normalized.getContext("2d")
+  if (!ctx) return null
+  ctx.imageSmoothingEnabled = false
+  const dw = bounds.w * scale
+  const dh = bounds.h * scale
+  const dx = Math.round((width - dw) / 2)
+  const dy = Math.round((height - dh) / 2)
+  ctx.drawImage(src, bounds.x, bounds.y, bounds.w, bounds.h, dx, dy, dw, dh)
+  return { canvas: normalized, bounds: { x: dx, y: dy, w: dw, h: dh } }
 }
 
 function hardSilhouette(src: CanvasImageSource, width: number, height: number): HTMLCanvasElement {
@@ -68,7 +135,7 @@ function recolor(silhouette: HTMLCanvasElement, color: string) {
   ctx.globalCompositeOperation = "source-over"
 }
 
-function applyRimMask(layer: HTMLCanvasElement) {
+function applyRimMask(layer: HTMLCanvasElement, figure: OpaqueRect) {
   const ctx = layer.getContext("2d", { willReadFrequently: true })
   if (!ctx) throw new Error("thumbFx: 2d context unavailable")
   const { width, height } = layer
@@ -77,7 +144,11 @@ function applyRimMask(layer: HTMLCanvasElement) {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const i = (y * width + x) * 4
-      data[i + 3] = data[i + 3] * rimMaskAt((x + 0.5) / width)
+      // Normalize against the FIGURE's own width, not the canvas: a narrow
+      // piece centered in the canvas would otherwise sit inside the mask's
+      // fade ramp and lose its rim while a wide piece kept a full one.
+      const t = (x + 0.5 - figure.x) / figure.w
+      data[i + 3] = data[i + 3] * rimMaskAt(t)
     }
   }
   ctx.putImageData(image, 0, 0)
@@ -94,7 +165,10 @@ export function compositeIsoThumbFx(
 ): string {
   if (width <= 0 || height <= 0) throw new Error("thumbFx: empty source")
 
-  const silhouette = hardSilhouette(src, width, height)
+  const norm = normalizeFigure(src, width, height)
+  const normalized = norm?.canvas ?? src
+  const figure = norm?.bounds ?? { x: 0, y: 0, w: width, h: height }
+  const silhouette = hardSilhouette(normalized, width, height)
 
   const shadow = makeCanvas(width, height)
   {
@@ -112,7 +186,7 @@ export function compositeIsoThumbFx(
     ctx.drawImage(silhouette, RIM_X, 0)
     ctx.drawImage(silhouette, RIM_X, RIM_Y)
     recolor(rim, ISO_RIM_FILL)
-    applyRimMask(rim)
+    applyRimMask(rim, figure)
   }
 
   const out = makeCanvas(width, height)
@@ -122,34 +196,6 @@ export function compositeIsoThumbFx(
   ctx.drawImage(shadow, 0, 0)
   ctx.globalAlpha = 1
   ctx.drawImage(rim, 0, 0)
-  ctx.drawImage(src, 0, 0, width, height)
+  ctx.drawImage(normalized, 0, 0, width, height)
   return out.toDataURL("image/png")
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.decoding = "async"
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error(`thumbFx: image failed to load: ${src}`))
-    img.src = src
-  })
-}
-
-/**
- * Bake fx into an image URL (static pre-rendered thumbs). Returns the baked
- * data URL, or the original URL when baking is not possible (load failure,
- * no canvas) so callers degrade gracefully to an fx-less figure.
- */
-export async function bakeIsoThumbFx(src: string): Promise<string> {
-  const cached = bakedUrls.get(src)
-  if (cached) return cached
-  try {
-    const img = await loadImage(src)
-    const baked = compositeIsoThumbFx(img, img.naturalWidth, img.naturalHeight)
-    bakedUrls.set(src, baked)
-    return baked
-  } catch {
-    return src
-  }
 }

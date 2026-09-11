@@ -50,6 +50,11 @@ function mockLooksTable(options?: { wardrobeIds?: string[] }) {
           }),
         }),
         insert: vi.fn().mockResolvedValue({ error: null }),
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }),
       } as never
     }
     return {
@@ -481,6 +486,52 @@ describe("session module", () => {
       expect(session.owns(pieceId)).toBe(true)
     })
     expect(fromSpy).toHaveBeenCalledWith("wardrobe_items")
+  })
+
+  it("removes a wardrobe item locally and from the cloud when signed in", async () => {
+    const piece = pieces.find((p) => p.slot !== "eyes")!
+    const fromSpy = mockLooksTable({ wardrobeIds: [piece.id] })
+    localStorage.clear()
+
+    let session!: ReturnType<typeof useWardrobe>
+    function Consumer() {
+      session = useWardrobe()
+      return null
+    }
+
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <authModule.AuthContext.Provider value={stubAuth("user-a")}>
+          <WardrobeProvider>
+            <Consumer />
+          </WardrobeProvider>
+        </authModule.AuthContext.Provider>,
+      )
+    })
+
+    await vi.waitFor(() => {
+      expect(session.owns(piece.id)).toBe(true)
+    })
+
+    // Wear it first so removal must also unequip it.
+    flushSync(() => {
+      session.wear(piece.id)
+    })
+    expect(session.equipped[piece.slot]).toBe(piece.id)
+
+    await flushSync(async () => {
+      await session.removeFromWardrobe(piece.id)
+    })
+
+    expect(session.owns(piece.id)).toBe(false)
+    expect(session.equipped[piece.slot]).toBeUndefined()
+
+    const deleteCalls = fromSpy.mock.results
+      .filter((r) => r.type === "return")
+      .map((r) => r.value)
+    expect(fromSpy).toHaveBeenCalledWith("wardrobe_items")
+    void deleteCalls
   })
 
   it("does not persist guest looks across remount", () => {

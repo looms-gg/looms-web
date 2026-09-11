@@ -175,7 +175,6 @@ export function SkinStage({
             applyGroupFocus(
               viewer,
               group,
-              next,
               fullFigure ? ["head", "torso", "legs"] : covers,
               true,
             )

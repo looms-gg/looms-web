@@ -88,7 +88,7 @@ export function LatestActivityFeed() {
           className="btn btn-ghost btn-sm rounded-full font-bold gap-1.5 text-base-content/70 hover:text-base-content transition-colors active:scale-[0.96] transition-transform"
           title="Refresh activity"
         >
-          <Icon icon={ArrowsClockwise} className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          <Icon icon={ArrowsClockwise} className={loading ? "animate-spin" : ""} />
           Refresh
         </button>
       </div>
@@ -122,7 +122,7 @@ export function LatestActivityFeed() {
           {(filter === "all" || filter === "looks") && data.looks.length > 0 ? (
             <section className="space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-base-content/60 flex items-center gap-2">
-                <Icon icon={Sparkle} className="size-3 text-primary" />
+                <Icon icon={Sparkle} size="xs" className="text-primary" />
                 Latest Looks ({data.looks.length})
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -145,7 +145,7 @@ export function LatestActivityFeed() {
                         className="btn btn-ghost btn-xs size-8 rounded-full text-primary hover:bg-primary/15 active:scale-[0.96] transition-transform"
                         title="View Look"
                       >
-                        <Icon icon={Eye} className="size-3.5" />
+                        <Icon icon={Eye} size="sm" />
                       </Link>
                       <button
                         type="button"
@@ -154,7 +154,7 @@ export function LatestActivityFeed() {
                         className="btn btn-ghost btn-xs size-8 rounded-full text-error hover:bg-error/20 active:scale-[0.96] transition-transform"
                         title="Delete Look"
                       >
-                        <Icon icon={Trash} className="size-3.5" />
+                        <Icon icon={Trash} size="sm" />
                       </button>
                     </div>
                   </div>
@@ -167,7 +167,7 @@ export function LatestActivityFeed() {
           {(filter === "all" || filter === "pieces") && data.pieces.length > 0 ? (
             <section className="space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-base-content/60 flex items-center gap-2">
-                <Icon icon={TShirt} className="size-3 text-secondary" />
+                <Icon icon={TShirt} size="xs" className="text-secondary" />
                 Latest Pieces ({data.pieces.length})
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -190,7 +190,7 @@ export function LatestActivityFeed() {
                         className="btn btn-ghost btn-xs size-8 rounded-full text-primary hover:bg-primary/15 active:scale-[0.96] transition-transform"
                         title="View Piece"
                       >
-                        <Icon icon={Eye} className="size-3.5" />
+                        <Icon icon={Eye} size="sm" />
                       </Link>
                       <button
                         type="button"
@@ -199,7 +199,7 @@ export function LatestActivityFeed() {
                         className="btn btn-ghost btn-xs size-8 rounded-full text-error hover:bg-error/20 active:scale-[0.96] transition-transform"
                         title="Delete Piece"
                       >
-                        <Icon icon={Trash} className="size-3.5" />
+                        <Icon icon={Trash} size="sm" />
                       </button>
                     </div>
                   </div>
@@ -212,7 +212,7 @@ export function LatestActivityFeed() {
           {(filter === "all" || filter === "comments") && data.comments.length > 0 ? (
             <section className="space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-base-content/60 flex items-center gap-2">
-                <Icon icon={ChatCircle} className="size-3 text-accent" />
+                <Icon icon={ChatCircle} size="xs" className="text-accent" />
                 Latest Comments ({data.comments.length})
               </h3>
               <div className="space-y-2">
@@ -242,7 +242,7 @@ export function LatestActivityFeed() {
                         className="btn btn-ghost btn-xs min-h-[28px] px-2.5 rounded-full gap-1 text-primary active:scale-[0.96] transition-transform"
                         title="View thread"
                       >
-                        <Icon icon={Eye} className="size-3" />
+                        <Icon icon={Eye} size="xs" />
                         Target
                       </Link>
                       <button
@@ -258,7 +258,7 @@ export function LatestActivityFeed() {
                         className="btn btn-ghost btn-xs size-8 rounded-full text-error hover:bg-error/20 active:scale-[0.96] transition-transform"
                         title="Delete Comment"
                       >
-                        <Icon icon={Trash} className="size-3.5" />
+                        <Icon icon={Trash} size="sm" />
                       </button>
                     </div>
                   </div>
@@ -271,7 +271,7 @@ export function LatestActivityFeed() {
           {(filter === "all" || filter === "profiles") && data.profiles.length > 0 ? (
             <section className="space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-base-content/60 flex items-center gap-2">
-                <Icon icon={User} className="size-3 text-info" />
+                <Icon icon={User} size="xs" className="text-info" />
                 Latest Profiles ({data.profiles.length})
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -295,7 +295,7 @@ export function LatestActivityFeed() {
                       className="btn btn-ghost btn-xs min-h-[28px] px-2.5 rounded-full text-primary active:scale-[0.96] transition-transform"
                       title="View Profile"
                     >
-                      <Icon icon={Eye} className="size-3 mr-1" />
+                      <Icon icon={Eye} size="xs" className="mr-1" />
                       View
                     </Link>
                   </div>

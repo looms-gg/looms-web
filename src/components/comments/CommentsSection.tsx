@@ -76,8 +76,7 @@ function CommentComposer({
         maxLength={MAX_LIMITS.COMMENT}
         value={body}
         disabled={busy || disabled}
-        onChange={(event) => setBody(event.target.value)}
-      />
+        onChange={(event) => setBody(event.target.value)} />
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="submit"
@@ -139,8 +138,7 @@ function CommentCard({
         <MakerLink
           username={comment.username}
           prefix=""
-          className="text-sm font-extrabold text-primary"
-        />
+          className="text-sm font-extrabold text-primary" />
         <time
           className="text-xs font-bold text-base-content/45"
           dateTime={new Date(comment.createdAt).toISOString()}
@@ -178,8 +176,7 @@ function CommentCard({
             } catch (err) {
               setError(formatErrorMessage(err))
             }
-          }}
-        />
+          }} />
       ) : (
         <p className="whitespace-pre-wrap text-sm leading-relaxed text-base-content/85">
           {comment.body}
@@ -200,7 +197,7 @@ function CommentCard({
               setReplyOpen((open) => !open)
             }}
           >
-            <Icon icon={ArrowBendUpLeft} className="size-3 mr-1" />
+            <Icon icon={ArrowBendUpLeft} size="xs" className="mr-1" />
             Reply
           </button>
         ) : null}
@@ -211,7 +208,7 @@ function CommentCard({
             title="Edit comment"
             onClick={() => setEditing(true)}
           >
-            <Icon icon={Pencil} className="size-3 mr-1" />
+            <Icon icon={Pencil} size="xs" className="mr-1" />
             Edit
           </button>
         ) : null}
@@ -232,7 +229,7 @@ function CommentCard({
                 .catch((err) => setError(formatErrorMessage(err)))
             }}
           >
-            <Icon icon={Trash} className="size-3 mr-1" />
+            <Icon icon={Trash} size="xs" className="mr-1" />
             Delete
           </button>
         ) : null}
@@ -250,7 +247,7 @@ function CommentCard({
               setReportOpen(true)
             }}
           >
-            <Icon icon={Flag} className="size-3 mr-1" />
+            <Icon icon={Flag} size="xs" className="mr-1" />
             Report
           </button>
         ) : null}
@@ -291,8 +288,7 @@ function CommentCard({
             } catch (err) {
               setError(formatErrorMessage(err))
             }
-          }}
-        />
+          }} />
       ) : null}
 
       {comment.replies?.map((reply) => (
@@ -303,8 +299,7 @@ function CommentCard({
           viewerId={viewerId}
           targetType={targetType}
           ownerId={ownerId}
-          onChanged={onChanged}
-        />
+          onChanged={onChanged} />
       ))}
 
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
@@ -316,8 +311,7 @@ function CommentCard({
           targetId={comment.id}
           targetSubType={targetType === "garment" ? "garment_comment" : "look_comment"}
           targetLabel={`Comment by @${comment.username}`}
-          reporterId={viewerId}
-        />
+          reporterId={viewerId} />
       ) : null}
     </article>
   )
@@ -406,8 +400,7 @@ export function CommentsSection({
               } catch (err) {
                 setError(formatErrorMessage(err))
               }
-            }}
-          />
+            }} />
         </div>
       ) : (
         <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -446,8 +439,7 @@ export function CommentsSection({
               ownerId={ownerId}
               onChanged={() => {
                 void reload()
-              }}
-            />
+              }} />
           ))}
         </div>
       )}

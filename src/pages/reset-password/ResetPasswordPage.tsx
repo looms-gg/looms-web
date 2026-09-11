@@ -105,7 +105,7 @@ export function ResetPasswordPage() {
               role="alert"
               className="mt-4 flex items-start gap-2 text-left text-sm font-semibold text-error"
             >
-              <Icon icon={Warning} className="mt-0.5 size-3.5 shrink-0" />
+              <Icon icon={Warning} size="sm" className="mt-0.5 shrink-0" />
               <span>{errorMsg}</span>
             </p>
           ) : null}
@@ -127,8 +127,7 @@ export function ResetPasswordPage() {
                 maxLength={100}
                 autoComplete="new-password"
                 className={fieldClass}
-                placeholder="At least 6 characters"
-              />
+                placeholder="At least 6 characters" />
             </div>
             <div>
               <label
@@ -146,8 +145,7 @@ export function ResetPasswordPage() {
                 maxLength={100}
                 autoComplete="new-password"
                 className={fieldClass}
-                placeholder="Repeat your new password"
-              />
+                placeholder="Repeat your new password" />
             </div>
             <button
               type="submit"

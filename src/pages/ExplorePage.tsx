@@ -198,15 +198,13 @@ export function ExplorePage() {
             : undefined
         }
         url={canonicalPath}
-        jsonLd={siteJsonLd}
-      />
+        jsonLd={siteJsonLd} />
       {showHero ? (
         <ExploreHero
           trendingLooks={trendingLooks}
           loading={trendingLoading}
           yesterdayTop={yesterdayTop}
-          onWearLook={handleWearLook}
-        />
+          onWearLook={handleWearLook} />
       ) : null}
 
       <section
@@ -234,7 +232,7 @@ export function ExplorePage() {
 
         <div className="flex w-full max-w-md items-center gap-2">
           <label className="input input-bordered flex h-11 grow items-center gap-2 rounded-full bg-base-100">
-            <Icon icon={MagnifyingGlass} className="size-3.5 opacity-50" />
+            <Icon icon={MagnifyingGlass} size="sm" className="opacity-50" />
             <input
               type="search"
               maxLength={MAX_LIMITS.SEARCH_QUERY}
@@ -242,8 +240,7 @@ export function ExplorePage() {
               placeholder={mode === "pieces" ? "Search clothing..." : "Search looks or creators..."}
               aria-label={mode === "pieces" ? "Search clothing" : "Search looks"}
               value={query}
-              onChange={(event) => setQuery(event.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))}
-            />
+              onChange={(event) => setQuery(event.target.value.slice(0, MAX_LIMITS.SEARCH_QUERY))} />
           </label>
 
           {mode === "pieces" ? (
@@ -258,7 +255,7 @@ export function ExplorePage() {
                 }
               }}
             >
-              <Icon icon={CloudArrowUp} className="size-3.5" />
+              <Icon icon={CloudArrowUp} size="sm" />
               <span className="hidden sm:inline">Upload Piece</span>
             </button>
           ) : (
@@ -273,7 +270,7 @@ export function ExplorePage() {
                 }
               }}
             >
-              <Icon icon={Sparkle} className="size-3.5" />
+              <Icon icon={Sparkle} size="sm" />
               <span className="hidden sm:inline">Open Studio</span>
             </button>
           )}
@@ -296,8 +293,7 @@ export function ExplorePage() {
           onSort={setSort}
           onSlot={setSlot}
           onLookSort={setLookSort}
-          onModel={setLookModel}
-        />
+          onModel={setLookModel} />
         <ExploreRack
           mode={mode}
           loading={mode === "pieces" ? piecesLoading : looksLoading}
@@ -316,8 +312,7 @@ export function ExplorePage() {
             setSlot("all")
             setLookModel("all")
           }}
-          onLookLikeCountChange={handleLookLikeCountChange}
-        />
+          onLookLikeCountChange={handleLookLikeCountChange} />
       </div>
 
       <UploadPieceModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />

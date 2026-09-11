@@ -112,7 +112,7 @@ export function ExploreHero({
             to="/studio"
             className="btn btn-primary rounded-full pl-5 pr-6 font-extrabold shadow-md active:scale-[0.96] transition-transform"
           >
-            <Icon icon={Sparkle} className="size-3.5" />
+            <Icon icon={Sparkle} size="sm" />
             Open Studio
           </Link>
           <a
@@ -150,8 +150,7 @@ export function ExploreHero({
                 <div
                   key={idx}
                   className="skin-bone h-6 w-16 rounded-full opacity-50"
-                  aria-hidden="true"
-                />
+                  aria-hidden="true" />
               ))
             : [0, 1, 2].map((idx) => (
                 <button
@@ -172,8 +171,7 @@ export function ExploreHero({
           <HeroPosedFigure
             look={heroLooks[mobileTab]}
             pose={mobileTab === 0 ? "center" : mobileTab === 1 ? "left" : "right"}
-            loading={loading}
-          />
+            loading={loading} />
         </div>
 
         {/* Desktop / Tablet View: 3 friends posing close together (almost a bust) */}
@@ -183,24 +181,21 @@ export function ExploreHero({
             look={heroLooks[1]}
             pose="left"
             loading={loading}
-            className="z-20 hover:z-30"
-          />
+            className="z-20 hover:z-30" />
 
           {/* Friend 1 (Center, prominent, moved left to wrap arm behind left friend) */}
           <HeroPosedFigure
             look={heroLooks[0]}
             pose="center"
             loading={loading}
-            className="z-10 scale-105 hover:z-30 -ml-20 sm:-ml-26 lg:-ml-32"
-          />
+            className="z-10 scale-105 hover:z-30 -ml-20 sm:-ml-26 lg:-ml-32" />
 
           {/* Friend 3 (Right, leaning in close) */}
           <HeroPosedFigure
             look={heroLooks[2]}
             pose="right"
             loading={loading}
-            className="z-10 hover:z-30 -ml-16 sm:-ml-20 lg:-ml-24"
-          />
+            className="z-10 hover:z-30 -ml-16 sm:-ml-20 lg:-ml-24" />
         </div>
       </div>
     </section>

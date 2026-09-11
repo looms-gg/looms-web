@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { Warning, X } from "@phosphor-icons/react"
+import { Warning } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
+import { CloseButton } from "../../components/ui/CloseButton"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
 import { DangerZoneModal } from "./DangerZoneModal"
 
@@ -32,14 +33,7 @@ export function ProfilePrivacyModal({
       scrimClassName="modal-scrim modal-scrim-soft"
       panelClassName="modal-panel relative w-full max-w-xs rounded-2xl border border-white/10 bg-base-300 p-5 shadow-2xl"
     >
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm btn-circle absolute right-2 top-2 text-base-content/70 hover:text-base-content"
-        aria-label="Close"
-        onClick={onClose}
-      >
-        <Icon icon={X} className="size-4" />
-      </button>
+      <CloseButton onClick={onClose} className="absolute right-0.5 top-0.5" />
 
       <h2 className="pr-8 text-lg font-extrabold">Privacy</h2>
       <p className="mt-1 text-sm text-base-content/65">
@@ -58,8 +52,7 @@ export function ProfilePrivacyModal({
             checked={showLastSeen}
             disabled={busy}
             aria-label="Show last seen"
-            onChange={(event) => onToggleLastSeen(event.target.checked)}
-          />
+            onChange={(event) => onToggleLastSeen(event.target.checked)} />
         </li>
         <li className="flex items-center justify-between gap-3 rounded-xl bg-base-200/80 px-3 py-3">
           <div className="min-w-0">
@@ -72,8 +65,7 @@ export function ProfilePrivacyModal({
             checked={showLikes}
             disabled={busy}
             aria-label="Show likes"
-            onChange={(event) => onToggleLikes(event.target.checked)}
-          />
+            onChange={(event) => onToggleLikes(event.target.checked)} />
         </li>
       </ul>
 
@@ -88,7 +80,7 @@ export function ProfilePrivacyModal({
           onClick={() => setDangerOpen(true)}
         >
           <span className="flex items-center gap-2">
-            <Icon icon={Warning} className="size-3.5" />
+            <Icon icon={Warning} size="sm" />
             Delete account
           </span>
           <span className="text-xs font-normal text-base-content/50">→</span>
@@ -103,8 +95,7 @@ export function ProfilePrivacyModal({
           setDangerOpen(false)
           onClose()
           await onDeleteAccount()
-        }}
-      />
+        }} />
     </ModalOverlay>
   )
 }
