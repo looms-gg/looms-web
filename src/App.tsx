@@ -25,6 +25,11 @@ const AdminPage = lazy(() => import("./pages/AdminPage").then((m) => ({ default:
 const SettingsRoute = lazy(() =>
   import("./pages/settings/SettingsPage").then((m) => ({ default: m.SettingsRoute })),
 )
+const ResetPasswordPage = lazy(() =>
+  import("./pages/reset-password/ResetPasswordPage").then((m) => ({
+    default: m.ResetPasswordPage,
+  })),
+)
 
 function RouteFallback() {
   return (
@@ -134,6 +139,14 @@ export default function App() {
                       element={
                         <Suspense fallback={<RouteFallback />}>
                           <SettingsRoute />
+                        </Suspense>
+                      }
+                    />
+                    <Route
+                      path="reset-password"
+                      element={
+                        <Suspense fallback={<RouteFallback />}>
+                          <ResetPasswordPage />
                         </Suspense>
                       }
                     />

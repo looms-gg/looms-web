@@ -109,6 +109,41 @@ describe("auth module", () => {
     )
   })
 
+  it("resetPasswordForEmail redirects to the reset page with base path", async () => {
+    const reset = vi.spyOn(supabase.auth, "resetPasswordForEmail").mockResolvedValue({
+      data: null,
+      error: null,
+    } as never)
+
+    const { getAuth } = mountAuth()
+    const { error } = await getAuth().resetPasswordForEmail({
+      email: "user@example.com",
+    })
+
+    expect(error).toBeNull()
+    expect(reset).toHaveBeenCalledWith(
+      "user@example.com",
+      expect.objectContaining({
+        redirectTo: `${absoluteAppUrl()}/reset-password`,
+      }),
+    )
+  })
+
+  it("resetPasswordForEmail surfaces formatted errors", async () => {
+    vi.spyOn(supabase.auth, "resetPasswordForEmail").mockResolvedValue({
+      data: null,
+      error: { message: "Email rate limit exceeded" },
+    } as never)
+
+    const { getAuth } = mountAuth()
+    const { error } = await getAuth().resetPasswordForEmail({
+      email: "user@example.com",
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain("rate limit")
+  })
+
   it("updateProfile truncates over-limit fields via sanitize", async () => {
     const user = {
       id: "user-1",

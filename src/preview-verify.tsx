@@ -33,6 +33,7 @@ function Preview() {
     signInWithPassword: async () => ({ error: null }),
     signUpWithPassword: async () => ({ error: null }),
     signInWithOtp: async () => ({ error: null }),
+    resetPasswordForEmail: async () => ({ error: null }),
     signOut: async () => ({ error: null }),
     updateProfile: async () => ({ error: null }),
     refreshProfile: async () => {},

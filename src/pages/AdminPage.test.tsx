@@ -26,6 +26,7 @@ function stubAuth(userId: string): AuthContextValue {
     signInWithPassword: vi.fn(),
     signUpWithPassword: vi.fn(),
     signInWithOtp: vi.fn(),
+    resetPasswordForEmail: vi.fn(),
     signOut: vi.fn(),
     updateProfile: vi.fn(),
     refreshProfile: vi.fn(),

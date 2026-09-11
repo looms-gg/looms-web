@@ -104,6 +104,28 @@ describe("AuthModal", () => {
     expect(body.textContent).toMatch(/Use a password instead/i)
   })
 
+  it("opens forgot password mode without password field", () => {
+    const body = renderModal(
+      <AuthModal isOpen={true} initialMode="forgot" isGate={false} onClose={() => {}} />,
+    )
+    expect(body.querySelector("#auth-dialog-title")?.textContent).toBe("Reset password")
+    expect(body.querySelector('input[name="password"]')).toBeNull()
+    expect(body.textContent).toMatch(/Back to log in/i)
+  })
+
+  it("switches from login to forgot mode via the forgot link", () => {
+    const body = renderModal(<AuthModal isOpen={true} isGate={false} onClose={() => {}} />)
+    const forgotBtn = [...body.querySelectorAll("button")].find((b) =>
+      b.textContent?.match(/Forgot password\?/i),
+    )
+    expect(forgotBtn).not.toBeUndefined()
+    flushSync(() => {
+      forgotBtn!.click()
+    })
+    expect(body.querySelector("#auth-dialog-title")?.textContent).toBe("Reset password")
+    expect(body.querySelector('input[name="password"]')).toBeNull()
+  })
+
   it("hides close button when rendered in mandatory gate mode", () => {
     const body = renderModal(<AuthModal isOpen={true} isGate={true} />)
 

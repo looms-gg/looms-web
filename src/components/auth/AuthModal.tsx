@@ -9,7 +9,7 @@ import { LoomsLogo } from "../ui/LoomsLogo"
 import { ModalOverlay } from "../ui/ModalOverlay"
 import { TurnstileWidget } from "./TurnstileWidget"
 
-export type AuthMode = "login" | "signup" | "magic_link"
+export type AuthMode = "login" | "signup" | "magic_link" | "forgot"
 
 export interface AuthModalProps {
   isOpen: boolean
@@ -39,6 +39,7 @@ export function AuthModal({
   const signInWithPassword = auth?.signInWithPassword
   const signUpWithPassword = auth?.signUpWithPassword
   const signInWithOtp = auth?.signInWithOtp
+  const resetPasswordForEmail = auth?.resetPasswordForEmail
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -89,7 +90,7 @@ export function AuthModal({
     const spentCaptchaToken = captchaEnabled && Boolean(captchaToken)
 
     try {
-      if (!signInWithPassword || !signUpWithPassword || !signInWithOtp) {
+      if (!signInWithPassword || !signUpWithPassword || !signInWithOtp || !resetPasswordForEmail) {
         setErrorMsg("Auth is unavailable.")
         return
       }
@@ -141,6 +142,16 @@ export function AuthModal({
         } else {
           setSuccessMsg("Link sent — check your inbox.")
         }
+      } else if (mode === "forgot") {
+        const { error } = await resetPasswordForEmail({
+          email: email.trim(),
+          captchaToken: captchaToken ?? undefined,
+        })
+        if (error) {
+          setErrorMsg(formatErrorMessage(error))
+        } else {
+          setSuccessMsg("Reset link sent — check your inbox.")
+        }
       }
     } catch (err: unknown) {
       setErrorMsg(formatErrorMessage(err))
@@ -158,10 +169,22 @@ export function AuthModal({
     : null
 
   const title =
-    mode === "login" ? "Log in" : mode === "signup" ? "Sign up" : "Magic link"
+    mode === "login"
+      ? "Log in"
+      : mode === "signup"
+        ? "Sign up"
+        : mode === "forgot"
+          ? "Reset password"
+          : "Magic link"
 
   const submitLabel =
-    mode === "login" ? "Log in" : mode === "signup" ? "Create account" : "Send link"
+    mode === "login"
+      ? "Log in"
+      : mode === "signup"
+        ? "Create account"
+        : mode === "forgot"
+          ? "Send reset link"
+          : "Send link"
 
   const fieldClass =
     "input input-bordered h-11 w-full rounded-[10px] border-base-content/10 bg-base-100 text-sm"
@@ -201,6 +224,11 @@ export function AuthModal({
           We’ll email a one-click sign-in link. No password needed.
         </p>
       ) : null}
+      {mode === "forgot" ? (
+        <p className="mt-1 text-sm leading-relaxed text-base-content/60">
+          We’ll email a link to choose a new password.
+        </p>
+      ) : null}
 
       {errorMsg ? (
         <p
@@ -238,7 +266,7 @@ export function AuthModal({
           />
         </div>
 
-        {mode !== "magic_link" ? (
+        {mode !== "magic_link" && mode !== "forgot" ? (
           <div>
             <label
               htmlFor={passwordId}
@@ -257,15 +285,22 @@ export function AuthModal({
               className={fieldClass}
               placeholder="At least 6 characters"
             />
-            {mode === "login" ? (
+            <div className="mt-2 flex items-center justify-between gap-2">
               <button
                 type="button"
-                className="mt-2 text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
+                className="text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
                 onClick={() => switchMode("magic_link", setMode, clearFeedback, resetCaptcha)}
               >
                 Email me a magic link instead
               </button>
-            ) : null}
+              <button
+                type="button"
+                className="text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
+                onClick={() => switchMode("forgot", setMode, clearFeedback, resetCaptcha)}
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
         ) : (
           <button
@@ -273,7 +308,7 @@ export function AuthModal({
             className="text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
             onClick={() => switchMode("login", setMode, clearFeedback, resetCaptcha)}
           >
-            Use a password instead
+            {mode === "forgot" ? "Back to log in" : "Use a password instead"}
           </button>
         )}
 

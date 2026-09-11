@@ -80,6 +80,10 @@ export interface AuthContextValue {
     email: string
     captchaToken?: string
   }) => Promise<{ error: Error | null }>
+  resetPasswordForEmail: (params: {
+    email: string
+    captchaToken?: string
+  }) => Promise<{ error: Error | null }>
   signOut: () => Promise<{ error: Error | null }>
   deleteAccount: () => Promise<{ error: Error | null }>
   updateProfile: (updates: {
@@ -376,6 +380,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  const resetPasswordForEmail = useCallback(
+    async ({ email, captchaToken }: { email: string; captchaToken?: string }) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        captchaToken,
+        redirectTo: `${absoluteAppUrl()}/reset-password`,
+      })
+      return { error: error ? new Error(formatErrorMessage(error)) : null }
+    },
+    [],
+  )
+
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
     setUser(null)
@@ -516,6 +531,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithPassword,
     signUpWithPassword,
     signInWithOtp,
+    resetPasswordForEmail,
     signOut,
     deleteAccount,
     updateProfile,
