@@ -276,10 +276,17 @@ def main() -> None:
     pieces = json.loads(seed_path.read_text())
     print(f"🎨 Generating {len(pieces)} authentic isometric piece cards...")
 
+    generated = 0
     for piece in pieces:
         p_id = piece["id"]
         iso_file = ISO_PIECES_DIR / f"{p_id}.png"
         meta_file = ISO_PIECES_DIR / f"{p_id}.json"
+
+        # No source render (the IsoThumb pipeline is client-side now) — keep the
+        # last committed card instead of overwriting it with an empty stage.
+        if not iso_file.exists():
+            print(f"⚠️  Skipping {p_id}: no isometric render at {iso_file}")
+            continue
 
         wash_str = "oklch(0.91 0.04 85)"
         if meta_file.exists():
@@ -302,23 +309,55 @@ def main() -> None:
             wash_color_str=wash_str,
             out_path=OG_PIECES_DIR / f"{p_id}.png",
         )
+        generated += 1
 
-    print(f"✅ Generated {len(pieces)} piece cards in public/og/pieces/")
+    print(f"✅ Generated {generated} piece cards in public/og/pieces/ ({len(pieces) - generated} kept)")
 
     # Outfit default card — used for /look, individual looks, and the home page.
+    # scripts/bake-featured-look.mjs refreshes the render + sidecar each build
+    # with the current #1 look. Without a fresh render we keep the committed
+    # card rather than shipping an empty stage.
     featured_iso = ISO_PIECES_DIR / "__featured_outfit.png"
-    outfit_wash = "oklch(0.91 0.05 320)"
-    render_card(
-        title="Winter Explorer",
-        subtitle="4 layers  ·  Curated Outfit",
-        badge_label="OUTFIT",
-        description="Winter coat, converse shoes, dark sweatpants, and ink fall hair. Wear in Studio or export to skin.",
-        footer_text="Free to style, export, and wear  ·  looms.gg",
-        iso_img_path=featured_iso,
-        wash_color_str=outfit_wash,
-        out_path=OG_DIR / "outfit-default.png",
-    )
-    print("✅ Generated public/og/outfit-default.png")
+    featured_meta = ISO_PIECES_DIR / "__featured_outfit.json"
+
+    if not featured_iso.exists():
+        print("⚠️  No featured outfit render; keeping existing public/og/outfit-default.png")
+    else:
+        title = "Winter Explorer"
+        subtitle = "4 layers  ·  Curated Outfit"
+        description = "Winter coat, converse shoes, dark sweatpants, and ink fall hair. Wear in Studio or export to skin."
+        outfit_wash = "oklch(0.91 0.05 320)"
+
+        if featured_meta.exists():
+            try:
+                meta = json.loads(featured_meta.read_text())
+                outfit_wash = meta.get("wash") or outfit_wash
+                name = (meta.get("name") or "").strip()
+                maker = (meta.get("maker") or "").strip()
+                layers = meta.get("layers")
+                if name:
+                    title = name
+                if layers:
+                    subtitle = f"by {maker}  ·  {layers} layers" if maker else f"{layers} layers  ·  #1 today"
+                blurb = (meta.get("description") or "").strip()
+                description = blurb or (
+                    f"{title} is the look the community is wearing most on looms right now. "
+                    "Open it in Studio or export the skin."
+                )
+            except Exception:
+                pass
+
+        render_card(
+            title=title,
+            subtitle=subtitle,
+            badge_label="OUTFIT",
+            description=description,
+            footer_text="Free to style, export, and wear  ·  looms.gg",
+            iso_img_path=featured_iso,
+            wash_color_str=outfit_wash,
+            out_path=OG_DIR / "outfit-default.png",
+        )
+        print(f"✅ Generated public/og/outfit-default.png for “{title}”")
 
 
 if __name__ == "__main__":

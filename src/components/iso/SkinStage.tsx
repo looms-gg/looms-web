@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import type { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../../data/bodies"
 import { preparePreview, type Piece } from "../../data/catalog"
-import { composeSkin, groupsFromAtlas } from "../../skin/compose"
+import { composePieceSkin, composeSkin, groupsFromAtlas, partsFromAtlas } from "../../skin/compose"
 import { applyGroupFocus, crispSkinTexture, isoPoseAnimation, mountLiveViewer, poseGroupForParts, skinviewModel } from "../../skin/focus"
 import type { SkinModel } from "../../skin/convert"
 import { ISO_RIM_FILL } from "../../skin/thumbFx"
@@ -159,9 +159,17 @@ export function SkinStage({
     // (outfit, body, model) actually changes.
     const poseSig = `${bodyId}\u0000${model}\u0000${fullFigure ? 1 : 0}\u0000${outfitIds}`
     const poseChanged = poseSigRef.current !== poseSig
-    poseSigRef.current = poseSig
-    void composeSkin(outfitRef.current, bodyId, bodyHue, model)
-      .then((skin) => {
+    // Single-piece stages hide every mesh the garment itself does not paint, so
+    // detect parts from the piece-only texture (the composed skin always has
+    // the base body filling every region). Kicked off alongside the main
+    // compose so the two image loads overlap.
+    const piece = outfitRef.current[0]
+    const partsPromise =
+      !fullFigure && outfitRef.current.length === 1 && piece
+        ? composePieceSkin(piece).then(partsFromAtlas).catch(() => undefined)
+        : Promise.resolve(undefined)
+    void Promise.all([composeSkin(outfitRef.current, bodyId, bodyHue, model), partsPromise])
+      .then(([skin, paintedParts]) => {
         if (cancelled || viewerRef.current !== viewer) return
         viewer.loadSkin(skin, { model: skinviewModel(model) })
         crispSkinTexture(viewer)
@@ -177,10 +185,15 @@ export function SkinStage({
               group,
               fullFigure ? ["head", "torso", "legs"] : covers,
               true,
+              paintedParts,
             )
           }
           replayRef.current = focus
           focus()
+          // Commit only once the focus has actually landed on this viewer, so
+          // StrictMode's discarded first effect pass cannot mark the pose as
+          // applied and leave the second pass showing the bare mannequin.
+          poseSigRef.current = poseSig
           // Soft 160ms fade on the re-posed frame so clothing swaps read as a
           // smooth transition. Web Animations API — no remount, so the WebGL
           // context survives. Never on hue drags (must be live) or under

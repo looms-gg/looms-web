@@ -24,6 +24,7 @@ GitHub is for developers: pull requests, code review, and bugs that need a repro
 | --------------------------------------------------------------- | ---------------------------------- |
 | [PRODUCT.md](PRODUCT.md)                                        | Who looms is for and why it exists |
 | [DESIGN.md](DESIGN.md)                                          | Visual system and UI tokens        |
+| [VOICE.md](VOICE.md)                                            | Brand voice and tone               |
 | [AGENTS.md](AGENTS.md)                                          | Contribution rules and code standards |
 | [Threat modeling](docs/THREAT_MODELING_AND_ABUSE_PREVENTION.md) | Security and abuse prevention      |
 | [Platform docs](docs/platform/README.md)                       | Deep-dive briefings: product, features, tech, brand |

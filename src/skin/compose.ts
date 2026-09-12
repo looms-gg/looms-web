@@ -288,6 +288,40 @@ function atlasRegionPainted(
   return false
 }
 
+export const SKIN_PARTS = [
+  "head",
+  "body",
+  "rightArm",
+  "leftArm",
+  "rightLeg",
+  "leftLeg",
+] as const
+export type SkinPart = (typeof SKIN_PARTS)[number]
+
+/** Atlas bounds of each rendered mesh, inner and outer layers included. */
+const PART_REGIONS: Record<SkinPart, [number, number, number, number]> = {
+  head: [0, 0, 64, 16],
+  body: [16, 16, 40, 48],
+  rightArm: [40, 16, 56, 48],
+  leftArm: [32, 48, 64, 64],
+  rightLeg: [0, 16, 16, 48],
+  leftLeg: [0, 48, 32, 64],
+}
+
+/**
+ * Which rendered meshes have paint. Finer than {@link groupsFromAtlas}: a shirt
+ * that only paints the body should not drag the bare arms into frame.
+ */
+export function partsFromAtlas(canvas: HTMLCanvasElement): SkinPart[] {
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return []
+  const { data } = ctx.getImageData(0, 0, ATLAS, ATLAS)
+  return SKIN_PARTS.filter((part) => {
+    const [x0, y0, x1, y1] = PART_REGIONS[part]
+    return atlasRegionPainted(data, x0, y0, x1, y1)
+  })
+}
+
 /** Which body racks have paint — long hair often lands on torso overlay, not just the head. */
 export function groupsFromAtlas(canvas: HTMLCanvasElement): Group[] {
   const ctx = canvas.getContext("2d")

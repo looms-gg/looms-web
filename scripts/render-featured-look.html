@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>featured look render</title>
+</head>
+<body>
+  <pre id="out" style="font: 11px monospace"></pre>
+  <script type="module">
+    const log = (m) => { document.getElementById("out").textContent += m + "\n" }
+
+    try {
+      const look = window.__FEATURED_LOOK__
+      if (!look || !Array.isArray(look.stack) || look.stack.length === 0) {
+        throw new Error("missing featured look payload")
+      }
+
+      const { loadGarments } = await import("/src/state/catalog.tsx")
+      const { replaceCatalog } = await import("/src/data/catalog")
+      const { piecesFromEquipped } = await import("/src/data/outfit")
+      const { isoOutfitThumb } = await import("/src/skin/iso")
+
+      const pieces = await loadGarments()
+      replaceCatalog(pieces)
+
+      const outfit = piecesFromEquipped({}, look.stack)
+      if (outfit.length === 0) throw new Error("look resolved to zero pieces")
+
+      const model = look.model === "slim" ? "slim" : "classic"
+      const res = await isoOutfitThumb(
+        outfit,
+        look.bodyId,
+        Number(look.bodyHue) || 0,
+        model,
+        true,
+        false,
+      )
+
+      window.__FEATURED_RESULT__ = { url: res.url, wash: res.wash, layers: outfit.length }
+      log(`rendered ${outfit.length} pieces for ${look.id}`)
+      document.title = "RENDER_OK"
+    } catch (err) {
+      log("FAILED " + String((err && err.stack) || err))
+      document.title = "RENDER_FAILED"
+    }
+  </script>
+</body>
+</html>

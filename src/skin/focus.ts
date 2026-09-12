@@ -14,10 +14,11 @@ import { FunctionAnimation, SkinViewer, type PlayerObject } from "skinview3d"
 import type { SkinModel } from "./convert"
 import type { Group } from "../data/catalog"
 import { flattenSkinMaterials } from "./materials"
+import { SKIN_PARTS, type SkinPart } from "./compose"
 
 export { flattenSkinMaterials } from "./materials"
 
-const PARTS = ["head", "body", "rightArm", "leftArm", "rightLeg", "leftLeg"] as const
+const PARTS = SKIN_PARTS
 const BACK = 0.42
 const AWAY = -1.6
 const LEG_BACK = 0.18
@@ -117,6 +118,9 @@ const ndcCorner = new Vector3()
 // Still thumbs fill this fraction of the render canvas on the binding axis;
 // the rest is clean viewport margin the normalized fx bake keeps.
 const VIEW_FILL = 0.72
+// Single-piece previews frame tighter than full figures: hidden untextured
+// meshes are excluded from the silhouette, leaving room to push in further.
+const PIECE_FILL = 0.9
 
 /**
  * Full painted NDC span at the current camera: 2 fills the whole canvas axis,
@@ -157,7 +161,7 @@ function expandVisible(obj: Object3D, box: Box3) {
 }
 
 /** Center the visible silhouette and zoom so it fits the viewport with margin. */
-function frameVisible(viewer: SkinViewer) {
+function frameVisible(viewer: SkinViewer, fill = VIEW_FILL) {
   const wrapper = viewer.playerWrapper
   wrapper.position.set(0, 0, 0)
   wrapper.updateWorldMatrix(true, true)
@@ -187,7 +191,7 @@ function frameVisible(viewer: SkinViewer) {
   // to [10, 256], which the closed form ignores, so pieces needing very tight
   // or very wide framing came out tiny or clipped. A monotonic search respects
   // the clamp and the perspective projection exactly.
-  const target = VIEW_FILL * 2
+  const target = fill * 2
   const spanAt = (zoom: number) => {
     viewer.zoom = zoom
     viewer.camera.updateMatrixWorld()
@@ -264,19 +268,32 @@ export function mountLiveViewer(
   return viewer
 }
 
-export function applyGroupFocus(
-  viewer: SkinViewer,
+const PART_GROUP: Record<SkinPart, Group> = {
+  head: "head",
+  body: "torso",
+  rightArm: "torso",
+  leftArm: "torso",
+  rightLeg: "legs",
+  leftLeg: "legs",
+}
+
+/**
+ * Which meshes to render. `paintedParts`, when present, narrows a single-piece
+ * preview to the meshes its texture actually paints, clipped to `covers`, so a
+ * body-only garment does not drag the bare arms into frame. Falls back to the
+ * group map when that would hide everything.
+ */
+export function visibleSkinParts(
   group: Group | "full",
   covers?: Group[],
-  live = false,
-) {
-  const skin = viewer.playerObject.skin
+  paintedParts?: SkinPart[],
+): Record<SkinPart, boolean> {
   const parts = covers?.length
     ? covers
     : group === "full"
       ? (["head", "torso", "legs"] satisfies Group[])
       : [group]
-  const show = {
+  const groupShow: Record<SkinPart, boolean> = {
     head: parts.includes("head"),
     body: parts.includes("torso"),
     rightArm: parts.includes("torso"),
@@ -284,6 +301,35 @@ export function applyGroupFocus(
     rightLeg: parts.includes("legs"),
     leftLeg: parts.includes("legs"),
   }
+  if (!paintedParts?.length) return groupShow
+  const show: Record<SkinPart, boolean> = {
+    head: false,
+    body: false,
+    rightArm: false,
+    leftArm: false,
+    rightLeg: false,
+    leftLeg: false,
+  }
+  for (const part of paintedParts) {
+    if (parts.includes(PART_GROUP[part])) show[part] = true
+  }
+  return SKIN_PARTS.some((part) => show[part]) ? show : groupShow
+}
+
+export function applyGroupFocus(
+  viewer: SkinViewer,
+  group: Group | "full",
+  covers?: Group[],
+  live = false,
+  paintedParts?: SkinPart[],
+) {
+  const skin = viewer.playerObject.skin
+  const parts = covers?.length
+    ? covers
+    : group === "full"
+      ? (["head", "torso", "legs"] satisfies Group[])
+      : [group]
+  const show = visibleSkinParts(group, covers, paintedParts)
   for (const part of PARTS) {
     skin[part].visible = show[part]
   }
@@ -306,6 +352,6 @@ export function applyGroupFocus(
   skin.rightLeg.outerLayer.visible = true
   skin.leftLeg.outerLayer.visible = true
 
-  frameVisible(viewer)
+  frameVisible(viewer, paintedParts?.length ? PIECE_FILL : VIEW_FILL)
   if (live) lockTurntable(viewer)
 }

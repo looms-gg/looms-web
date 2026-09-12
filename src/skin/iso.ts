@@ -1,7 +1,7 @@
 import { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../data/bodies"
 import { preparePreview, type Group, type Piece } from "../data/catalog"
-import { composePieceSkin, composeSkin, groupsFromAtlas } from "./compose"
+import { composePieceSkin, composeSkin, groupsFromAtlas, partsFromAtlas, type SkinPart } from "./compose"
 import {
   applyGroupFocus,
   crispSkinTexture,
@@ -23,6 +23,7 @@ type Prepared = {
   wash: string
   group: Group | "full"
   covers: Group[]
+  parts?: SkinPart[]
   model: "slim" | "default"
   bakeFx: boolean
 }
@@ -169,7 +170,7 @@ function captureJob(job: Job, prepared: Prepared) {
   // doesn't run three render loops behind everyone's back.
   pauseViewerLoop(v)
   v.loadSkin(prepared.skin, { model: prepared.model })
-  applyGroupFocus(v, prepared.group, prepared.covers, false)
+  applyGroupFocus(v, prepared.group, prepared.covers, false, prepared.parts)
   crispSkinTexture(v)
   v.render()
 
@@ -221,8 +222,8 @@ export async function isoPieceThumb(
   priority = false,
   bakeFx = true,
 ): Promise<IsoThumbResult> {
-  // v66: figure-relative rim mask (uniform outline weight across piece sizes).
-  const key = `piece:v66:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
+  // v69: single-piece previews show only painted meshes, cropped tighter.
+  const key = `piece:v69:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)
@@ -240,12 +241,14 @@ export async function isoPieceThumb(
         const skin = await composePieceSkin(piece)
         const wash = washFromCanvas(skin)
         const normalized = ensureModel(skin, model)
-        const { covers, group } = preparePreview([piece], groupsFromAtlas(normalized))
+        const painted = groupsFromAtlas(normalized)
+        const { covers, group } = preparePreview([piece], painted)
         return {
           skin: normalized,
           wash,
           group,
           covers: covers ?? ["head", "torso", "legs"],
+          parts: partsFromAtlas(normalized),
           model: skinviewModel(model),
           bakeFx,
         }
@@ -271,8 +274,8 @@ export async function isoOutfitThumb(
   bakeFx = true,
 ): Promise<IsoThumbResult> {
   const outfitKey = pieces.map((piece) => piece.id).join("|") || "empty"
-  // v64: figure-relative rim mask (uniform outline weight across piece sizes).
-  const key = `outfit:v64:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
+  // v66: darker off-white rim, 1/3 thicker outline.
+  const key = `outfit:v66:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)

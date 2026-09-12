@@ -13,12 +13,12 @@
 //  - shadow: hard silhouette in black, offset (-punchX, +punchY), 35% alpha
 //  - rim: hard silhouette in rim fill, offset (+rimX, ±rimY), unioned, then
 //    faded in from the left edge (transparent until 50%, full past 64%)
-export const ISO_RIM_FILL = "#e8e4dc"
+export const ISO_RIM_FILL = "#d4cec2"
 
 const PUNCH_X = 10
 const PUNCH_Y = 5
-const RIM_X = 3
-const RIM_Y = 3
+const RIM_X = 5.33
+const RIM_Y = 5.33
 const SHADOW_ALPHA = 0.35
 // feComponentTransfer discrete tableValues="0 1": alpha ≥ 0.5 → fully opaque.
 const ALPHA_THRESHOLD = 128
@@ -26,10 +26,10 @@ const ALPHA_THRESHOLD = 128
 // Fill fraction of the canvas the normalized figure occupies. The card CSS
 // (--iso-figure-size: 78%) displays the 6:7 canvas inside a 4:3 frame, which
 // overflows vertically: the visible part of the canvas is only 82% of its
-// height. W/H target half of the frame each way (figure = 50% of card):
-// W = 0.5/0.78, H = 0.5/1.213.
-const FIGURE_FILL_H = 0.41
-const FIGURE_FILL_W = 0.64
+// height. W/H target the figure at ~63% of the card each way:
+// W = 0.63/0.78, H = 0.63/1.213.
+const FIGURE_FILL_H = 0.52
+const FIGURE_FILL_W = 0.81
 
 function rimMaskAt(x: number): number {
   // mask-image on the old .iso-thumb-rim: "to right", stops 0 / 50% / 58% /

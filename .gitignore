@@ -39,6 +39,9 @@ service-account*.json
 # Isolated git worktrees
 .worktrees/
 
+# Build-time source renders for OG cards (baked fresh by scripts/bake-featured-look.mjs)
+public/iso/
+
 # AI / agent tooling (local only — keep out of the public repo)
 .agents/
 .claude/
@@ -55,6 +58,7 @@ service-account*.json
 .github/copilot-instructions.md
 .github/instructions/
 AGENTS.md
+VOICE.md
 CLAUDE.md
 GEMINI.md
 .cursorrules
