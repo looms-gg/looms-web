@@ -105,7 +105,7 @@ export function ImageCropModal({
   const validCenter = useCallback(
     (c: CropRect, size: { w: number; h: number } | null, vw: number, vh: number): CropRect => {
       if (!size) return c
-      const scale = coverScale(size, aspect, vw, vh)
+      const scale = coverScale(size, vw, vh)
       const drawW = size.w * scale
       const drawH = size.h * scale
       // Pan range shrinks to a point at zoom 1, so the center stays 0.5.
@@ -140,7 +140,7 @@ export function ImageCropModal({
       drag.lastY = e.clientY
       if (drag.mode === "move" && imgSize) {
         setCrop((c) => {
-          const scale = coverScale(imgSize, aspect, viewW, viewH) * c.zoom
+          const scale = coverScale(imgSize, viewW, viewH) * c.zoom
           return validCenter(
             {
               ...c,
@@ -211,7 +211,7 @@ export function ImageCropModal({
               alt="Crop preview"
               draggable={false}
               className="pointer-events-none absolute left-0 top-0 max-w-none"
-              style={imgStyle(imgSize, aspect, crop, viewW, viewH)} />
+              style={imgStyle(imgSize, crop, viewW, viewH)} />
             <span
               aria-hidden
               className={`pointer-events-none absolute inset-0 border-2 border-white/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] ${
@@ -262,7 +262,8 @@ export function ImageCropModal({
           value={crop.zoom}
           disabled={!canConfirm || busy}
           aria-label="Zoom"
-          className="range range-primary range-xs h-9 flex-1"
+          className="crop-zoom-range h-5 flex-1"
+          style={{ "--fill": `${((crop.zoom - 1) / (MAX_ZOOM - 1)) * 100}%` } as React.CSSProperties}
           onChange={(e) => setZoom(Number(e.target.value))} />
         <button
           type="button"
@@ -321,7 +322,6 @@ function clamp(v: number, min: number, max: number): number {
 
 function coverScale(
   imgSize: { w: number; h: number },
-  aspect: number,
   viewW: number,
   viewH: number,
 ): number {
@@ -335,14 +335,13 @@ function coverScale(
  */
 function imgStyle(
   imgSize: { w: number; h: number } | null,
-  aspect: number,
   crop: CropRect,
   viewW: number,
   viewH: number,
 ): React.CSSProperties {
   if (!imgSize) return { visibility: "hidden" }
 
-  const scale = coverScale(imgSize, aspect, viewW, viewH) * crop.zoom
+  const scale = coverScale(imgSize, viewW, viewH) * crop.zoom
   const drawW = imgSize.w * scale
   const drawH = imgSize.h * scale
 

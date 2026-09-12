@@ -2016,6 +2016,70 @@ html.studio-lock #root {
   transform: scale(1.15);
 }
 
+/* Crop modal zoom slider. Custom track so the fill matches the value exactly;
+   daisyUI's .range fill relies on thumb box-shadow geometry that breaks if the
+   input height is overridden. Fill width comes from --fill set inline. */
+.crop-zoom-range {
+  width: 100%;
+  height: 1.25rem;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.crop-zoom-range::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--color-primary), var(--color-primary)) 0 0 /
+      var(--fill, 0%) 100% no-repeat,
+    color-mix(in oklab, var(--color-base-content) 15%, transparent);
+}
+
+.crop-zoom-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: calc((0.5rem - 1.1rem) / 2);
+  border: 2px solid var(--color-primary-content);
+  border-radius: 999px;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--plaza-line);
+  transition: transform 140ms var(--ease-out-quint);
+}
+
+.crop-zoom-range:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.crop-zoom-range::-moz-range-track {
+  height: 0.5rem;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--color-base-content) 15%, transparent);
+}
+
+.crop-zoom-range::-moz-range-progress {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.crop-zoom-range::-moz-range-thumb {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--color-primary-content);
+  border-radius: 999px;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--plaza-line);
+  transition: transform 140ms var(--ease-out-quint);
+}
+
+.crop-zoom-range:active::-moz-range-thumb {
+  transform: scale(1.15);
+}
+
 .studio-stack-row {
   display: flex;
   align-items: center;
