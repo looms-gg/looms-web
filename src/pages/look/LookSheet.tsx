@@ -4,12 +4,13 @@ import {
   Download,
   Link as LinkIcon,
   Check,
-  Sparkle,
+  TShirt,
   Stack,
   Flag,
 } from "@phosphor-icons/react"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
 import { Icon } from "../../components/ui/Icon"
+import { Button } from "../../components/ui/Button"
 import { MakerLink } from "../../components/piece/MakerLink"
 import { SkinStage } from "../../components/iso/SkinStage"
 import { IsoThumb } from "../../components/iso/IsoThumb"
@@ -59,7 +60,7 @@ export function LookSheet({
   })
 
   return (
-    <section className="piece-sheet relative overflow-hidden rounded-[22px] bg-base-200">
+    <section className="piece-sheet relative overflow-hidden rounded-[18px] bg-base-200">
       <div className="grid md:grid-cols-[minmax(280px,1fr)_minmax(0,1.1fr)]">
         {/* Left: 3D / Live Stage Character Preview */}
         <div
@@ -94,7 +95,7 @@ export function LookSheet({
                 </span>
               </div>
 
-              <h1 className="text-balance text-3xl font-black tracking-tight sm:text-4xl">
+              <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
                 {look.name}
               </h1>
 
@@ -114,24 +115,24 @@ export function LookSheet({
               className="piece-reveal flex flex-wrap items-center gap-2.5 pt-2"
               style={revealStyle(3)}
             >
-              <button
-                type="button"
-                className="btn btn-primary rounded-full font-black px-5 shadow-sm active:scale-[0.96] transition-transform"
+              <Button
+                variant="primary"
+                className="px-5 font-extrabold shadow-sm active:scale-[0.96] transition-transform"
                 onClick={onWear}
               >
-                <Icon icon={Sparkle} size="sm" className="mr-1.5" />
+                <Icon icon={TShirt} size="sm" className="mr-1.5" />
                 Wear in Studio
-              </button>
+              </Button>
 
-              <button
-                type="button"
-                className="btn btn-ghost rounded-full border border-base-content/20 font-extrabold active:scale-[0.96] transition-transform"
+              <Button
+                variant="ghost"
+                className="border border-base-content/20 font-extrabold active:scale-[0.96] transition-transform"
                 onClick={onDownload}
                 title="Download 64x64 Minecraft skin PNG"
               >
                 <Icon icon={Download} size="sm" className="mr-1.5" />
                 Download Skin
-              </button>
+              </Button>
 
               <LikeButton
                 type="look"
@@ -139,19 +140,22 @@ export function LookSheet({
                 count={look.likeCount}
                 onCountChange={onLikeCountChange} />
 
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                circle
+                className="border border-base-content/15 active:scale-[0.96] transition-transform"
                 onClick={() => void handleCopyLink()}
-                className="btn btn-ghost btn-circle border border-base-content/15 active:scale-[0.96] transition-transform"
                 title="Copy share link"
                 aria-label="Copy share link"
               >
                 <Icon icon={copied ? Check : LinkIcon} className={copied ? "text-success" : ""} />
-              </button>
+              </Button>
 
               {!isCreator ? (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  circle
+                  className="border border-base-content/15 opacity-60 hover:opacity-100 active:scale-[0.96] transition-transform"
                   onClick={() => {
                     if (!auth?.user) {
                       setAuthOpen(true)
@@ -159,12 +163,11 @@ export function LookSheet({
                     }
                     setReportOpen(true)
                   }}
-                  className="btn btn-ghost btn-circle border border-base-content/15 opacity-60 hover:opacity-100 active:scale-[0.96] transition-transform"
                   title="Report look"
                   aria-label="Report look"
                 >
                   <Icon icon={Flag} size="sm" />
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -172,7 +175,7 @@ export function LookSheet({
           {/* Outfit Layers Breakdown */}
           <div className="piece-reveal space-y-3 pt-4 border-t border-base-content/10" style={revealStyle(4)}>
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-black uppercase tracking-[0.06em] text-base-content/60 flex items-center gap-1.5">
+              <h2 className="text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/60 flex items-center gap-1.5">
                 <Icon icon={Stack} size="xs" />
                 Outfit Layers ({outfit.length})
               </h2>
@@ -186,7 +189,7 @@ export function LookSheet({
                   <Link
                     key={piece.id}
                     to={`/piece/${piece.id}`}
-                    className="flex items-center gap-2.5 rounded-2xl border border-base-content/10 bg-base-100/80 p-2 text-inherit no-underline transition-colors duration-150 hover:border-primary hover:bg-base-100"
+                    className="flex items-center gap-2.5 rounded-[18px] border border-base-content/10 bg-base-100/80 p-2 text-inherit no-underline transition-colors duration-150 hover:border-primary hover:bg-base-100"
                   >
                     <div className="size-10 shrink-0 overflow-hidden rounded-lg bg-base-300">
                       <IsoThumb piece={piece} alt={piece.name} className="size-full" />

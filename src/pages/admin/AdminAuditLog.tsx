@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { fetchAdminAuditLog } from "../../lib/adminAudit"
 import type { AdminAuditLogRow } from "../../lib/supabase"
 import { formatErrorMessage } from "../../lib/errorFormat"
+import { Bone } from "../../components/ui/Bone"
 
 function formatAction(action: string): string {
   return action.replaceAll("_", " ")
@@ -33,8 +34,14 @@ export function AdminAuditLog() {
 
   if (loading) {
     return (
-      <div className="rounded-[18px] bg-base-200 p-6 text-sm font-bold text-base-content/60">
-        Loading audit trail…
+      <div
+        className="space-y-2 rounded-[18px] bg-base-200 p-4"
+        aria-busy="true"
+        aria-label="Loading audit trail"
+      >
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <Bone key={n} className="h-9" rounded="rounded-lg" />
+        ))}
       </div>
     )
   }

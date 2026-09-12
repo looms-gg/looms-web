@@ -9,6 +9,7 @@ import type { GarmentRow, LookRow } from "../../lib/supabase"
 import { useLikesOptional } from "../../state/likes"
 import type { ProfileTab } from "../profileTab"
 import type { LikedContent } from "./profileApi"
+import { EmptyState } from "../../components/ui/EmptyState"
 
 export function ProfileTabs({
   tab,
@@ -56,7 +57,7 @@ export function ProfileTabs({
               type="button"
               role="tab"
               aria-selected={active}
-              className={`btn btn-sm rounded-full font-extrabold ${
+              className={`btn btn-sm btn-pill font-extrabold ${
                 active ? "btn-primary" : "btn-ghost"
               }`}
               onClick={() => onTab(item.id)}
@@ -119,11 +120,7 @@ export function ProfileTabs({
 }
 
 function Empty({ copy }: { copy: string }) {
-  return (
-    <div className="rounded-[18px] bg-base-200 px-6 py-10 text-center text-base-content/70">
-      {copy}
-    </div>
-  )
+  return <EmptyState title={copy} />
 }
 
 function LookCard({ look: row }: { look: LookRow }) {

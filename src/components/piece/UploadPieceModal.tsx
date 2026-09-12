@@ -217,7 +217,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
       open={isOpen}
       onClose={onClose}
       labelledBy="upload-piece-title"
-      panelClassName="modal-panel relative w-full max-w-md rounded-2xl border border-white/10 bg-base-300 p-6 shadow-2xl sm:p-7 max-h-[90vh] overflow-y-auto"
+      panelClassName="modal-panel relative w-full max-w-xl rounded-[18px] border border-white/10 bg-base-300 p-6 shadow-2xl sm:p-7 max-h-[90vh] overflow-y-auto"
     >
         <CloseButton onClick={onClose} className="absolute right-1.5 top-1.5" />
 
@@ -228,7 +228,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
           <div>
             <h2
               id="upload-piece-title"
-              className="text-xl font-black tracking-tight text-base-content"
+              className="text-xl font-extrabold tracking-tight text-base-content"
             >
               Upload Garment Piece
             </h2>
@@ -252,7 +252,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
           {/* File input / drag box */}
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/15 hover:border-primary/50 rounded-2xl cursor-pointer bg-base-100/50 hover:bg-base-100 transition-colors text-center"
+            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/15 hover:border-primary/50 rounded-[18px] cursor-pointer bg-base-100/50 hover:bg-base-100 transition-colors text-center"
           >
             <input
               ref={fileInputRef}
@@ -356,7 +356,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
             <button
               type="submit"
               disabled={loading || !file}
-              className="btn btn-primary flex-1 rounded-full font-black tracking-wide"
+              className="btn btn-primary flex-1 rounded-full font-extrabold tracking-wide"
             >
               {loading ? <span className="loading loading-spinner loading-sm" /> : "Publish Piece"}
             </button>

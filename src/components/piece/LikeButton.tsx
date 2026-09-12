@@ -34,7 +34,7 @@ export function LikeButton({
     <>
       <button
         type="button"
-        className={`relative inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-base-content/20 bg-base-100 px-2.5 transition-[background-color,border-color,color,transform] duration-150 after:absolute after:-inset-0 after:content-[''] hover:scale-110 active:scale-[0.96] ${
+        className={`relative inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-base-content/20 bg-base-100 px-2.5 transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.96] ${
           liked
             ? "border-secondary text-secondary"
             : "text-base-content/80 hover:border-secondary hover:text-secondary"

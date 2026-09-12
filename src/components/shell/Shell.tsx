@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom"
-import { MagicWand, Package, Sparkle, TShirt } from "@phosphor-icons/react"
+import { MagicWand, Package, PaintBrush, TShirt } from "@phosphor-icons/react"
 import { useWardrobe } from "../../state/wardrobe"
 import { useAuth } from "../../state/auth"
 import { useLikes } from "../../state/likes"
@@ -19,7 +19,7 @@ import { usePendingActionReplay } from "./usePendingActionReplay"
 const links: { to: string; label: string; icon: IconType }[] = [
   { to: "/", label: "Explore", icon: TShirt },
   { to: "/wardrobe", label: "Wardrobe", icon: Package },
-  { to: "/studio", label: "Studio", icon: Sparkle },
+  { to: "/studio", label: "Studio", icon: PaintBrush },
   { to: "/editor", label: "Editor", icon: MagicWand },
 ]
 

@@ -2,6 +2,8 @@ import { MagnifyingGlass } from "@phosphor-icons/react"
 import { SLOTS, SLOT_LABEL } from "../../data/catalog"
 import type { SlotFilter } from "../../lib/exploreBrowse"
 import { Icon } from "../../components/ui/Icon"
+import { EmptyState } from "../../components/ui/EmptyState"
+import { Button } from "../../components/ui/Button"
 import { MAX_LIMITS } from "../../lib/sanitize"
 
 export function WardrobeFilterBar({
@@ -26,7 +28,7 @@ export function WardrobeFilterBar({
       <div className="flex flex-wrap items-center gap-1.5" role="listbox" aria-label={listLabel}>
         <button
           type="button"
-          className={`btn btn-sm rounded-full font-extrabold ${slot === "all" ? "btn-primary" : "btn-ghost"}`}
+          className={`btn btn-sm btn-pill font-extrabold ${slot === "all" ? "btn-primary" : "btn-ghost"}`}
           onClick={() => onSlot("all")}
         >
           All
@@ -35,7 +37,7 @@ export function WardrobeFilterBar({
           <button
             key={id}
             type="button"
-            className={`btn btn-sm rounded-full font-extrabold ${slot === id ? "btn-primary" : "btn-ghost"}`}
+            className={`btn btn-sm btn-pill font-extrabold ${slot === id ? "btn-primary" : "btn-ghost"}`}
             onClick={() => onSlot(id)}
           >
             {SLOT_LABEL[id]}
@@ -67,16 +69,14 @@ export function WardrobeEmptyRack({
   onReset: () => void
 }) {
   return (
-    <div className="grid place-items-center rounded-[18px] border border-dashed border-base-content/15 bg-base-200 px-6 py-12 text-center">
-      <p className="text-base font-extrabold">Nothing in this rack</p>
-      <p className="mt-1 text-sm text-base-content/65">{body}</p>
-      <button
-        type="button"
-        className="btn btn-primary btn-sm mt-4 rounded-full font-extrabold"
-        onClick={onReset}
-      >
-        Reset filters
-      </button>
-    </div>
+    <EmptyState
+      title="Nothing in this rack"
+      body={body}
+      action={
+        <Button variant="primary" size="sm" className="mt-4 font-extrabold" onClick={onReset}>
+          Reset filters
+        </Button>
+      }
+    />
   )
 }

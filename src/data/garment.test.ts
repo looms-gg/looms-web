@@ -21,9 +21,9 @@ const row: GarmentRow = {
 
 describe("garmentToPiece", () => {
   it("maps a garment row onto a wardrobe piece", () => {
-    const piece = garmentToPiece(row, "ser0th")
+    const piece = garmentToPiece(row, "PyreDev")
     expect(piece.id).toBe("ink-fall")
-    expect(piece.maker).toBe("ser0th")
+    expect(piece.maker).toBe("PyreDev")
     expect(piece.group).toBe("head")
     expect(piece.covers).toEqual(["head", "torso"])
     expect(piece.skin).toBe(row.texture_url)

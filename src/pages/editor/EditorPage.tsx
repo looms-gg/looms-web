@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { Link } from "react-router-dom"
 import { MagicWand, PaintBrush, Stack, UploadSimple } from "@phosphor-icons/react"
 import { Icon, type IconType } from "../../components/ui/Icon"
+import { Bone as SkeletonBone } from "../../components/ui/Bone"
 
 const DISCORD_URL = "https://discord.gg/UNTRgHBBPb"
 
@@ -12,7 +13,7 @@ const FEATURES: { icon: IconType; label: string }[] = [
 ]
 
 function Bone({ className = "", rounded = "rounded-lg" }: { className?: string; rounded?: string }) {
-  return <div aria-hidden className={`editor-bone ${rounded} ${className}`} />
+  return <SkeletonBone pulse={false} className={className} rounded={rounded} />
 }
 
 /**
@@ -46,7 +47,7 @@ export function EditorPage() {
           >
             <div className="flex h-full gap-3" aria-hidden>
               {/* Left tool rail */}
-              <div className="flex w-12 shrink-0 flex-col gap-2 rounded-[14px] bg-base-300/70 p-2">
+              <div className="flex w-12 shrink-0 flex-col gap-2 rounded-[10px] bg-base-300/70 p-2">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <Bone key={i} className="aspect-square w-full" rounded="rounded-xl" />
                 ))}
@@ -54,7 +55,7 @@ export function EditorPage() {
 
               {/* Canvas + timeline */}
               <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-                <div className="relative flex-1 rounded-[14px] bg-base-300/70 p-4">
+                <div className="relative flex-1 rounded-[10px] bg-base-300/70 p-4">
                   {/* Zoom pill with an inline dot */}
                   <div className="absolute bottom-4 right-4 flex h-6 items-center gap-1.5 rounded-full bg-base-200/70 px-2">
                     <Bone className="size-2.5" rounded="rounded-full" />
@@ -62,7 +63,7 @@ export function EditorPage() {
                 </div>
 
                 {/* Timeline strip */}
-                <div className="flex items-center gap-2 rounded-[14px] bg-base-300/70 p-3">
+                <div className="flex items-center gap-2 rounded-[10px] bg-base-300/70 p-3">
                   <Bone className="h-6 w-6 shrink-0" rounded="rounded-md" />
                   <div className="flex flex-1 items-center gap-1.5 overflow-hidden">
                     {[0, 1, 2, 3, 4].map((i) => (
@@ -74,7 +75,7 @@ export function EditorPage() {
               </div>
 
               {/* Right property panel */}
-              <div className="flex w-36 shrink-0 flex-col gap-2 rounded-[14px] bg-base-300/70 p-3">
+              <div className="flex w-36 shrink-0 flex-col gap-2 rounded-[10px] bg-base-300/70 p-3">
                 <Bone className="h-4 w-16" rounded="rounded-md" />
                 <div className="grid grid-cols-4 gap-1.5 py-1">
                   {[0, 1, 2, 3].map((i) => (

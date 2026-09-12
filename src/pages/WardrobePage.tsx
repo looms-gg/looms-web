@@ -63,7 +63,7 @@ export function WardrobePage() {
                 type="button"
                 role="tab"
                 aria-selected={tab === id}
-                className={`btn btn-sm rounded-full font-extrabold ${tab === id ? "btn-primary" : "btn-ghost"}`}
+                className={`btn btn-sm btn-pill font-extrabold ${tab === id ? "btn-primary" : "btn-ghost"}`}
                 onClick={() => selectTab(id)}
               >
                 {label}

@@ -301,7 +301,7 @@ def main() -> None:
 
         render_card(
             title=piece["name"],
-            subtitle="by ser0th",
+            subtitle="by PyreDev",
             badge_label=badge,
             description=piece.get("blurb", ""),
             footer_text=f"{saves} saves  ·  looms.gg",

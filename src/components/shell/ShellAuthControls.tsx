@@ -5,7 +5,7 @@ import {
   SignOut,
   ShieldCheck,
   User,
-  Sparkle,
+  PaintBrush,
   Gear,
 } from "@phosphor-icons/react"
 import { AuthButtons } from "../auth/AuthModal"
@@ -80,7 +80,7 @@ export function ShellAccountMenu({
             className="size-5 rounded-md"
             style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
         ) : (
-          <span className="grid size-5 place-items-center rounded-md bg-primary/25 text-primary text-[10px] font-black">
+          <span className="grid size-5 place-items-center rounded-md bg-primary/25 text-primary text-[10px] font-extrabold">
             {initials}
           </span>
         )}
@@ -147,7 +147,7 @@ export function ShellAccountMenu({
             style={{ "--item-i": 2 } as React.CSSProperties}
             role="menuitem"
           >
-            <Icon icon={Sparkle} className="account-menu-item-icon" />
+            <Icon icon={PaintBrush} className="account-menu-item-icon" />
             Studio
           </NavLink>
           <NavLink

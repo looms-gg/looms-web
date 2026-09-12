@@ -246,15 +246,15 @@ export function UploadInspector({
   }
 
   return (
-    <aside className={className}>
-      <div className="overflow-hidden rounded-[14px] bg-base-300 relative group">
+    <aside className={`inspector-body ${className}`}>
+      <div className="relative overflow-hidden rounded-[14px] bg-base-200 group">
         <IsoThumb piece={piece} alt={piece.name} />
         <span className="absolute top-2 left-2 badge badge-neutral text-xs font-bold uppercase tracking-wider">
           {SLOT_LABEL[piece.slot]}
         </span>
       </div>
 
-      <div className="mt-4 space-y-4">
+      <div className="space-y-4">
         {errorMsg && (
           <div className="alert alert-error text-xs p-2.5 rounded-xl flex items-center gap-2">
             <Icon icon={Warning} size="md" className="shrink-0" />

@@ -20,7 +20,7 @@ export type CatalogSeed = {
 export const catalogSeed = seed as CatalogSeed[]
 
 export const AUTHOR_USER_ID = "45e6be54-c9a5-4627-af39-9c14b27ec92e"
-export const AUTHOR_USERNAME = "ser0th"
+export const AUTHOR_USERNAME = "PyreDev"
 
 export function fixturePieces(maker = AUTHOR_USERNAME, skin = FIXTURE_SKIN): Piece[] {
   return catalogSeed.map((row) => ({

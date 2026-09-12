@@ -26,7 +26,7 @@ Paste `docs/platform/master-briefing.md` for full context on any task, or indivi
 ## Key identities
 
 - **Product name:** looms (always lowercase, except at sentence start)
-- **Operator:** ser0th (solo developer, United States)
+- **Operator:** PyreDev (solo developer, United States)
 - **GitHub org:** [looms-gg](https://github.com/looms-gg) · repo `looms-gg/looms-web`
 - **Status:** open beta, actively developed (launched September 2026)
 - **Business model:** none, free forever, no monetization in product

@@ -25,7 +25,7 @@ describe("loadGarments", () => {
           is_public: true,
           tags: [],
           created_at: "2026-09-07T00:00:00.000Z",
-          profiles: { username: "ser0th" },
+          profiles: { username: "PyreDev" },
         },
       ],
       error: null,
@@ -38,7 +38,7 @@ describe("loadGarments", () => {
     expect(supabase.from).toHaveBeenCalledWith("garments")
     expect(eq).toHaveBeenCalledWith("is_public", true)
     expect(pieces).toHaveLength(1)
-    expect(pieces[0]?.maker).toBe("ser0th")
+    expect(pieces[0]?.maker).toBe("PyreDev")
     expect(pieces[0]?.group).toBe("head")
   })
 })

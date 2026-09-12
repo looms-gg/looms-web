@@ -10,6 +10,31 @@ const EXIT_MS = 160
 
 type Phase = "closed" | "open" | "exiting"
 
+// Body scroll locking is reference-counted: each overlay saves the body's
+// inline overflow once for the whole stack and only the last overlay to close
+// restores it. Per-instance save/restore breaks with stacked overlays — the
+// second overlay captures "hidden" as the previous value and the body stays
+// scroll-locked after every overlay is gone.
+let openOverlayCount = 0
+let savedBodyOverflow: string | null = null
+
+function lockBodyScroll() {
+  if (openOverlayCount === 0) {
+    savedBodyOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+  }
+  openOverlayCount += 1
+}
+
+function unlockBodyScroll() {
+  if (openOverlayCount === 0) return
+  openOverlayCount -= 1
+  if (openOverlayCount === 0 && savedBodyOverflow !== null) {
+    document.body.style.overflow = savedBodyOverflow
+    savedBodyOverflow = null
+  }
+}
+
 export function ModalOverlay({
   open,
   onClose,
@@ -47,14 +72,13 @@ export function ModalOverlay({
 
   useEffect(() => {
     if (phase !== "open") return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
+    lockBodyScroll()
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape" && dismissible) onClose?.()
     }
     window.addEventListener("keydown", onKey)
     return () => {
-      document.body.style.overflow = previousOverflow
+      unlockBodyScroll()
       window.removeEventListener("keydown", onKey)
     }
   }, [dismissible, onClose, phase])

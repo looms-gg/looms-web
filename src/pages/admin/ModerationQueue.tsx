@@ -8,7 +8,7 @@ import {
   TShirt,
   Trash,
   User,
-  Sparkle,
+  Stack,
   X,
 } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
@@ -103,7 +103,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
   const getTargetIcon = (type: ReportTargetType) => {
     switch (type) {
       case "look":
-        return Sparkle
+        return Stack
       case "piece":
         return TShirt
       case "comment":
@@ -139,7 +139,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
               <button
                 key={status}
                 type="button"
-                className={`btn btn-sm rounded-full font-bold capitalize transition-colors active:scale-[0.96] transition-transform ${
+                className={`btn btn-sm btn-pill font-bold capitalize transition-colors active:scale-[0.96] transition-transform ${
                   active
                     ? "btn-primary shadow-sm"
                     : "btn-ghost text-base-content/70 hover:text-base-content"
@@ -148,7 +148,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
               >
                 <span>{status}</span>
                 {status === "pending" && pendingCount > 0 ? (
-                  <span className="badge badge-xs badge-error font-mono font-black ml-1 tabular-nums">
+                  <span className="badge badge-xs badge-error font-mono font-extrabold ml-1 tabular-nums">
                     {pendingCount}
                   </span>
                 ) : null}
@@ -188,7 +188,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
           {[1, 2, 3].map((n) => (
             <div
               key={n}
-              className="rounded-2xl border border-base-content/10 bg-base-200/40 p-4 space-y-3 animate-pulse"
+              className="rounded-[18px] border border-base-content/10 bg-base-200/40 p-4 space-y-3 animate-pulse"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
@@ -207,12 +207,12 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
           ))}
         </div>
       ) : reports.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-base-content/20 bg-base-200/20 p-12 text-center space-y-3">
+        <div className="rounded-[18px] border border-dashed border-base-content/20 bg-base-200/20 p-12 text-center space-y-3">
           <div className="mx-auto grid size-12 place-items-center rounded-full bg-success/10 text-success">
             <Icon icon={CheckCircle} size="lg" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-base font-black text-base-content text-balance">All caught up!</h3>
+            <h3 className="text-base font-extrabold text-base-content text-balance">All caught up!</h3>
             <p className="text-xs text-base-content/60 text-pretty">
               No {statusFilter === "all" ? "" : statusFilter} reports in this category.
             </p>
@@ -227,7 +227,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
             return (
               <div
                 key={report.id}
-                className="group relative rounded-2xl border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/25 hover:bg-base-200/80 shadow-sm"
+                className="group relative rounded-[18px] border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/25 hover:bg-base-200/80 shadow-sm"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1.5 flex-1 min-w-0">
@@ -258,7 +258,7 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-black truncate text-base-content">
+                      <h4 className="text-sm font-extrabold truncate text-base-content">
                         {report.target_label || `${report.target_type} ID: ${report.target_id}`}
                       </h4>
                       {targetLink ? (

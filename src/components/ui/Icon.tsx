@@ -6,7 +6,7 @@ import {
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react"
 
-/** Any Phosphor icon component (e.g. `Pants`, `Sparkle`, `TShirt`). */
+/** Any Phosphor icon component (e.g. `Pants`, `PaintBrush`, `TShirt`). */
 export type IconType = PhosphorIcon
 
 /**

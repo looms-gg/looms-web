@@ -66,7 +66,7 @@ describe("EditorPage", () => {
     expect(frame.getAttribute("role")).toBe("img")
     expect(frame.getAttribute("aria-label")).toMatch(/preview of the upcoming looms editor/i)
 
-    const bones = host.querySelectorAll(".editor-bone")
+    const bones = host.querySelectorAll(".profile-bone--static")
     expect(bones.length).toBeGreaterThan(10)
 
     // No text or icons inside the skeleton mockup itself

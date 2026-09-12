@@ -18,10 +18,12 @@ export function InspectorModal({
       open={open}
       onClose={onClose}
       label={title}
-      panelClassName="modal-panel relative w-full max-w-sm rounded-2xl border border-white/10 bg-base-300 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+      panelClassName="modal-panel inspector-panel relative w-full max-w-[56rem] overflow-hidden rounded-[18px] border border-white/10 bg-base-300 shadow-2xl"
     >
-      <CloseButton onClick={onClose} className="absolute right-1.5 top-1.5 z-10" />
-      {children}
+      <div className="absolute right-2.5 top-2.5 z-10">
+        <CloseButton onClick={onClose} />
+      </div>
+      <div className="h-full p-6 sm:p-8">{children}</div>
     </ModalOverlay>
   )
 }

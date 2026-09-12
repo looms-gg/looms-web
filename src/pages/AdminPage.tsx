@@ -36,13 +36,13 @@ export function AdminPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-base-content/10 pb-6">
         <div className="flex items-center gap-3.5">
-          <div className="grid size-12 place-items-center rounded-2xl bg-warning/15 text-warning">
+          <div className="grid size-12 place-items-center rounded-[18px] bg-warning/15 text-warning">
             <Icon icon={ShieldCheck} size="lg" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-balance">Admin Panel</h1>
-              <span className="badge badge-warning badge-sm font-black uppercase tracking-wider text-xs">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-balance">Admin Panel</h1>
+              <span className="badge badge-warning badge-sm font-extrabold uppercase tracking-wider text-xs">
                 Admin
               </span>
             </div>
@@ -76,7 +76,7 @@ export function AdminPage() {
               aria-selected={active}
               title={tab.label}
               onClick={() => setActiveTab(tab.id)}
-              className={`btn btn-sm rounded-full font-extrabold gap-2 transition-colors active:scale-[0.96] transition-transform ${
+              className={`btn btn-sm btn-pill font-extrabold gap-2 transition-colors active:scale-[0.96] transition-transform ${
                 active
                   ? "btn-primary shadow-sm"
                   : "btn-ghost text-base-content/70 hover:text-base-content"

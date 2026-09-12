@@ -16,7 +16,7 @@ describe("LegalDocument", () => {
     })
     expect(host.querySelector("h1")?.textContent).toMatch(/Privacy Policy/i)
     expect(host.textContent).toMatch(/privacy@looms\.gg/)
-    expect(host.textContent).toMatch(/ser0th/)
+    expect(host.textContent).toMatch(/PyreDev/)
     expect(host.querySelector("article")?.className).toMatch(/max-w-prose/)
   })
 

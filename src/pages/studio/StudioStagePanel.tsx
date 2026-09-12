@@ -93,7 +93,7 @@ export function StudioStagePanel({
         labelledBy="overwrite-dialog-title"
         portal={false}
         scrimClassName="modal-scrim modal-scrim-soft"
-        panelClassName="modal-panel w-full max-w-md rounded-[20px] bg-base-200 border border-white/10 p-6 shadow-2xl space-y-4"
+        panelClassName="modal-panel w-full max-w-md rounded-[18px] bg-base-200 border border-white/10 p-6 shadow-2xl space-y-4"
       >
         <h2 id="overwrite-dialog-title" className="text-lg font-extrabold">
           This skin seems to already exist!

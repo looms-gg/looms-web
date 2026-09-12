@@ -36,7 +36,7 @@ export function PieceSheet({
   const coverLabels = pieceCovers(piece).map((g) => GROUP_LABEL[g])
 
   return (
-    <section className="piece-sheet relative overflow-hidden rounded-[22px] bg-base-200">
+    <section className="piece-sheet relative overflow-hidden rounded-[18px] bg-base-200">
       {isCreator ? (
         <button
           type="button"

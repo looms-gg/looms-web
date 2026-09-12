@@ -5,6 +5,8 @@ Browse clothing layers, stack outfits in Studio, export a vanilla PNG.
 
 **[Live site](https://looms.gg/)** · **[Discord](https://discord.gg/UNTRgHBBPb)**
 
+looms is an unofficial Minecraft fan project. Not affiliated with, endorsed by, or sponsored by Mojang Studios or Microsoft. Minecraft is a trademark of Mojang Synergies AB.
+
 ---
 
 ## Got an idea?
@@ -51,5 +53,7 @@ Copy `[.env.example](.env.example)` to `.env` (and/or `.env.local` for `VITE_*` 
 
 - **Site URL:** `https://looms.gg/`
 - **Redirect URLs** should include `https://looms.gg/**` and `http://localhost:*/**` (the app sends the current origin + base path with every auth email, so local sign-ups come back to local).
+
+If the allowlist misses `https://looms.gg/**`, Supabase drops the app's `redirect_to` and the email link falls back to the Site URL — so a Site URL left at localhost from dev testing sends every confirmation to `localhost`. Symptom: clicking the email link opens a browser error page instead of the app. Fix both fields in the dashboard, and re-paste the email templates from `supabase/email-templates/` if a host was ever hardcoded into the dashboard copy (templates must only ever use `{{ .ConfirmationURL }}`).
 
 PRs welcome. Talk through bigger ideas on Discord first so we are not building past each other!

@@ -14,7 +14,7 @@ Quick-reference companion to [master-briefing.md](master-briefing.md). Hard fact
 | Live URL | https://looms.gg/ |
 | Discord | https://discord.gg/UNTRgHBBPb |
 | GitHub | https://github.com/looms-gg/looms-web |
-| Operator | ser0th (individual, United States) |
+| Operator | PyreDev (individual, United States) |
 | Repo age | First commits September 2026; open beta |
 | Repo | Public, open source, PRs welcome |
 

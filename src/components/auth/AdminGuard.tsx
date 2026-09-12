@@ -19,11 +19,11 @@ export function AdminGuard({ children }: { children: ReactNode }) {
   if (!user || !isAdmin(user.id)) {
     return (
       <div className="mx-auto max-w-md py-16 text-center space-y-5">
-        <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-error/10 text-error">
+        <div className="mx-auto grid size-16 place-items-center rounded-[18px] bg-error/10 text-error">
           <Icon icon={ShieldCheck} size="xl" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-black tracking-tight">Access Restricted</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Access Restricted</h1>
           <p className="text-sm text-base-content/70">
             The looms admin panel is restricted to verified platform administrators.
           </p>

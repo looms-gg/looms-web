@@ -206,7 +206,7 @@ function AccountSection() {
               className="size-10 rounded-xl object-cover"
               style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
           ) : (
-            <span className="grid size-10 place-items-center rounded-xl bg-primary/25 text-primary text-sm font-black">
+            <span className="grid size-10 place-items-center rounded-xl bg-primary/25 text-primary text-sm font-extrabold">
               {(profile?.username ?? "?").slice(0, 2).toUpperCase()}
             </span>
           )}
@@ -363,11 +363,11 @@ export function SettingsPage() {
 
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3.5 border-b border-base-content/10 pb-6">
-        <div className="grid size-12 place-items-center rounded-2xl bg-primary/15 text-primary">
+        <div className="grid size-12 place-items-center rounded-[18px] bg-primary/15 text-primary">
           <Icon icon={Gear} size="lg" />
         </div>
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-balance sm:text-3xl">Settings</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">Settings</h1>
           <p className="text-xs font-semibold text-base-content/60 text-pretty">
             Privacy, uploads, and account controls in one place
           </p>

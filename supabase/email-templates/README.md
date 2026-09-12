@@ -30,6 +30,10 @@ rules in `docs/platform/brand-and-content-guide.md` §3.
 
 ## Rules when editing
 
+- Never hardcode a host in a template. Links must use `{{ .ConfirmationURL }}` —
+  Supabase builds it from the dashboard's Site URL and redirect allowlist. A
+  hardcoded `localhost` from dev testing ships broken confirmation emails to
+  production (this actually happened in the public alpha).
 - Accent pink appears exactly twice: the CTA and the fallback link. Nothing else.
 - Never add a 1px border *and* a heavy shadow to the panel (design law).
 - Copy: platform voice — warm, concrete, no hype. Banned verbs: buy, unlock,

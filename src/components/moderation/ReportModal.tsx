@@ -102,7 +102,7 @@ export function ReportModal({
     >
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-error/15 text-error">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-error/15 text-error">
             <Icon icon={Flag} size="md" />
           </span>
           <div>
@@ -124,10 +124,10 @@ export function ReportModal({
 
       {success ? (
         <div className="py-8 text-center">
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success/15 text-success">
+          <span className="mx-auto grid size-12 place-items-center rounded-[18px] bg-success/15 text-success">
             <Icon icon={CheckCircle} size="lg" />
           </span>
-          <h3 className="mt-4 text-2xl font-black tracking-tight">Report Submitted</h3>
+          <h3 className="mt-4 text-2xl font-extrabold tracking-tight">Report Submitted</h3>
           <p className="mx-auto mt-2 max-w-[300px] text-sm leading-relaxed text-base-content/65">
             Thank you for helping keep looms safe and creative. Our team will review this
             promptly.

@@ -68,7 +68,7 @@ When limits hit, the server raises errors that the client maps through `formatEr
 **Privacy posture specifics:**
 - Cookie banner: accept-all or reject-non-essential; today only essential storage exists (session, theme, consent record); re-openable via "Cookie settings" in the footer; documented in a `/cookies` policy page.
 - `/privacy` page: what's collected, how it's used, processors, retention ("while your account exists, subject to quotas and abuse enforcement"), user rights (access/correct/delete/export via email contact; may verify account control), children under 13 (not directed; removal on request), change-notice via "last updated" date.
-- The operator is a named individual (ser0th, United States), the docs are honest about being a solo operation, and the privacy contact email is currently a placeholder pending a real address.
+- The operator is a named individual (PyreDev, United States), the docs are honest about being a solo operation, and the privacy contact email is currently a placeholder pending a real address.
 
 ## 5. Legal framework (all four docs live in-app)
 

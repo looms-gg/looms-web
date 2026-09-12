@@ -1,8 +1,8 @@
 import { useState, type CSSProperties } from "react"
-import { Link } from "react-router-dom"
 import { Bookmark, Check, Flag, Link as LinkIcon, Plus, Trash } from "@phosphor-icons/react"
 import type { Piece } from "../../data/catalog"
 import { Icon } from "../../components/ui/Icon"
+import { Button, ButtonLink } from "../../components/ui/Button"
 import { LikeButton } from "../../components/piece/LikeButton"
 import { copyShareLink, getPieceShareUrl } from "../../lib/share"
 import { useAuthOptional } from "../../state/auth"
@@ -63,21 +63,21 @@ export function PieceActions({
         {piece.savedCount}
         <span className="font-bold text-base-content/45">saved</span>
       </span>
-      <button
-        type="button"
-        className={`btn ${copied ? "btn-success" : "btn-ghost"} min-h-11 rounded-full font-bold border border-base-content/15`}
+      <Button
+        variant={copied ? "success" : "ghost"}
+        className="min-h-11 font-bold border border-base-content/15"
         onClick={handleShare}
         title={copied ? "Link copied to clipboard!" : `Share ${piece.name}`}
         aria-label={copied ? "Link copied" : `Share ${piece.name}`}
       >
         <Icon icon={copied ? Check : LinkIcon} size="sm" className="mr-1.5" />
         {copied ? "Copied!" : "Share"}
-      </button>
+      </Button>
       {owned ? (
         <>
-          <button
-            type="button"
-            className="btn btn-primary min-h-11 rounded-full font-extrabold"
+          <Button
+            variant="primary"
+            className="min-h-11 font-extrabold"
             onClick={onWear}
             disabled={wearing}
             title={
@@ -87,13 +87,13 @@ export function PieceActions({
             }
           >
             {wearing ? "Wearing" : "Wear in studio"}
-          </button>
-          <button
-            type="button"
-            className={`btn min-h-11 rounded-full font-bold border transition-colors ${
+          </Button>
+          <Button
+            variant={confirmRemove ? "error" : "ghost"}
+            className={`min-h-11 font-bold border transition-colors ${
               confirmRemove
-                ? "btn-error text-white font-extrabold"
-                : "btn-ghost border-base-content/15 text-base-content/60 hover:border-error hover:text-error"
+                ? "text-white font-extrabold"
+                : "border-base-content/15 text-base-content/60 hover:border-error hover:text-error"
             }`}
             onClick={() => {
               if (!confirmRemove) {
@@ -113,36 +113,32 @@ export function PieceActions({
           >
             <Icon icon={confirmRemove ? Trash : Check} size="sm" className="mr-1.5" />
             {confirmRemove ? "Confirm remove?" : "Saved"}
-          </button>
+          </Button>
         </>
       ) : (
         <>
-          <button
-            type="button"
-            className="btn btn-primary min-h-11 rounded-full font-extrabold"
+          <Button
+            variant="primary"
+            className="min-h-11 font-extrabold"
             onClick={onAddToWardrobe}
+            icon={Plus}
           >
-            <Icon icon={Plus} size="sm" />
             Add to wardrobe
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost min-h-11 rounded-full font-bold"
-            onClick={onAddAndWear}
-          >
+          </Button>
+          <Button variant="ghost" className="min-h-11 font-bold" onClick={onAddAndWear}>
             Add & wear
-          </button>
+          </Button>
         </>
       )}
       {owned ? (
-        <Link to="/studio" className="btn btn-ghost min-h-11 rounded-full font-bold">
+        <ButtonLink to="/studio" variant="ghost" className="min-h-11 font-bold">
           Open studio
-        </Link>
+        </ButtonLink>
       ) : null}
       {!isCreator ? (
-        <button
-          type="button"
-          className="btn btn-ghost min-h-11 rounded-full font-bold border border-base-content/15 opacity-60 hover:opacity-100"
+        <Button
+          variant="ghost"
+          className="min-h-11 font-bold border border-base-content/15 opacity-60 hover:opacity-100"
           onClick={() => {
             if (!auth?.user) {
               setAuthOpen(true)
@@ -155,7 +151,7 @@ export function PieceActions({
         >
           <Icon icon={Flag} size="sm" className="mr-1.5" />
           Report
-        </button>
+        </Button>
       ) : null}
 
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />

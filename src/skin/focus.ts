@@ -120,7 +120,10 @@ const ndcCorner = new Vector3()
 const VIEW_FILL = 0.72
 // Single-piece previews frame tighter than full figures: hidden untextured
 // meshes are excluded from the silhouette, leaving room to push in further.
-const PIECE_FILL = 0.9
+const PIECE_FILL = 0.84
+// Head-only pieces (hats, hair, masks) are a small cube; at PIECE_FILL they
+// balloon to fill the whole stage, so they keep the gentler full-figure fill.
+const HEAD_FILL = VIEW_FILL
 
 /**
  * Full painted NDC span at the current camera: 2 fills the whole canvas axis,
@@ -352,6 +355,12 @@ export function applyGroupFocus(
   skin.rightLeg.outerLayer.visible = true
   skin.leftLeg.outerLayer.visible = true
 
-  frameVisible(viewer, paintedParts?.length ? PIECE_FILL : VIEW_FILL)
+  const visibleParts = SKIN_PARTS.filter((part) => show[part])
+  const headOnly =
+    visibleParts.length > 0 && visibleParts.every((part) => part === "head")
+  frameVisible(
+    viewer,
+    paintedParts?.length ? (headOnly ? HEAD_FILL : PIECE_FILL) : VIEW_FILL,
+  )
   if (live) lockTurntable(viewer)
 }

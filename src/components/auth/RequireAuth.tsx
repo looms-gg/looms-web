@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react"
 import { AuthModal } from "./AuthModal"
 import { useAuthOptional } from "../../state/auth"
+import { Button } from "../ui/Button"
 
 export function RequireAuth({
   children,
@@ -19,6 +20,7 @@ export function RequireAuth({
   if (loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center" aria-busy="true">
+        <span className="loading loading-spinner loading-lg text-primary" aria-hidden="true" />
         <span className="sr-only">Checking sign-in…</span>
       </div>
     )
@@ -29,13 +31,13 @@ export function RequireAuth({
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center">
         <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
         <p className="text-base-content/70">{body}</p>
-        <button
-          type="button"
-          className="btn btn-primary rounded-full font-extrabold"
+        <Button
+          variant="primary"
+          className="font-extrabold"
           onClick={() => setAuthOpen(true)}
         >
           Sign in
-        </button>
+        </Button>
         <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} />
       </div>
     )

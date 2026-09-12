@@ -12,7 +12,7 @@ import {
   PuzzlePiece,
   Scissors,
   Smiley,
-  Sparkle,
+  SquaresFour,
   Stack,
   TShirt,
   User,
@@ -147,7 +147,7 @@ export function ExploreRail({
           type="button"
           role="tab"
           aria-selected={mode === "pieces"}
-          className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-black transition-all active:scale-[0.96] ${
+          className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-extrabold transition-all active:scale-[0.96] ${
             mode === "pieces"
               ? "bg-primary text-primary-content shadow-sm"
               : "text-base-content/70 hover:text-base-content"
@@ -164,14 +164,14 @@ export function ExploreRail({
           type="button"
           role="tab"
           aria-selected={mode === "looks"}
-          className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-black transition-all active:scale-[0.96] ${
+          className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-extrabold transition-all active:scale-[0.96] ${
             mode === "looks"
               ? "bg-primary text-primary-content shadow-sm"
               : "text-base-content/70 hover:text-base-content"
           }`}
           onClick={() => onModeChange("looks")}
         >
-          <Icon icon={Sparkle} size="xs" />
+          <Icon icon={SquaresFour} size="xs" />
           <span>Looks</span>
           {lookCount > 0 ? (
             <span className="opacity-65 tabular-nums text-[10px]">({lookCount})</span>
@@ -183,104 +183,108 @@ export function ExploreRail({
 
   if (mode === "looks") {
     return (
-      <aside className="plaza-panel explore-rail h-fit self-start rounded-[18px] p-3">
+      <aside className="explore-rail p-1">
         {modeFilterHeader}
 
-        <p className="mb-2 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
-          Sort by
-        </p>
-        <RailList
-          label="Sort by"
-          selected={lookSort}
-          onPick={(id) => onLookSort?.(id)}
-          items={LOOK_SORTS.map((item) => ({
-            id: item,
-            icon: LOOK_SORT_ICON[item],
-            label: item,
-          }))} />
+        <div className="explore-rail-sticky">
+          <p className="mb-2 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
+            Sort by
+          </p>
+          <RailList
+            label="Sort by"
+            selected={lookSort}
+            onPick={(id) => onLookSort?.(id)}
+            items={LOOK_SORTS.map((item) => ({
+              id: item,
+              icon: LOOK_SORT_ICON[item],
+              label: item,
+            }))} />
 
-        <p className="mb-2 mt-5 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
-          Skin model
-        </p>
-        <details ref={combo} className="cat-combo lg:hidden">
-          <summary className="rail-row rail-row-on">
-            <Icon icon={currentModel.icon} size="sm" className="shrink-0" />
-            <span className="min-w-0 flex-1 truncate">{currentModel.label}</span>
-            <Icon icon={CaretDown} size="xs" className="cat-chevron shrink-0 opacity-80" />
-          </summary>
-          <div className="cat-combo-panel">
+          <p className="mb-2 mt-5 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
+            Skin model
+          </p>
+          <details ref={combo} className="cat-combo lg:hidden">
+            <summary className="rail-row rail-row-on">
+              <Icon icon={currentModel.icon} size="sm" className="shrink-0" />
+              <span className="min-w-0 flex-1 truncate">{currentModel.label}</span>
+              <Icon icon={CaretDown} size="xs" className="cat-chevron shrink-0 opacity-80" />
+            </summary>
+            <div className="cat-combo-panel">
+              <RailList
+                label="Skin model"
+                selected={model}
+                onPick={(id) => {
+                  onModel?.(id)
+                  combo.current?.removeAttribute("open")
+                }}
+                items={MODEL_ITEMS} />
+            </div>
+          </details>
+          <div className="max-lg:hidden">
             <RailList
               label="Skin model"
               selected={model}
-              onPick={(id) => {
-                onModel?.(id)
-                combo.current?.removeAttribute("open")
-              }}
+              onPick={(id) => onModel?.(id)}
               items={MODEL_ITEMS} />
           </div>
-        </details>
-        <div className="max-lg:hidden">
-          <RailList
-            label="Skin model"
-            selected={model}
-            onPick={(id) => onModel?.(id)}
-            items={MODEL_ITEMS} />
         </div>
       </aside>
     )
   }
 
   return (
-    <aside className="plaza-panel explore-rail h-fit self-start rounded-[18px] p-3">
+    <aside className="explore-rail p-1">
       {modeFilterHeader}
 
-      <p className="mb-2 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
-        Sort by
-      </p>
-      <RailList
-        label="Sort by"
-        selected={sort}
-        onPick={onSort}
-        items={SORTS.map((item) => ({
-          id: item,
-          icon: PIECE_SORT_ICON[item],
-          label: item,
-        }))} />
+      <div className="explore-rail-sticky">
+        <p className="mb-2 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
+          Sort by
+        </p>
+        <RailList
+          label="Sort by"
+          selected={sort}
+          onPick={onSort}
+          items={SORTS.map((item) => ({
+            id: item,
+            icon: PIECE_SORT_ICON[item],
+            label: item,
+          }))} />
 
-      <p className="mb-2 mt-5 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
-        Categories
-      </p>
-      <details ref={combo} className="cat-combo lg:hidden">
-        <summary className="rail-row rail-row-on">
-          <Icon icon={SLOT_ICON[currentSlot.id]} size="sm" className="shrink-0" />
-          <span className="min-w-0 flex-1 truncate">{currentSlot.label}</span>
-          <Icon icon={CaretDown} size="xs" className="cat-chevron shrink-0 opacity-80" />
-        </summary>
-        <div className="cat-combo-panel">
+        <p className="mb-2 mt-5 px-2 text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/55">
+          Categories
+        </p>
+        <details ref={combo} className="cat-combo lg:hidden">
+          <summary className="rail-row rail-row-on">
+            <Icon icon={SLOT_ICON[currentSlot.id]} size="sm" className="shrink-0" />
+            <span className="min-w-0 flex-1 truncate">{currentSlot.label}</span>
+            <Icon icon={CaretDown} size="xs" className="cat-chevron shrink-0 opacity-80" />
+          </summary>
+          <div className="cat-combo-panel">
+            <RailList
+              label="Categories"
+              selected={slot}
+              onPick={(id) => {
+                onSlot(id)
+                combo.current?.removeAttribute("open")
+              }}
+              items={layers.map((item) => ({
+                id: item.id,
+                icon: SLOT_ICON[item.id],
+                label: item.label,
+              }))} />
+          </div>
+        </details>
+        <div className="max-lg:hidden">
           <RailList
             label="Categories"
             selected={slot}
-            onPick={(id) => {
-              onSlot(id)
-              combo.current?.removeAttribute("open")
-            }}
+            onPick={onSlot}
             items={layers.map((item) => ({
               id: item.id,
               icon: SLOT_ICON[item.id],
               label: item.label,
             }))} />
         </div>
-      </details>
-      <div className="max-lg:hidden">
-        <RailList
-          label="Categories"
-          selected={slot}
-          onPick={onSlot}
-          items={layers.map((item) => ({
-            id: item.id,
-            icon: SLOT_ICON[item.id],
-            label: item.label,
-          }))} />
       </div>
     </aside>
   )

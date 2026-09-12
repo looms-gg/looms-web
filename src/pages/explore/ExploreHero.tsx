@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { Sparkle } from "@phosphor-icons/react"
+import { PaintBrush } from "@phosphor-icons/react"
 import type { Piece } from "../../data/catalog"
 import { Icon } from "../../components/ui/Icon"
 import { DEFAULT_FEATURED_LOOKS, type PublicLook } from "../../state/publicLooks"
@@ -46,7 +46,7 @@ export function ExploreHero({
     : looks
 
   return (
-    <section className="plaza-panel hero-wardrobe rounded-[22px] overflow-hidden">
+    <section className="plaza-panel hero-wardrobe rounded-[18px]">
       <div className="hero-dots-container" aria-hidden="true">
         <svg
           className="hero-polka-svg"
@@ -99,7 +99,7 @@ export function ExploreHero({
       </div>
 
       <div className="hero-copy max-w-xl">
-        <h1 className="text-[2.25rem] font-black leading-[1.1] tracking-tight sm:text-[2.75rem] lg:text-[3.15rem] text-balance">
+        <h1 className="text-[2.25rem] font-extrabold leading-[1.1] tracking-tight sm:text-[2.75rem] lg:text-[3.15rem] text-balance">
           <span className="block">Custom skins.</span>
           <span className="block text-primary">No art skills needed!</span>
         </h1>
@@ -112,7 +112,7 @@ export function ExploreHero({
             to="/studio"
             className="btn btn-primary rounded-full pl-5 pr-6 font-extrabold shadow-md active:scale-[0.96] transition-transform"
           >
-            <Icon icon={Sparkle} size="sm" />
+            <Icon icon={PaintBrush} size="sm" />
             Open Studio
           </Link>
           <a
@@ -131,7 +131,7 @@ export function ExploreHero({
       </div>
 
       {/* 3 Friends Posing Together (Intimate Bust Portrait) */}
-      <div className="relative z-10 flex flex-col items-center">
+      <div className="relative z-10 flex flex-col items-center -mb-7 md:-mb-14">
         {crownWorthy && yesterdayTop ? (
           <Link
             to={`/look/${yesterdayTop.id}`}
@@ -171,31 +171,34 @@ export function ExploreHero({
           <HeroPosedFigure
             look={heroLooks[mobileTab]}
             pose={mobileTab === 0 ? "center" : mobileTab === 1 ? "left" : "right"}
+            labelAlign="center"
             loading={loading} />
         </div>
 
         {/* Desktop / Tablet View: 3 friends posing close together (almost a bust) */}
-        <div className="hidden md:flex items-end justify-center w-full max-w-2xl py-2">
-          {/* Friend 2 (Left, leaning in close, forward over top the middle one) */}
-          <HeroPosedFigure
-            look={heroLooks[1]}
-            pose="left"
-            loading={loading}
-            className="z-20 hover:z-30" />
+        <div className="hero-stage hidden w-full max-w-2xl py-2 md:flex md:items-end md:justify-center">
+          <div className="hero-trio flex items-end">
+            {/* Friend 2 (Left, leaning in close, forward over top the middle one) */}
+            <HeroPosedFigure
+              look={heroLooks[1]}
+              pose="left"
+              loading={loading}
+              className="z-20 hover:z-30" />
 
-          {/* Friend 1 (Center, prominent, moved left to wrap arm behind left friend) */}
-          <HeroPosedFigure
-            look={heroLooks[0]}
-            pose="center"
-            loading={loading}
-            className="z-10 scale-105 hover:z-30 -ml-20 sm:-ml-26 lg:-ml-32" />
+            {/* Friend 1 (Center, prominent, moved left to wrap arm behind left friend) */}
+            <HeroPosedFigure
+              look={heroLooks[0]}
+              pose="center"
+              loading={loading}
+              className="z-10 scale-105 hover:z-30 -ml-25 sm:-ml-31 lg:-ml-37" />
 
-          {/* Friend 3 (Right, leaning in close) */}
-          <HeroPosedFigure
-            look={heroLooks[2]}
-            pose="right"
-            loading={loading}
-            className="z-10 hover:z-30 -ml-16 sm:-ml-20 lg:-ml-24" />
+            {/* Friend 3 (Right, leaning in close) */}
+            <HeroPosedFigure
+              look={heroLooks[2]}
+              pose="right"
+              loading={loading}
+              className="z-10 hover:z-30 -ml-19 sm:-ml-25 lg:-ml-29" />
+          </div>
         </div>
       </div>
     </section>

@@ -3,7 +3,7 @@ import {
   Megaphone,
   Info,
   Warning,
-  Sparkle,
+  Star,
   ArrowRight,
 } from "@phosphor-icons/react"
 import { Icon } from "../ui/Icon"
@@ -65,7 +65,7 @@ export function SiteBanner() {
       case "accent":
         return {
           wrapper: "bg-secondary/15 text-secondary-content border-secondary/25",
-          icon: Sparkle,
+          icon: Star,
           iconColor: "text-secondary",
           btnClass: "btn-secondary",
         }

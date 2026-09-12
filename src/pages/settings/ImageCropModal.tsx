@@ -110,7 +110,7 @@ export function ImageCropModal({
       open={open}
       onClose={onClose}
       label={title}
-      panelClassName="modal-panel relative w-full max-w-sm rounded-2xl border border-white/10 bg-base-300 p-5 shadow-2xl"
+      panelClassName="modal-panel relative w-full max-w-sm rounded-[18px] border border-white/10 bg-base-300 p-5 shadow-2xl"
     >
       <div className="flex items-center gap-3 pr-8">
         <h2 className="text-lg font-extrabold tracking-tight text-balance">{title}</h2>
@@ -174,7 +174,7 @@ export function ImageCropModal({
       <div className="mt-3 flex items-center gap-1.5">
         <button
           type="button"
-          className="btn btn-ghost btn-xs size-9 rounded-full font-black transition-transform duration-150 ease-out active:scale-[0.96]"
+          className="btn btn-ghost btn-xs size-9 rounded-full font-extrabold transition-transform duration-150 ease-out active:scale-[0.96]"
           aria-label="Zoom out"
           disabled={!canConfirm || busy}
           onPointerDown={(e) => e.preventDefault()}
@@ -194,7 +194,7 @@ export function ImageCropModal({
           onChange={(e) => setCrop((c) => ({ ...c, zoom: Number(e.target.value) }))} />
         <button
           type="button"
-          className="btn btn-ghost btn-xs size-9 rounded-full font-black transition-transform duration-150 ease-out active:scale-[0.96]"
+          className="btn btn-ghost btn-xs size-9 rounded-full font-extrabold transition-transform duration-150 ease-out active:scale-[0.96]"
           aria-label="Zoom in"
           disabled={!canConfirm || busy}
           onPointerDown={(e) => e.preventDefault()}

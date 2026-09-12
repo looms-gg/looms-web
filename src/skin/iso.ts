@@ -222,8 +222,9 @@ export async function isoPieceThumb(
   priority = false,
   bakeFx = true,
 ): Promise<IsoThumbResult> {
-  // v69: single-piece previews show only painted meshes, cropped tighter.
-  const key = `piece:v69:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
+  // v72: single-piece previews show only painted meshes, cropped tighter,
+  // with a thicker rim outline and a matching punch shadow.
+  const key = `piece:v72:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)
@@ -274,8 +275,8 @@ export async function isoOutfitThumb(
   bakeFx = true,
 ): Promise<IsoThumbResult> {
   const outfitKey = pieces.map((piece) => piece.id).join("|") || "empty"
-  // v66: darker off-white rim, 1/3 thicker outline.
-  const key = `outfit:v66:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
+  // v69: thicker rim outline and matching punch shadow.
+  const key = `outfit:v69:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)

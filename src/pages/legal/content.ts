@@ -24,7 +24,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
       {
         heading: "Who we are",
         paragraphs: [
-          `looms is operated by ser0th in the United States. This policy explains what personal data we process when you use the looms website and related services.`,
+          `looms is operated by PyreDev in the United States. This policy explains what personal data we process when you use the looms website and related services.`,
           `Contact for privacy requests: ${CONTACT} Community questions can also go through Discord at ${DISCORD}.`,
         ],
       },
@@ -84,7 +84,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         heading: "The service",
         paragraphs: [
           "looms is a free modular Minecraft skin creator. You can browse clothing layers, add pieces to your wardrobe at no cost, assemble outfits in Studio, and export a vanilla PNG skin for personal use.",
-          "There are no paid unlocks, microtransactions, or ads in the current product. The service is provided as-is by ser0th.",
+          "There are no paid unlocks, microtransactions, or ads in the current product. The service is provided as-is by PyreDev.",
         ],
       },
       {

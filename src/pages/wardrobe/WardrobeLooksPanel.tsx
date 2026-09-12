@@ -10,6 +10,7 @@ import { useWardrobe, type Look } from "../../state/wardrobe"
 import { LookInspector } from "./LookInspector"
 import { InspectorModal } from "./InspectorModal"
 import { WardrobeEmpty } from "./WardrobeEmpty"
+import { EmptyState } from "../../components/ui/EmptyState"
 
 /** Resolve a look's layers fresh each render so late-loading catalog pieces appear. */
 function outfitOf(look: Look) {
@@ -67,19 +68,19 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
             </div>
 
             {filteredLooks.length === 0 ? (
-              <div className="grid place-items-center rounded-[18px] border border-dashed border-base-content/15 bg-base-200 px-6 py-12 text-center">
-                <p className="text-base font-extrabold">No looks match</p>
-                <p className="mt-1 text-sm text-base-content/65">
-                  No saved looks match your search.
-                </p>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm mt-4 rounded-full font-extrabold"
-                  onClick={() => setLookQuery("")}
-                >
-                  Reset search
-                </button>
-              </div>
+              <EmptyState
+                title="No looks match"
+                body="No saved looks match your search."
+                action={
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm mt-4 rounded-full font-extrabold"
+                    onClick={() => setLookQuery("")}
+                  >
+                    Reset search
+                  </button>
+                }
+              />
             ) : (
               <RackGrid>
                 {filteredLooks.map((look, i) => {

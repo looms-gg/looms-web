@@ -97,7 +97,7 @@ export function ResetPasswordPage() {
         <>
           <h1 className="text-2xl font-extrabold tracking-tight">Choose a new password</h1>
           <p className="mt-1 text-sm leading-relaxed text-base-content/60">
-            Pick something you can remember — at least 6 characters.
+            Pick something you can remember, at least 6 characters.
           </p>
 
           {errorMsg ? (

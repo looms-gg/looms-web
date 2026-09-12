@@ -5,7 +5,7 @@ import {
   Info,
   FloppyDisk,
   Warning,
-  Sparkle,
+  Star,
   ArrowRight,
   X,
 } from "@phosphor-icons/react"
@@ -92,7 +92,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
       case "accent":
         return {
           wrapper: "bg-secondary/15 text-secondary-content border-secondary/25",
-          icon: Sparkle,
+          icon: Star,
           iconColor: "text-secondary",
           btnClass: "btn-secondary",
         }
@@ -135,10 +135,10 @@ export function BannerSettings({ adminId }: { adminId: string }) {
     <div className="max-w-2xl space-y-8">
       {/* Live Preview */}
       <div className="space-y-2">
-        <label className="text-xs font-black uppercase tracking-wider text-base-content/60">
+        <label className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
           Live Preview
         </label>
-        <div className="overflow-hidden rounded-2xl border border-base-content/15 bg-base-300/30 p-1 shadow-sm">
+        <div className="overflow-hidden rounded-[18px] border border-base-content/15 bg-base-300/30 p-1 shadow-sm">
           <aside
             className={`w-full rounded-xl border px-4 py-2.5 transition-colors duration-200 ${preview.wrapper}`}
           >
@@ -171,9 +171,9 @@ export function BannerSettings({ adminId }: { adminId: string }) {
       {/* Editor Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Active Toggle */}
-        <div className="flex items-center justify-between rounded-2xl border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/20 hover:bg-base-200/80 shadow-sm">
+        <div className="flex items-center justify-between rounded-[18px] border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/20 hover:bg-base-200/80 shadow-sm">
           <div>
-            <h4 className="text-sm font-black text-base-content">Site Announcement Active</h4>
+            <h4 className="text-sm font-extrabold text-base-content">Site Announcement Active</h4>
             <p className="text-xs text-base-content/60 text-pretty">
               When enabled, this banner is displayed across the top of all pages.
             </p>
@@ -198,7 +198,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
             id="banner-text"
             rows={2}
             className="textarea textarea-bordered w-full font-medium focus:outline-none focus:border-primary"
-            placeholder="e.g. 🚀 Welcome to looms! Try out the new 3D Studio layers."
+            placeholder="e.g. Welcome to looms! Try out the new 3D Studio layers."
             maxLength={MAX_LIMITS.SITE_BANNER_TEXT}
             value={text}
             onChange={(e) => setText(e.target.value)} />
@@ -206,7 +206,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
 
         {/* Style Selection */}
         <div className="space-y-2">
-          <label className="text-xs font-black uppercase tracking-wider text-base-content/60">
+          <label className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
             Color Style
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -241,7 +241,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
         {/* Optional Link & Label */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label htmlFor="banner-link-url" className="text-xs font-black uppercase tracking-wider text-base-content/60">
+            <label htmlFor="banner-link-url" className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
               Link URL (Optional)
             </label>
             <input
@@ -254,7 +254,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="banner-link-label" className="text-xs font-black uppercase tracking-wider text-base-content/60">
+            <label htmlFor="banner-link-label" className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
               Button Label
             </label>
             <input
@@ -269,9 +269,9 @@ export function BannerSettings({ adminId }: { adminId: string }) {
         </div>
 
         {/* Dismissible Toggle */}
-        <div className="flex items-center justify-between rounded-2xl border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/20 hover:bg-base-200/80 shadow-sm">
+        <div className="flex items-center justify-between rounded-[18px] border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/20 hover:bg-base-200/80 shadow-sm">
           <div>
-            <h4 className="text-sm font-black text-base-content">Dismissible by Users</h4>
+            <h4 className="text-sm font-extrabold text-base-content">Dismissible by Users</h4>
             <p className="text-xs text-base-content/60 text-pretty">
               Allows users to click 'x' to dismiss this announcement on their device.
             </p>
@@ -301,7 +301,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
           <button
             type="submit"
             disabled={saving}
-            className="btn btn-primary min-h-11 rounded-full font-black px-6 gap-2 shadow-sm transition-colors active:scale-[0.96] transition-transform"
+            className="btn btn-primary min-h-11 rounded-full font-extrabold px-6 gap-2 shadow-sm transition-colors active:scale-[0.96] transition-transform"
           >
             <Icon icon={FloppyDisk} className={saving ? "animate-spin" : ""} />
             {saving ? "Saving..." : "Save Banner"}

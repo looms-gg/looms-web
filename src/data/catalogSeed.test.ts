@@ -7,7 +7,7 @@ describe("catalogSeed", () => {
     const seeded = fixturePieces()
     replaceCatalog(seeded)
     expect(seeded).toHaveLength(22)
-    expect(getPiece("winter-coat")?.maker).toBe("ser0th")
+    expect(getPiece("winter-coat")?.maker).toBe("PyreDev")
     expect(getPiece("ink-fall")?.covers).toEqual(["head", "torso"])
   })
 })

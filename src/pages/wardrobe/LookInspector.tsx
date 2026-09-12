@@ -40,8 +40,8 @@ export function LookInspector({
   }
 
   return (
-    <aside className={className}>
-      <div className="overflow-hidden rounded-[14px] bg-base-300">
+    <aside className={`inspector-body ${className}`}>
+      <div className="overflow-hidden rounded-[14px] bg-base-200">
         <IsoThumb
           outfit={outfit}
           bodyId={look.bodyId}
@@ -50,7 +50,7 @@ export function LookInspector({
           alt={look.name} />
       </div>
 
-      <div className="mt-4 space-y-4">
+      <div className="space-y-4">
         <div>
           <InlineEditableText
             value={look.name}

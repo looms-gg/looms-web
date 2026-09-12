@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react"
-import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom"
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import { useWardrobe } from "../state/wardrobe"
 import {
   DEFAULT_FEATURED_LOOKS,
@@ -20,6 +20,9 @@ import { CommentsSection } from "../components/comments/CommentsSection"
 import { AuthModal } from "../components/auth/AuthModal"
 import { useAuthOptional } from "../state/auth"
 import { setPendingAction } from "../lib/pendingAction"
+import { formatErrorMessage } from "../lib/errorFormat"
+import { EmptyState } from "../components/ui/EmptyState"
+import { ButtonLink } from "../components/ui/Button"
 import { LookSheet } from "./look/LookSheet"
 import { PieceSkeleton } from "./piece/PieceSkeleton"
 
@@ -37,6 +40,7 @@ export function LookPage() {
 
   const [look, setLook] = useState<PublicLook | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [authOpen, setAuthOpen] = useState(false)
 
   useEffect(() => {
@@ -74,8 +78,11 @@ export function LookPage() {
           setLoading(false)
         }
       })
-      .catch(() => {
-        if (active) setLoading(false)
+      .catch((err) => {
+        if (active) {
+          setError(formatErrorMessage(err))
+          setLoading(false)
+        }
       })
 
     return () => {
@@ -96,7 +103,19 @@ export function LookPage() {
   }
 
   if (!look) {
-    return <Navigate to="/" replace />
+    return (
+      <div className="mx-auto max-w-md py-16">
+        <EmptyState
+          title={error ? "Couldn't load this look" : "Look not found"}
+          body={error ?? "This look may have been removed, or the link is wrong."}
+          action={
+            <ButtonLink to="/" variant="primary" className="mt-4 font-extrabold">
+              Explore looks
+            </ButtonLink>
+          }
+        />
+      </div>
+    )
   }
 
   const outfit = piecesFromEquipped(equippedFromStack(look.stack), look.stack)

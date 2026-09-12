@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import {
   CloudArrowUp,
   MagnifyingGlass,
-  Sparkle,
+  PaintBrush,
 } from "@phosphor-icons/react"
 import { SLOT_LABEL } from "../data/catalog"
 import { ExploreRail } from "../components/explore/ExploreRail"
@@ -31,7 +31,7 @@ import { ExploreRack } from "./explore/ExploreRack"
 import { MAX_LIMITS } from "../lib/sanitize"
 import { formatErrorMessage } from "../lib/errorFormat"
 
-const RAIL_STICKY_OFFSET = 88
+const RESULTS_TOP_OFFSET = 88
 
 export function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -70,7 +70,7 @@ export function ExplorePage() {
     lastSlot.current = slot
     const grid = resultsRef.current
     if (!grid) return
-    const top = grid.getBoundingClientRect().top + window.scrollY - RAIL_STICKY_OFFSET
+    const top = grid.getBoundingClientRect().top + window.scrollY - RESULTS_TOP_OFFSET
     if (top > 0 && window.scrollY > top) {
       window.scrollTo({
         top,
@@ -209,7 +209,7 @@ export function ExplorePage() {
 
       <section
         id="wardrobe"
-        className="flex flex-col gap-4 rounded-[22px] bg-base-200 p-5 md:flex-row md:items-center md:justify-between"
+        className="flex flex-col gap-4 rounded-[18px] bg-base-200 p-5 md:flex-row md:items-center md:justify-between"
       >
         <div>
           <h2 className="text-2xl font-extrabold tracking-tight">
@@ -270,7 +270,7 @@ export function ExplorePage() {
                 }
               }}
             >
-              <Icon icon={Sparkle} size="sm" />
+              <Icon icon={PaintBrush} size="sm" />
               <span className="hidden sm:inline">Open Studio</span>
             </button>
           )}

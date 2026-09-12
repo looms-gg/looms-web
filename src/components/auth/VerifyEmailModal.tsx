@@ -59,10 +59,10 @@ export function VerifyEmailModal() {
     >
       {emailVerified ? (
         <div className="text-center">
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-success/15 text-success">
+          <span className="mx-auto grid size-12 place-items-center rounded-[18px] bg-success/15 text-success">
             <Icon icon={CheckCircle} size="lg" />
           </span>
-          <h2 id="verify-email-title" className="mt-4 text-2xl font-black tracking-tight">
+          <h2 id="verify-email-title" className="mt-4 text-2xl font-extrabold tracking-tight">
             You're in
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-base-content/65">
@@ -71,12 +71,12 @@ export function VerifyEmailModal() {
         </div>
       ) : (
         <div className="text-center">
-          <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <span className="mx-auto grid size-12 place-items-center rounded-[18px] bg-primary/10 text-primary">
             <Icon icon={EnvelopeSimple} size="lg" />
           </span>
           <h2
             id="verify-email-title"
-            className="mt-4 text-2xl font-black tracking-tight text-balance"
+            className="mt-4 text-2xl font-extrabold tracking-tight text-balance"
           >
             Check your inbox
           </h2>

@@ -1,28 +1,12 @@
-import type { CSSProperties, ReactNode } from "react"
+import type { CSSProperties } from "react"
 import type { Piece } from "../../data/catalog"
 import type { SlotFilter, Sort } from "../../lib/exploreBrowse"
 import type { LookModelFilter, LookSort, PublicLook } from "../../state/publicLooks"
 import { PieceTile } from "../../components/piece/PieceTile"
 import { LookTile } from "../../components/look/LookTile"
 import { RackGrid } from "../../components/piece/RackGrid"
-
-function EmptyPanel({
-  title,
-  body,
-  action,
-}: {
-  title: string
-  body: ReactNode
-  action?: ReactNode
-}) {
-  return (
-    <div className="grid place-items-center rounded-[18px] border border-dashed border-base-content/15 bg-base-200 px-6 py-16 text-center">
-      <p className="text-lg font-extrabold">{title}</p>
-      <p className="mt-1 max-w-sm text-sm text-base-content/65">{body}</p>
-      {action}
-    </div>
-  )
-}
+import { EmptyState } from "../../components/ui/EmptyState"
+import { Button } from "../../components/ui/Button"
 
 export function ExploreRack({
   mode = "pieces",
@@ -32,11 +16,6 @@ export function ExploreRack({
   filtered,
   looks = [],
   filteredLooks = [],
-  slot,
-  sort,
-  lookSort = "Trending",
-  model = "all",
-  query,
   onReset,
   onLookLikeCountChange,
 }: {
@@ -58,31 +37,27 @@ export function ExploreRack({
   if (mode === "looks") {
     if (loading && looks.length === 0) {
       return (
-        <EmptyPanel title="Opening the wardrobe" body="Gathering community published looks." />
+        <EmptyState title="Opening the wardrobe" body="Gathering community published looks." />
       )
     }
     if (error && looks.length === 0) {
-      return <EmptyPanel title="Couldn't load looks" body={error} />
+      return <EmptyState title="Couldn't load looks" body={error} />
     }
     if (filteredLooks.length === 0) {
       return (
-        <EmptyPanel
+        <EmptyState
           title="No looks found"
           body="Try another search term or reset filters."
           action={
-            <button
-              type="button"
-              className="btn btn-primary mt-4 rounded-full font-extrabold"
-              onClick={onReset}
-            >
+            <Button variant="primary" className="mt-4 font-extrabold" onClick={onReset}>
               Reset filters
-            </button>
+            </Button>
           }
         />
       )
     }
     return (
-      <RackGrid key={`looks:${model}:${lookSort}:${query}`}>
+      <RackGrid>
         {filteredLooks.map((look, i) => (
           <div
             key={look.id}
@@ -101,31 +76,27 @@ export function ExploreRack({
 
   if (loading && pieces.length === 0) {
     return (
-      <EmptyPanel title="Opening the racks" body="Pulling pieces from Explore." />
+      <EmptyState title="Opening the racks" body="Pulling pieces from Explore." />
     )
   }
   if (error && pieces.length === 0) {
-    return <EmptyPanel title="Couldn't load Explore" body={error} />
+    return <EmptyState title="Couldn't load Explore" body={error} />
   }
   if (filtered.length === 0) {
     return (
-      <EmptyPanel
+      <EmptyState
         title="Nothing in this rack"
         body="Try another category, or clear search."
-        action={
-          <button
-            type="button"
-            className="btn btn-primary mt-4 rounded-full font-extrabold"
-            onClick={onReset}
-          >
-            Reset filters
-          </button>
-        }
+          action={
+            <Button variant="primary" className="mt-4 font-extrabold" onClick={onReset}>
+              Reset filters
+            </Button>
+          }
       />
     )
   }
   return (
-    <RackGrid key={`${slot}:${sort}:${query}`}>
+    <RackGrid>
       {filtered.map((piece, i) => (
         <div
           key={piece.id}

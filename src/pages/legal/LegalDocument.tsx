@@ -26,7 +26,7 @@ export function LegalDocument({ docId }: { docId: LegalDocId }) {
           <Link
             key={link.id}
             to={`/${link.id}`}
-            className={`btn btn-sm rounded-full font-bold ${
+            className={`btn btn-sm btn-pill font-bold ${
               link.id === docId ? "btn-primary" : "btn-ghost border border-base-content/15"
             }`}
           >

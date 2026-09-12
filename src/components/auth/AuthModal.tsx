@@ -141,7 +141,7 @@ export function AuthModal({
         if (error) {
           setErrorMsg(formatErrorMessage(error))
         } else {
-          setSuccessMsg("Link sent — check your inbox.")
+          setSuccessMsg("Link sent. Check your inbox.")
         }
       } else if (mode === "forgot") {
         const { error } = await resetPasswordForEmail({
@@ -151,7 +151,7 @@ export function AuthModal({
         if (error) {
           setErrorMsg(formatErrorMessage(error))
         } else {
-          setSuccessMsg("Reset link sent — check your inbox.")
+          setSuccessMsg("Reset link sent. Check your inbox.")
         }
       }
     } catch (err: unknown) {

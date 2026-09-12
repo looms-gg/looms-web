@@ -11,7 +11,7 @@ looms is a **100% free modular character creator for Minecraft skins**. Think "d
 - **Live site:** https://looms.gg/
 - **Discord:** https://discord.gg/UNTRgHBBPb
 - **GitHub:** https://github.com/looms-gg/looms-web (open source)
-- **Operator:** ser0th, solo developer, United States
+- **Operator:** PyreDev, solo developer, United States
 - **Status:** open beta, launched September 2026, actively developed
 
 **Core loop:** Explore → add pieces (free) → Wardrobe → stack layers in Studio → export & wear in-game.

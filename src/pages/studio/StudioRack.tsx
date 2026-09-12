@@ -46,7 +46,7 @@ function PieceRackRow({
         aria-pressed={on}
         aria-label={on ? `Take off ${piece.name}` : `Wear ${piece.name}`}
         onClick={() => (on ? onClear(piece.slot) : onWear(piece.id))}
-        className={`studio-piece studio-piece-row flex w-full items-center gap-3 rounded-[12px] p-2 text-left cursor-pointer ${
+        className={`studio-piece studio-piece-row flex w-full items-center gap-3 rounded-[10px] p-2 text-left cursor-pointer ${
           on ? "studio-piece-on" : ""
         }`}
       >
@@ -288,7 +288,7 @@ export function StudioRack({
           <div className="studio-wardrobe-list space-y-3">
             {/* Skin Tone Section - Sticky to top */}
             <div className="sticky top-0 z-10 bg-base-200 pt-1 pb-2 -mt-1">
-              <div className="rounded-[14px] bg-base-300/85 p-3 shadow-xs border border-white/5">
+              <div className="rounded-[10px] bg-base-300/85 p-3 shadow-xs border border-white/5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span
@@ -469,7 +469,7 @@ export function StudioRack({
               always reachable, even with the eyes grid scrolled down */}
           {equippedEyes ? (
             <div className="studio-eye-dock sticky bottom-0 z-10 bg-base-200 pt-2 pb-1 -mb-1">
-              <div className="rounded-[14px] bg-base-300/85 p-3 shadow-xs border border-white/5">
+              <div className="rounded-[10px] bg-base-300/85 p-3 shadow-xs border border-white/5">
                 <div className="flex items-center justify-between text-xs mb-1.5 min-h-5">
                   <span className="font-extrabold text-base-content/60 flex items-center gap-1.5">
                     <Icon icon={SlidersHorizontal} size="xs" className="text-base-content/40" />
@@ -516,7 +516,7 @@ export function StudioRack({
       ) : searching ? (
         <div className="studio-wardrobe-clip">
           {searchSlots.length === 0 ? (
-            <div className="mt-4 grid flex-1 place-items-center rounded-[12px] border border-dashed border-base-content/15 px-3 py-8 text-center">
+            <div className="mt-4 grid flex-1 place-items-center rounded-[10px] border border-dashed border-base-content/15 px-3 py-8 text-center">
               <p className="font-extrabold">No pieces match</p>
               <p className="mt-1 text-sm text-base-content/65">
                 Nothing in your wardrobe matches "{pieceQuery.trim()}".
@@ -545,7 +545,7 @@ export function StudioRack({
           )}
         </div>
       ) : !hasOwned ? (
-        <div className="mt-4 grid flex-1 place-items-center rounded-[12px] border border-dashed border-base-content/15 px-3 py-8 text-center">
+        <div className="mt-4 grid flex-1 place-items-center rounded-[10px] border border-dashed border-base-content/15 px-3 py-8 text-center">
           <p className="font-extrabold">Nothing unlocked yet</p>
           <p className="mt-1 text-sm text-base-content/65">
             Find pieces in Explore, or customize your body & eyes in Appearance.

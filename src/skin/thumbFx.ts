@@ -15,10 +15,13 @@
 //    faded in from the left edge (transparent until 50%, full past 64%)
 export const ISO_RIM_FILL = "#d4cec2"
 
-const PUNCH_X = 10
-const PUNCH_Y = 5
-const RIM_X = 5.33
-const RIM_Y = 5.33
+// One thickness for the whole baked effect: the punch shadow's offset and the
+// rim highlight's offset must match or one band reads wider than the other.
+const OUTLINE = 8
+const PUNCH_X = OUTLINE
+const PUNCH_Y = OUTLINE
+const RIM_X = OUTLINE
+const RIM_Y = OUTLINE
 const SHADOW_ALPHA = 0.35
 // feComponentTransfer discrete tableValues="0 1": alpha ≥ 0.5 → fully opaque.
 const ALPHA_THRESHOLD = 128
@@ -90,12 +93,14 @@ function normalizeFigure(
   src: CanvasImageSource,
   width: number,
   height: number,
+  fillW = FIGURE_FILL_W,
+  fillH = FIGURE_FILL_H,
 ): { canvas: HTMLCanvasElement; bounds: OpaqueRect } | null {
   const bounds = opaqueBounds(src, width, height)
   if (!bounds) return null
   const scale = Math.min(
-    (width * FIGURE_FILL_W) / bounds.w,
-    (height * FIGURE_FILL_H) / bounds.h,
+    (width * fillW) / bounds.w,
+    (height * fillH) / bounds.h,
   )
   const normalized = makeCanvas(width, height)
   const ctx = normalized.getContext("2d")
@@ -157,15 +162,23 @@ function applyRimMask(layer: HTMLCanvasElement, figure: OpaqueRect) {
 /**
  * Composite shadow + rim + figure into a single PNG data URL. Throws when
  * canvas/2D is unavailable; callers should fall back to the un-baked image.
+ *
+ * `normalize` (default true) crops to the figure and rescales it to the tile
+ * fill. Pass false to bake the camera's own framing untouched — the hero bust
+ * is already framed tightly and only shrinks when run through the tile fill.
  */
 export function compositeIsoThumbFx(
   src: CanvasImageSource,
   width: number,
   height: number,
+  options?: { normalize?: boolean; fillW?: number; fillH?: number },
 ): string {
   if (width <= 0 || height <= 0) throw new Error("thumbFx: empty source")
 
-  const norm = normalizeFigure(src, width, height)
+  const norm =
+    options?.normalize === false
+      ? null
+      : normalizeFigure(src, width, height, options?.fillW, options?.fillH)
   const normalized = norm?.canvas ?? src
   const figure = norm?.bounds ?? { x: 0, y: 0, w: width, h: height }
   const silhouette = hardSilhouette(normalized, width, height)

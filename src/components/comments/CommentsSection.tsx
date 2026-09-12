@@ -19,6 +19,7 @@ import { useAuthOptional } from "../../state/auth"
 import { AuthModal } from "../auth/AuthModal"
 import { ReportModal } from "../moderation/ReportModal"
 import { Icon } from "../ui/Icon"
+import { Bone } from "../ui/Bone"
 import { MakerLink } from "../piece/MakerLink"
 
 function formatWhen(ts: number) {
@@ -71,7 +72,7 @@ function CommentComposer({
       </label>
       <textarea
         id={id}
-        className="textarea textarea-bordered min-h-24 w-full rounded-2xl bg-base-100 text-sm leading-relaxed"
+        className="textarea textarea-bordered min-h-24 w-full rounded-[18px] bg-base-100 text-sm leading-relaxed"
         placeholder={placeholder}
         maxLength={MAX_LIMITS.COMMENT}
         value={body}
@@ -367,7 +368,7 @@ export function CommentsSection({
   const commentCount = threads.reduce((n, t) => n + 1 + t.replies.length, 0)
 
   return (
-    <section className="rounded-[22px] bg-base-200 p-5 md:p-7" aria-label="Comments">
+    <section className="rounded-[18px] bg-base-200 p-5 md:p-7" aria-label="Comments">
       <div className="mb-4 flex items-baseline gap-2">
         <h2 className="text-lg font-extrabold tracking-tight">Comments</h2>
         <span className="text-xs font-extrabold tabular-nums text-base-content/50">
@@ -424,7 +425,11 @@ export function CommentsSection({
       ) : null}
 
       {loading ? (
-        <p className="text-sm font-bold text-base-content/50">Loading comments…</p>
+        <div className="space-y-3" aria-busy="true" aria-label="Loading comments">
+          {[1, 2, 3].map((n) => (
+            <Bone key={n} className="h-16" rounded="rounded-[18px]" />
+          ))}
+        </div>
       ) : threads.length === 0 ? (
         <p className="text-sm font-bold text-base-content/50">No comments yet.</p>
       ) : (

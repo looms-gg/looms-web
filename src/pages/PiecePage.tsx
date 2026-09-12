@@ -1,8 +1,10 @@
 import { useEffect, useState, type CSSProperties } from "react"
-import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom"
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import { getPiece } from "../data/catalog"
 import { AuthModal } from "../components/auth/AuthModal"
 import { PieceComments } from "../components/piece/PieceComments"
+import { EmptyState } from "../components/ui/EmptyState"
+import { ButtonLink } from "../components/ui/Button"
 import { useWardrobe } from "../state/wardrobe"
 import { useCatalog } from "../state/catalog"
 import { useAuthOptional } from "../state/auth"
@@ -62,7 +64,19 @@ export function PiecePage() {
 
   if (!piece) {
     if (loading) return <PieceSkeleton />
-    return <Navigate to="/" replace />
+    return (
+      <div className="mx-auto max-w-md py-16">
+        <EmptyState
+          title="Piece not found"
+          body="This piece may have been removed, or the link is wrong."
+          action={
+            <ButtonLink to="/" variant="primary" className="mt-4 font-extrabold">
+              Explore pieces
+            </ButtonLink>
+          }
+        />
+      </div>
+    )
   }
 
   const currentPiece = piece

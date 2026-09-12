@@ -130,7 +130,7 @@ export function ProfileSection() {
               className="size-14 rounded-full object-cover"
               style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
           ) : (
-            <span className="grid size-14 shrink-0 place-items-center rounded-full bg-primary/25 text-primary text-base font-black">
+            <span className="grid size-14 shrink-0 place-items-center rounded-full bg-primary/25 text-primary text-base font-extrabold">
               {initialsFromUsername(profile?.username ?? "?")}
             </span>
           )}

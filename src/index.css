@@ -93,8 +93,8 @@
   --prussian-blue: #131418;
   --iso-punch-x: 10px;
   --iso-punch-y: 5px;
-  --iso-rim-x: 5.33px;
-  --iso-rim-y: 5.33px;
+  --iso-rim-x: 4px;
+  --iso-rim-y: 4px;
   --iso-figure-size: 78%;
   --plaza-home: #181a22;
   --plaza-chin: #1e202a;
@@ -491,6 +491,35 @@ label input.grow:focus-visible,
   transition-duration: 150ms;
 }
 
+/* Detail dialogs (wardrobe look/upload edit, rename): a landscape 4:3 panel
+   with a preview column and a controls column. Sized to fit the controls so
+   desktop never needs an inner scroller; small screens stack and scroll. */
+.inspector-panel {
+  container-type: inline-size;
+  height: min(42rem, 88vh);
+}
+
+@media (max-width: 767px) {
+  .inspector-panel {
+    height: auto;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+.inspector-body {
+  display: grid;
+  gap: 1.75rem;
+  align-content: center;
+  height: 100%;
+}
+
+@container (min-width: 44rem) {
+  .inspector-body {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  }
+}
+
 body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   background: transparent;
   border-color: transparent;
@@ -856,7 +885,7 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
 
 .hero-wardrobe {
   position: relative;
-  overflow: hidden;
+  overflow: clip;
   display: grid;
   gap: 2rem;
   align-items: center;
@@ -868,8 +897,68 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
 
 @media (min-width: 768px) {
   .hero-wardrobe {
-    grid-template-columns: minmax(18rem, 1.25fr) minmax(0, 1fr);
     padding: 2.75rem 3rem;
+  }
+}
+
+/* Two columns only once the figure stage has room for the trio plus the
+   side labels that hang past it. Below this the copy stacks above the stage. */
+@media (min-width: 1280px) {
+  .hero-wardrobe {
+    grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+  }
+}
+
+/* The trio is authored at a fixed size. Scale the whole stage to whatever
+   space the grid hands it, so the figures stay as large as the card allows
+   without a side label slipping past the panel edge. */
+.hero-stage {
+  container-type: inline-size;
+}
+
+.hero-trio {
+  zoom: var(--hero-zoom, 1);
+}
+
+@media (min-width: 1280px) {
+  .hero-trio {
+    zoom: var(--hero-zoom, 1.15);
+  }
+
+  @container (max-width: 800px) {
+    .hero-trio { --hero-zoom: 1.12; }
+  }
+  @container (max-width: 760px) {
+    .hero-trio { --hero-zoom: 1.08; }
+  }
+  @container (max-width: 720px) {
+    .hero-trio { --hero-zoom: 1.04; }
+  }
+  @container (max-width: 680px) {
+    .hero-trio { --hero-zoom: 1; }
+  }
+  @container (max-width: 640px) {
+    .hero-trio { --hero-zoom: 0.96; }
+  }
+  @container (max-width: 600px) {
+    .hero-trio { --hero-zoom: 0.92; }
+  }
+  @container (max-width: 560px) {
+    .hero-trio { --hero-zoom: 0.88; }
+  }
+  @container (max-width: 520px) {
+    .hero-trio { --hero-zoom: 0.83; }
+  }
+  @container (max-width: 480px) {
+    .hero-trio { --hero-zoom: 0.78; }
+  }
+}
+
+/* Shift the trio toward the card's open right side once there is room for it
+   (at 1280-1365 the right label already sits near the edge). */
+@media (min-width: 1366px) {
+  .hero-trio {
+    margin-left: 3rem;
   }
 }
 
@@ -878,6 +967,7 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   inset: 0;
   pointer-events: none;
   overflow: hidden;
+  border-radius: inherit;
   z-index: 1;
 }
 
@@ -911,7 +1001,11 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
 }
 
 .hero-dots-grid {
-  animation: hero-polka-drift 18s ease-in-out infinite alternate;
+  animation: none;
+}
+
+.hero-wardrobe:hover .hero-dots-grid {
+  animation: hero-polka-drift 8s ease-in-out infinite alternate;
 }
 
 @keyframes hero-polka-drift {
@@ -1084,6 +1178,10 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   transform: rotate(180deg);
 }
 
+.cat-combo-panel {
+  padding-top: 0.25rem;
+}
+
 .rack-cell {
   min-width: 0;
   /* Keep overflow visible so tile-lift hover translate isn’t clipped */
@@ -1120,9 +1218,9 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   animation-delay: calc(var(--i, 0) * 70ms);
 }
 
-/* Editor teaser skeleton (static — no pulse, no entrance) */
-.editor-bone {
-  background-color: color-mix(in srgb, var(--color-base-content) 9%, transparent);
+/* Static skeleton (no pulse) for calm, non-loading previews. */
+.profile-bone--static {
+  animation: none;
 }
 
 .editor-frame {
@@ -1208,12 +1306,10 @@ html.studio-lock #root {
   from {
     opacity: 0;
     transform: translateY(12px);
-    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
@@ -1751,8 +1847,18 @@ html.studio-lock #root {
   border: 1px solid var(--plaza-line);
 }
 
+/*
+  Explore rail: the Show switcher stays in normal flow so scrolling past it
+  reads as committing to the current tab. The sort/category block below pins
+  to the header and scrolls internally only once it reaches it. The rail
+  stretches to the results column so the sticky block has room to travel.
+*/
 @media (min-width: 64rem) {
   .explore-rail {
+    align-self: stretch;
+  }
+
+  .explore-rail-sticky {
     position: sticky;
     top: 5.5rem;
     z-index: 30;
@@ -1762,15 +1868,27 @@ html.studio-lock #root {
   }
 }
 
+/* Action geometry has roles: primary and filter actions read as pills, while
+   secondary and utility buttons take the field radius. This keeps a deliberate
+   hierarchy instead of rounding every control the same. Unlayered so it wins
+   over stray rounded-full utilities on buttons. */
 .btn {
+  border-radius: var(--radius-field);
   transition:
     background-color 160ms var(--ease-out-quint),
     color 160ms var(--ease-out-quint),
     transform 140ms var(--ease-out-quint);
 }
 
-.btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+.btn-primary,
+.btn-secondary,
+.btn-accent,
+.btn-pill {
+  border-radius: var(--radius-selector);
+}
+
+.btn-circle {
+  border-radius: 999px;
 }
 
 .btn:active:not(:disabled) {
@@ -1778,14 +1896,11 @@ html.studio-lock #root {
 }
 
 .badge {
+  border-radius: var(--radius-field);
   transition:
     background-color 160ms var(--ease-out-quint),
     color 160ms var(--ease-out-quint),
     transform 140ms var(--ease-out-quint);
-}
-
-button.badge:hover {
-  transform: translateY(-1px);
 }
 
 button.badge:active {
