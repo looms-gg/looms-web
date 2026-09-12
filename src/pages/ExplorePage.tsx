@@ -44,7 +44,7 @@ export function ExplorePage() {
     tabParam === "looks" || isLookLanding ? "looks" : "pieces"
 
   const [query, setQuery] = useState("")
-  const [sort, setSort] = useState<Sort>("Newest")
+  const [sort, setSort] = useState<Sort>("Trending")
   const [slot, setSlot] = useState<SlotFilter>("all")
   const [lookSort, setLookSort] = useState<LookSort>("Trending")
   const [lookModel, setLookModel] = useState<LookModelFilter>("all")

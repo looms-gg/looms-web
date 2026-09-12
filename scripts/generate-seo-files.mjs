@@ -144,6 +144,17 @@ async function main() {
   // 1. robots.txt — a real file, not a 200-HTML SPA shell.
   fs.writeFileSync(path.join(DIST, "robots.txt"), buildRobotsTxt(), "utf8")
 
+  // 1.5 404.html — GitHub Pages serves this file (with a 404 status) for any
+  // path it cannot match. Shipping a copy of the SPA shell lets deep links
+  // like /terms or /settings boot the app and route client-side instead of
+  // showing the raw Pages 404.
+  const indexPath = path.join(DIST, "index.html")
+  if (fs.existsSync(indexPath)) {
+    fs.copyFileSync(indexPath, path.join(DIST, "404.html"))
+  } else {
+    console.warn("⚠️ dist/index.html missing; skipped 404.html generation.")
+  }
+
   // 2. sitemap.xml — canonical, indexable URLs only.
   const catalog = JSON.parse(
     fs.readFileSync(path.join(ROOT, "src/data/catalog-seed.json"), "utf8"),

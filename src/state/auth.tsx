@@ -8,8 +8,9 @@ import {
   type ReactNode,
 } from "react"
 import type { Session, User } from "@supabase/supabase-js"
-import { supabase, type Database, type ProfileRow } from "../lib/supabase"
+import { supabase, type ConnectionProvider, type ConnectionRow, type Database, type ProfileRow } from "../lib/supabase"
 import { isEmailVerified, isUnconfirmedAuthError } from "./emailStatus"
+import type { OAuthProvider } from "../lib/oauth"
 import {
   MAX_LIMITS,
   sanitizeMinecraftUsername,
@@ -19,7 +20,7 @@ import {
 } from "../lib/sanitize"
 import { resolveAvatarUrl } from "./profileDisplay"
 import { formatErrorMessage } from "../lib/errorFormat"
-import { mapProfileRow, PROFILE_SELECT } from "../lib/mapProfileRow"
+import { fetchProfileRow, mapProfileRow } from "../lib/mapProfileRow"
 import { absoluteAppUrl } from "../lib/basePath"
 
 const LAST_SEEN_CLIENT_THROTTLE_MS = 5 * 60 * 1000
@@ -73,9 +74,16 @@ export interface AuthContextValue {
     email: string
     password: string
     username: string
-    minecraftUsername?: string
     captchaToken?: string
   }) => Promise<{ error: Error | null }>
+  signInWithOAuth: (provider: OAuthProvider) => Promise<{ error: Error | null }>
+  completeOnboarding: (username: string) => Promise<{ error: Error | null }>
+  connections: ConnectionRow[]
+  unlinkConnection: (provider: ConnectionProvider) => Promise<{ error: Error | null }>
+  setConnectionFeatured: (
+    provider: ConnectionProvider,
+    featured: boolean,
+  ) => Promise<{ error: Error | null }>
   signInWithOtp: (params: {
     email: string
     captchaToken?: string
@@ -94,6 +102,9 @@ export interface AuthContextValue {
     avatar_url?: string | null
     show_last_seen?: boolean
     show_likes?: boolean
+    notify_likes?: boolean
+    notify_comments?: boolean
+    notify_replies?: boolean
   }) => Promise<{ error: Error | null }>
   refreshProfile: () => Promise<void>
 }
@@ -108,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profileError, setProfileError] = useState<string | null>(null)
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
   const [emailVerifyOpen, setEmailVerifyOpen] = useState(false)
+  const [connections, setConnections] = useState<ConnectionRow[]>([])
   const pendingUnlockRef = useRef<{ email: string; password: string } | null>(null)
   const unlockAttemptAtRef = useRef(0)
   const verifiedFlashTimer = useRef<number | null>(null)
@@ -131,11 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(PROFILE_SELECT)
-        .eq("id", userId)
-        .maybeSingle()
+      const { data, error } = await fetchProfileRow("id", userId)
 
       if (error) {
         setProfileError(formatErrorMessage(error))
@@ -151,6 +159,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const fetchConnections = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profile_connections")
+        .select("user_id, provider, featured, created_at")
+        .eq("user_id", userId)
+      if (error) return
+      if (data) setConnections(data as ConnectionRow[])
+    } catch {
+      // Connections are an enhancement; a failed fetch should never break auth.
+    }
+  }, [])
+
   useEffect(() => {
     let mounted = true
 
@@ -161,7 +182,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(initialSession)
         setUser(initialSession?.user ?? null)
         if (initialSession?.user) {
-          fetchProfile(initialSession.user.id).finally(() => {
+          fetchConnections(initialSession.user.id)
+          void fetchProfile(initialSession.user.id).finally(() => {
             if (mounted) setLoading(false)
           })
           touchLastSeen()
@@ -182,9 +204,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(newSession?.user ?? null)
       if (newSession?.user) {
         await fetchProfile(newSession.user.id)
+        void fetchConnections(newSession.user.id)
         touchLastSeen()
       } else {
         setProfile(null)
+        setConnections([])
       }
       setLoading(false)
     })
@@ -193,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchProfile, touchLastSeen])
+  }, [fetchProfile, fetchConnections, touchLastSeen])
 
   useEffect(() => {
     if (!session?.user) return
@@ -319,17 +343,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
       username,
-      minecraftUsername,
       captchaToken,
     }: {
       email: string
       password: string
       username: string
-      minecraftUsername?: string
       captchaToken?: string
     }) => {
       const cleanUsername = sanitizeUsername(username) || "user"
-      const cleanMc = minecraftUsername ? sanitizeMinecraftUsername(minecraftUsername) : null
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -340,7 +361,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           emailRedirectTo: absoluteAppUrl(),
           data: {
             username: cleanUsername,
-            minecraft_username: cleanMc || null,
           },
         },
       })
@@ -355,7 +375,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const profilePayload: Database["public"]["Tables"]["profiles"]["Insert"] = {
           id: data.user.id,
           username: cleanUsername,
-          minecraft_username: cleanMc || null,
         }
         await supabase.from("profiles").upsert(profilePayload)
         await fetchProfile(data.user.id)
@@ -364,6 +383,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null }
     },
     [fetchProfile, watchUnconfirmed],
+  )
+
+  const signInWithOAuth = useCallback(async (provider: OAuthProvider) => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${absoluteAppUrl()}/auth/callback` },
+    })
+    return { error: error ? new Error(formatErrorMessage(error)) : null }
+  }, [])
+
+  const completeOnboarding = useCallback(
+    async (username: string) => {
+      const clean = sanitizeUsername(username)
+      if (!clean) return { error: new Error("Please choose a display username.") }
+      const { error } = await supabase.rpc("complete_onboarding", { p_username: clean })
+      if (error) return { error: new Error(formatErrorMessage(error)) }
+      if (user) await fetchProfile(user.id)
+      return { error: null }
+    },
+    [user, fetchProfile],
+  )
+
+  const unlinkConnection = useCallback(
+    async (provider: ConnectionProvider) => {
+      const { error } = await supabase.rpc("unlink_connection", { p_provider: provider })
+      if (error) return { error: new Error(formatErrorMessage(error)) }
+      if (user) await fetchConnections(user.id)
+      return { error: null }
+    },
+    [user, fetchConnections],
+  )
+
+  const setConnectionFeatured = useCallback(
+    async (provider: ConnectionProvider, featured: boolean) => {
+      const { error } = await supabase.rpc("set_connection_featured", {
+        p_provider: provider,
+        p_featured: featured,
+      })
+      if (error) return { error: new Error(formatErrorMessage(error)) }
+      if (user) await fetchConnections(user.id)
+      return { error: null }
+    },
+    [user, fetchConnections],
   )
 
   const signInWithOtp = useCallback(
@@ -396,6 +458,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setSession(null)
     setProfile(null)
+    setConnections([])
     setPendingEmail(null)
     setEmailVerifyOpen(false)
     pendingUnlockRef.current = null
@@ -412,6 +475,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setSession(null)
     setProfile(null)
+    setConnections([])
     setPendingEmail(null)
     setEmailVerifyOpen(false)
     pendingUnlockRef.current = null
@@ -429,6 +493,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       avatar_url?: string | null
       show_last_seen?: boolean
       show_likes?: boolean
+      notify_likes?: boolean
+      notify_comments?: boolean
+      notify_replies?: boolean
     }) => {
       if (!user) return { error: new Error("Not authenticated") }
       const cleanUpdates: {
@@ -437,9 +504,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         bio?: string | null
         banner_url?: string | null
         avatar_url?: string | null
-        show_last_seen?: boolean
-        show_likes?: boolean
-      } = {}
+      show_last_seen?: boolean
+      show_likes?: boolean
+      notify_likes?: boolean
+      notify_comments?: boolean
+      notify_replies?: boolean
+    } = {}
 
       if (updates.username !== undefined) {
         cleanUpdates.username = sanitizeUsername(updates.username) || "user"
@@ -469,6 +539,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (updates.show_likes !== undefined) {
         cleanUpdates.show_likes = updates.show_likes
+      }
+      if (updates.notify_likes !== undefined) {
+        cleanUpdates.notify_likes = updates.notify_likes
+      }
+      if (updates.notify_comments !== undefined) {
+        cleanUpdates.notify_comments = updates.notify_comments
+      }
+      if (updates.notify_replies !== undefined) {
+        cleanUpdates.notify_replies = updates.notify_replies
       }
 
       const { error } = await supabase
@@ -530,6 +609,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resendConfirmation,
     signInWithPassword,
     signUpWithPassword,
+    signInWithOAuth,
+    completeOnboarding,
+    connections,
+    unlinkConnection,
+    setConnectionFeatured,
     signInWithOtp,
     resetPasswordForEmail,
     signOut,

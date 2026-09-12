@@ -1,7 +1,7 @@
 import type { GarmentRow, LookRow, ProfileRow } from "../../lib/supabase"
 import { supabase } from "../../lib/supabase"
 import type { LikeTargetType } from "../../state/likeKey"
-import { mapProfileRow, PROFILE_SELECT } from "../../lib/mapProfileRow"
+import { fetchProfileRow, mapProfileRow } from "../../lib/mapProfileRow"
 
 export type LikedTargetRef = {
   target_type: LikeTargetType
@@ -47,11 +47,7 @@ export function orderLikedTargets(
 export async function fetchProfileByUsername(
   username: string,
 ): Promise<ProfileRow | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(PROFILE_SELECT)
-    .eq("username", username)
-    .maybeSingle()
+  const { data, error } = await fetchProfileRow("username", username)
 
   if (error) throw error
   return data ? mapProfileRow(data) : null

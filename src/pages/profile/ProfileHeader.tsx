@@ -6,6 +6,7 @@ import type { ProfileRow } from "../../lib/supabase"
 import { useAuth } from "../../state/auth"
 import { AuthModal } from "../../components/auth/AuthModal"
 import { ReportModal } from "../../components/moderation/ReportModal"
+import { ProfileConnections } from "./ProfileConnections"
 import {
   formatLastSeen,
   initialsFromUsername,
@@ -66,12 +67,15 @@ export function ProfileHeader({
       <div className="space-y-3 px-5 pb-5 pt-14 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h1
-              className="block min-w-0 max-w-full truncate whitespace-nowrap overflow-hidden text-ellipsis text-left text-2xl font-extrabold"
-              title={profile.username}
-            >
-              {profile.username}
-            </h1>
+            <div className="flex min-w-0 items-center gap-2">
+              <h1
+                className="block min-w-0 max-w-full truncate whitespace-nowrap overflow-hidden text-ellipsis text-left text-2xl font-extrabold"
+                title={profile.username}
+              >
+                {profile.username}
+              </h1>
+              <ProfileConnections userId={profile.id} />
+            </div>
 
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-base-content/70">
               {lastSeenLabel ? <span title="Last seen">{lastSeenLabel}</span> : null}

@@ -10,6 +10,7 @@ describe("parseSettingsTab", () => {
 
   it("parses each known tab", () => {
     expect(parseSettingsTab("?tab=profile")).toBe("profile")
+    expect(parseSettingsTab("?tab=connections")).toBe("connections")
     expect(parseSettingsTab("?tab=privacy")).toBe("privacy")
     expect(parseSettingsTab("?tab=uploads")).toBe("uploads")
     expect(parseSettingsTab("?tab=account")).toBe("account")
@@ -22,7 +23,7 @@ describe("parseSettingsTab", () => {
 
 describe("settingsTabQuery", () => {
   it("round-trips every tab", () => {
-    for (const tab of ["profile", "privacy", "uploads", "account"] as const) {
+    for (const tab of ["profile", "connections", "privacy", "uploads", "account"] as const) {
       expect(parseSettingsTab(settingsTabQuery(tab))).toBe(tab)
     }
   })

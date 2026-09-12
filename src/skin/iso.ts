@@ -26,6 +26,7 @@ type Prepared = {
   parts?: SkinPart[]
   model: "slim" | "default"
   bakeFx: boolean
+  fx?: { rim?: number; rimAlpha?: number }
 }
 
 type Job = {
@@ -146,11 +147,19 @@ function enqueue(key: string, prepare: () => Promise<Prepared>, priority = false
   return jobPromise
 }
 
+/** Piece renders carry a lighter rim than full-figure renders: thinner band,
+ *  ~a quarter less opacity. */
+export const PIECE_FX = { rim: 6, rimAlpha: 0.45 } as const
+
 /** Bake shadow+rim into a freshly rendered viewer canvas (same-task read). */
-function bakeViewerCanvas(v: SkinViewer, bakeFx: boolean): string {
+function bakeViewerCanvas(
+  v: SkinViewer,
+  bakeFx: boolean,
+  fx?: Prepared["fx"],
+): string {
   if (!bakeFx) return v.canvas.toDataURL("image/png")
   try {
-    return compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height)
+    return compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height, fx)
   } catch {
     return v.canvas.toDataURL("image/png")
   }
@@ -176,7 +185,7 @@ function captureJob(job: Job, prepared: Prepared) {
 
   try {
     const result: IsoThumbResult = {
-      url: bakeViewerCanvas(v, prepared.bakeFx),
+      url: bakeViewerCanvas(v, prepared.bakeFx, prepared.fx),
       wash: prepared.wash,
     }
     memCache.set(job.key, result)
@@ -222,9 +231,8 @@ export async function isoPieceThumb(
   priority = false,
   bakeFx = true,
 ): Promise<IsoThumbResult> {
-  // v72: single-piece previews show only painted meshes, cropped tighter,
-  // with a thicker rim outline and a matching punch shadow.
-  const key = `piece:v72:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
+  // v75: piece rim lifted to 6px — zoomed pieces (hair) read too thin at 4.
+  const key = `piece:v75:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)
@@ -252,6 +260,7 @@ export async function isoPieceThumb(
           parts: partsFromAtlas(normalized),
           model: skinviewModel(model),
           bakeFx,
+          fx: PIECE_FX,
         }
       },
       priority,
@@ -275,8 +284,8 @@ export async function isoOutfitThumb(
   bakeFx = true,
 ): Promise<IsoThumbResult> {
   const outfitKey = pieces.map((piece) => piece.id).join("|") || "empty"
-  // v69: thicker rim outline and matching punch shadow.
-  const key = `outfit:v69:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
+  // v70: the rim became an inner overlay tinting the render's lit edge.
+  const key = `outfit:v70:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)

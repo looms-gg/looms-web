@@ -219,7 +219,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
       labelledBy="upload-piece-title"
       panelClassName="modal-panel relative w-full max-w-xl rounded-[18px] border border-white/10 bg-base-300 p-6 shadow-2xl sm:p-7 max-h-[90vh] overflow-y-auto"
     >
-        <CloseButton onClick={onClose} className="absolute right-1.5 top-1.5" />
+        <CloseButton onClick={onClose} className="absolute right-3 top-3" />
 
         <div className="flex items-center gap-3 mb-5">
           <span className="grid size-10 place-items-center rounded-xl bg-primary/20 text-primary">

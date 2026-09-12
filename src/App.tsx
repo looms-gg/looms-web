@@ -12,6 +12,7 @@ import { ThemeProvider } from "./state/theme"
 import { AuthProvider } from "./state/auth"
 import { CatalogProvider } from "./state/catalog"
 import { LikesProvider } from "./state/likes"
+import { NotificationsProvider } from "./state/notifications"
 
 // Home page stays eager; the rest load on navigation so the main bundle stays
 // small (Explore pulls the render engine via its own async chunk).
@@ -28,6 +29,11 @@ const SettingsRoute = lazy(() =>
 const ResetPasswordPage = lazy(() =>
   import("./pages/reset-password/ResetPasswordPage").then((m) => ({
     default: m.ResetPasswordPage,
+  })),
+)
+const AuthCallbackPage = lazy(() =>
+  import("./pages/auth/AuthCallbackPage").then((m) => ({
+    default: m.AuthCallbackPage,
   })),
 )
 
@@ -66,10 +72,11 @@ export default function App() {
     <IconContext.Provider value={{ weight: "fill" }}>
     <ThemeProvider>
       <AuthProvider>
-        <LikesProvider>
-          <CatalogProvider>
-            <WardrobeProvider>
-              <BrowserRouter basename={routerBasename()}>
+        <NotificationsProvider>
+          <LikesProvider>
+            <CatalogProvider>
+              <WardrobeProvider>
+                <BrowserRouter basename={routerBasename()}>
                 <Routes>
                   <Route element={<Shell />}>
                     <Route index element={<ExplorePage />} />
@@ -141,6 +148,13 @@ export default function App() {
                           <ResetPasswordPage />
                         </Suspense>
                       } />
+                    <Route
+                      path="auth/callback"
+                      element={
+                        <Suspense fallback={<RouteFallback />}>
+                          <AuthCallbackPage />
+                        </Suspense>
+                      } />
                     <Route path="privacy" element={<LegalDocument docId="privacy" />} />
                     <Route path="terms" element={<LegalDocument docId="terms" />} />
                     <Route path="cookies" element={<LegalDocument docId="cookies" />} />
@@ -157,9 +171,10 @@ export default function App() {
                   </Route>
                 </Routes>
               </BrowserRouter>
-            </WardrobeProvider>
-          </CatalogProvider>
-        </LikesProvider>
+              </WardrobeProvider>
+            </CatalogProvider>
+          </LikesProvider>
+        </NotificationsProvider>
       </AuthProvider>
     </ThemeProvider>
     </IconContext.Provider>

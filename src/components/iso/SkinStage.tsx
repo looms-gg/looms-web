@@ -7,7 +7,11 @@ import { applyGroupFocus, crispSkinTexture, isoPoseAnimation, mountLiveViewer, p
 import type { SkinModel } from "../../skin/convert"
 import { ISO_RIM_FILL } from "../../skin/thumbFx"
 
-const RIM_DIRS = ["ne", "e", "se"] as const
+// Visual width of the rim band in CSS pixels; matches the old --iso-rim-x/y.
+// Single-piece renders carry a lighter rim (thinner band, less opacity).
+const RIM_CSS_PX = 4
+const PIECE_RIM_CSS_PX = 3
+const PIECE_RIM_OPACITY = 0.45
 
 function copySilhouette(from: HTMLCanvasElement, to: HTMLCanvasElement, fill: string) {
   if (to.width !== from.width || to.height !== from.height) {
@@ -18,6 +22,33 @@ function copySilhouette(from: HTMLCanvasElement, to: HTMLCanvasElement, fill: st
   if (!ctx) return
   ctx.clearRect(0, 0, to.width, to.height)
   ctx.drawImage(from, 0, 0)
+  ctx.globalCompositeOperation = "source-in"
+  ctx.fillStyle = fill
+  ctx.fillRect(0, 0, to.width, to.height)
+  ctx.globalCompositeOperation = "source-over"
+}
+
+/**
+ * Live twin of the thumbFx rim: the frame eroded away from the light, tinted
+ * with the rim fill — a band that hugs the lit edge INSIDE the figure so the
+ * highlight overlays the render instead of outlining it.
+ */
+function copyRimBand(
+  from: HTMLCanvasElement,
+  to: HTMLCanvasElement,
+  fill: string,
+  bandPx: number,
+) {
+  if (to.width !== from.width || to.height !== from.height) {
+    to.width = from.width
+    to.height = from.height
+  }
+  const ctx = to.getContext("2d")
+  if (!ctx) return
+  ctx.clearRect(0, 0, to.width, to.height)
+  ctx.drawImage(from, 0, 0)
+  ctx.globalCompositeOperation = "destination-out"
+  ctx.drawImage(from, -bandPx, bandPx)
   ctx.globalCompositeOperation = "source-in"
   ctx.fillStyle = fill
   ctx.fillRect(0, 0, to.width, to.height)
@@ -53,6 +84,9 @@ export function SkinStage({
   const outfitRef = useRef(outfit)
   outfitRef.current = outfit
   const outfitIds = outfit.map((piece) => piece.id).join("|")
+  const piecePreview = !fullFigure && outfit.length === 1
+  // paintFx lives in the mount effect, so it reads the mode through a ref.
+  const piecePreviewRef = useRef(piecePreview)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -88,10 +122,14 @@ export function SkinStage({
         sCtx.clearRect(0, 0, scratch.width, scratch.height)
         sCtx.drawImage(src, 0, 0)
 
-        const [shadow, ...rims] = fxRefs.current
+        const [shadow, rim] = fxRefs.current
         if (shadow) copySilhouette(scratch, shadow, "#000")
-        for (const dest of rims) {
-          if (dest) copySilhouette(scratch, dest, ISO_RIM_FILL)
+        if (rim) {
+          // The WebGL canvas may render at device-pixel resolution, so convert
+          // the CSS-pixel band width into the frame's own pixel space.
+          const scale = src.clientWidth > 0 ? src.width / src.clientWidth : 1
+          const cssPx = (piecePreviewRef.current ? PIECE_RIM_CSS_PX : RIM_CSS_PX)
+          copyRimBand(scratch, rim, ISO_RIM_FILL, Math.max(2, Math.round(cssPx * scale)))
         }
       }
     }
@@ -153,6 +191,7 @@ export function SkinStage({
     const viewer = viewerRef.current
     if (!viewer) return
     let cancelled = false
+    piecePreviewRef.current = piecePreview
     // Hue shifts recolor the body only — pose, camera, and animation stay
     // exactly as they are, so dragging the slider updates the figure live
     // with zero flicker. The full pipeline runs only when the pose signature
@@ -200,13 +239,19 @@ export function SkinStage({
           // reduced motion.
           if (!firstPaint.current) {
             const node = canvasRef.current
+            const rimNode = fxRefs.current[1]
             if (
-              node &&
+              (node || rimNode) &&
               !window.matchMedia("(prefers-reduced-motion: reduce)").matches
             ) {
-              node.animate(
-                [{ opacity: 0.55 }, { opacity: 1 }],
-                { duration: 160, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+              const fade = { duration: 160, easing: "cubic-bezier(0.2, 0, 0, 1)" }
+              // The rim overlay sits ABOVE the canvas, so it fades on its own
+              // scale (its resting opacity is the class tint).
+              const rimRest = piecePreviewRef.current ? PIECE_RIM_OPACITY : 0.6
+              node?.animate([{ opacity: 0.55 }, { opacity: 1 }], fade)
+              rimNode?.animate(
+                [{ opacity: rimRest * 0.55 }, { opacity: rimRest }],
+                fade,
               )
             }
           }
@@ -222,39 +267,35 @@ export function SkinStage({
     return () => {
       cancelled = true
     }
-  }, [bodyHue, bodyId, fullFigure, model, outfitIds])
+  }, [bodyHue, bodyId, fullFigure, model, outfitIds, piecePreview])
 
   return (
     <div className={`skin-stage relative overflow-hidden bg-base-200 ${className}`}>
       {ready ? null : <div className="skin-bone absolute inset-0 z-10" aria-hidden />}
       <div className="skin-stage-inset">
         {ready ? (
-          <>
-            <canvas
-              ref={(node) => {
-                fxRefs.current[0] = node
-              }}
-              className="skin-stage-fx iso-thumb-shadow"
-              aria-hidden
-            />
-            <div className="iso-thumb-rim" aria-hidden>
-              {RIM_DIRS.map((dir, i) => (
-                <canvas
-                  key={dir}
-                  ref={(node) => {
-                    fxRefs.current[i + 1] = node
-                  }}
-                  className="skin-stage-fx iso-thumb-rim-copy"
-                  data-rim={dir}
-                />
-              ))}
-            </div>
-          </>
+          <canvas
+            ref={(node) => {
+              fxRefs.current[0] = node
+            }}
+            className="skin-stage-fx iso-thumb-shadow"
+            aria-hidden
+          />
         ) : null}
         <canvas
           ref={canvasRef}
           className={`skin-stage-canvas h-full w-full touch-none ${ready ? "" : "opacity-0"}`}
         />
+        {ready ? (
+          <canvas
+            ref={(node) => {
+              fxRefs.current[1] = node
+            }}
+            className="skin-stage-fx iso-thumb-rim"
+            style={piecePreview ? { opacity: PIECE_RIM_OPACITY } : undefined}
+            aria-hidden
+          />
+        ) : null}
       </div>
     </div>
   )

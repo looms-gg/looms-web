@@ -1,6 +1,7 @@
 import { useEffect, type FormEvent } from "react"
 import type { Piece } from "../../data/catalog"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
+import { CloseButton } from "../../components/ui/CloseButton"
 import { SkinStage } from "../../components/iso/SkinStage"
 import type { SkinModel } from "../../skin/convert"
 import type { Look } from "../../state/wardrobe"
@@ -93,9 +94,10 @@ export function StudioStagePanel({
         labelledBy="overwrite-dialog-title"
         portal={false}
         scrimClassName="modal-scrim modal-scrim-soft"
-        panelClassName="modal-panel w-full max-w-md rounded-[18px] bg-base-200 border border-white/10 p-6 shadow-2xl space-y-4"
+        panelClassName="modal-panel relative w-full max-w-md rounded-[18px] bg-base-200 border border-white/10 p-6 shadow-2xl space-y-4"
       >
-        <h2 id="overwrite-dialog-title" className="text-lg font-extrabold">
+        <CloseButton onClick={() => onCancelOverwrite?.()} className="absolute right-3 top-3" />
+        <h2 id="overwrite-dialog-title" className="pr-8 text-lg font-extrabold">
           This skin seems to already exist!
         </h2>
         <p className="text-sm text-base-content/75 leading-relaxed">

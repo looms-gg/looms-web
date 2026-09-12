@@ -16,7 +16,11 @@ const baseProfile: ProfileRow = {
   last_seen_at: new Date().toISOString(),
   show_last_seen: true,
   show_likes: true,
+  notify_likes: true,
+  notify_comments: true,
+  notify_replies: true,
   username_changed_at: null,
+  onboarding_complete: true,
   created_at: "",
   updated_at: "",
 }

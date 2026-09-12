@@ -3,6 +3,7 @@ import { CheckCircle, CircleNotch, EnvelopeSimple } from "@phosphor-icons/react"
 import { useAuth } from "../../state/auth"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { Icon } from "../ui/Icon"
+import { CloseButton } from "../ui/CloseButton"
 import { ModalOverlay } from "../ui/ModalOverlay"
 
 function useResendCountdown(resendWait: number, setResendWait: (fn: (value: number) => number) => void) {
@@ -57,6 +58,7 @@ export function VerifyEmailModal() {
       panelClassName="auth-scrim-panel relative w-full max-w-[22rem] rounded-[18px] border border-base-content/10 bg-base-200 p-6"
       portal
     >
+      <CloseButton onClick={dismissEmailVerify} label="Dismiss" className="absolute right-3 top-3 text-base-content/55" />
       {emailVerified ? (
         <div className="text-center">
           <span className="mx-auto grid size-12 place-items-center rounded-[18px] bg-success/15 text-success">

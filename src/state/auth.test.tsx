@@ -316,4 +316,40 @@ describe("auth module", () => {
     expect(error?.message).toMatch(/not authenticated/i)
     expect(getAuth().user).toBeNull()
   })
+
+  it("signInWithOAuth redirects to the callback route with the app base path", async () => {
+    const signInWithOAuth = vi.spyOn(supabase.auth, "signInWithOAuth").mockResolvedValue({
+      data: { provider: "discord", url: "https://example.com" },
+      error: null,
+    } as never)
+    const { getAuth } = mountAuth()
+    await getAuth().signInWithOAuth("discord")
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: "discord",
+      options: { redirectTo: `${absoluteAppUrl()}/auth/callback` },
+    })
+  })
+
+  it("completeOnboarding calls the RPC with a sanitized username", async () => {
+    const rpc = vi.spyOn(supabase, "rpc").mockResolvedValue({ data: null, error: null } as never)
+    const { getAuth } = mountAuth()
+    const { error } = await getAuth().completeOnboarding("  Pixel<script>Weaver  ")
+    expect(rpc).toHaveBeenCalledWith("complete_onboarding", { p_username: "PixelWeaver" })
+    expect(error).toBeNull()
+  })
+
+  it("signUpWithPassword no longer sends minecraft_username", async () => {
+    const signUp = vi.spyOn(supabase.auth, "signUp").mockResolvedValue({
+      data: { user: null, session: null },
+      error: null,
+    } as never)
+    const { getAuth } = mountAuth()
+    await getAuth().signUpWithPassword({
+      email: "a@b.c",
+      password: "hunter22",
+      username: "PixelWeaver",
+    })
+    const call = signUp.mock.calls[0][0] as { options?: { data?: Record<string, unknown> } }
+    expect(call.options?.data).toEqual({ username: "PixelWeaver" })
+  })
 })

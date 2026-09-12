@@ -5,6 +5,7 @@ import {
   CloudArrowUp,
   Eye,
   Gear,
+  Plugs,
   SignIn,
   UserCircle,
 } from "@phosphor-icons/react"
@@ -23,6 +24,7 @@ import {
 import { DangerZoneModal } from "../profile/DangerZoneModal"
 import { parseSettingsTab, settingsTabQuery, type SettingsTab } from "./settingsTab"
 import { ProfileSection } from "./ProfileSection"
+import { ConnectionsSection } from "./ConnectionsSection"
 
 const TABS: { id: SettingsTab; label: string; description: string; icon: IconType }[] = [
   {
@@ -30,6 +32,12 @@ const TABS: { id: SettingsTab; label: string; description: string; icon: IconTyp
     label: "Profile",
     description: "Your public identity across looms.",
     icon: UserCircle,
+  },
+  {
+    id: "connections",
+    label: "Connections",
+    description: "Linked accounts you can sign in with.",
+    icon: Plugs,
   },
   {
     id: "privacy",
@@ -132,6 +140,57 @@ function PrivacySection() {
           checked={Boolean(profile?.show_likes)}
           disabled={busy}
           onToggle={(next) => void toggle({ show_likes: next })} />
+      </ul>
+      {errorMsg ? (
+        <p className="mt-3 text-sm text-error" role="alert">
+          {errorMsg}
+        </p>
+      ) : null}
+    </Section>
+  )
+}
+
+function NotificationsSection() {
+  const { profile, updateProfile } = useAuth()
+  const [busy, setBusy] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  async function toggle(patch: {
+    notify_likes?: boolean
+    notify_comments?: boolean
+    notify_replies?: boolean
+  }) {
+    setBusy(true)
+    setErrorMsg(null)
+    const { error } = await updateProfile(patch)
+    setBusy(false)
+    if (error) setErrorMsg(formatErrorMessage(error))
+  }
+
+  return (
+    <Section title="Notifications" description="Choose what activity shows up in your bell.">
+      <ul className="space-y-3">
+        <ToggleRow
+          label="Likes"
+          hint="When someone likes your pieces or looks"
+          title="Turns like notifications off"
+          checked={Boolean(profile?.notify_likes)}
+          disabled={busy}
+          onToggle={(next) => void toggle({ notify_likes: next })} />
+        <ToggleRow
+          label="Comments"
+          hint="When someone comments on your pieces or looks"
+          title="Turns comment notifications off"
+          checked={Boolean(profile?.notify_comments)}
+          disabled={busy}
+          onToggle={(next) => void toggle({ notify_comments: next })} />
+        <ToggleRow
+          label="Replies"
+          hint="When someone replies to your comment"
+          title="Turns reply notifications off"
+          checked={Boolean(profile?.notify_replies)}
+          disabled={busy}
+          onToggle={(next) => void toggle({ notify_replies: next })} />
       </ul>
       {errorMsg ? (
         <p className="mt-3 text-sm text-error" role="alert">
@@ -388,7 +447,15 @@ export function SettingsPage() {
 
       <div className="pt-2">
         {tab === "profile" ? <ProfileSection /> : null}
-        {tab === "privacy" ? <PrivacySection /> : null}
+        {tab === "connections" ? <ConnectionsSection /> : null}
+        {tab === "privacy" ? (
+          <>
+            <PrivacySection />
+            <div className="mt-6">
+              <NotificationsSection />
+            </div>
+          </>
+        ) : null}
         {tab === "uploads" ? <UploadsSection /> : null}
         {tab === "account" ? <AccountSection /> : null}
       </div>

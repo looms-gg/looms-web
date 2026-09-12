@@ -45,7 +45,7 @@ export function DangerZoneModal({
       scrimClassName="modal-scrim modal-scrim-soft"
       panelClassName="modal-panel relative w-full max-w-md rounded-[18px] border border-white/10 bg-base-300 p-6 shadow-2xl"
     >
-      <CloseButton onClick={onClose} className="absolute right-0.5 top-0.5" />
+      <CloseButton onClick={onClose} className="absolute right-3 top-3" />
 
       <h2 className="pr-8 text-lg font-extrabold text-error">Delete account</h2>
       <p className="mt-1 text-sm text-base-content/65">

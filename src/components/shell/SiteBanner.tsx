@@ -122,7 +122,7 @@ export function SiteBanner() {
         </div>
 
         {banner.dismissible ? (
-          <CloseButton onClick={handleDismiss} label="Dismiss banner" size="size-3.5" className="shrink-0 opacity-60 hover:opacity-100" />
+          <CloseButton onClick={handleDismiss} label="Dismiss banner" size="size-3.5" className="relative shrink-0 opacity-60 hover:opacity-100" />
         ) : null}
       </div>
     </aside>

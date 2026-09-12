@@ -9,9 +9,11 @@ import { SiteBanner } from "./SiteBanner"
 import { Icon, type IconType } from "../ui/Icon"
 import { LoomsLogo } from "../ui/LoomsLogo"
 import { ShellAuthControls } from "./ShellAuthControls"
+import { NotificationBell } from "./NotificationBell"
 import { SiteFooter } from "./SiteFooter"
 import { ThemeToggle } from "./ThemeToggle"
 import { VerifyEmailModal } from "../auth/VerifyEmailModal"
+import { OnboardingGate } from "../auth/OnboardingGate"
 import { useNavThumbs } from "./useNavThumbs"
 import { useStudioLock } from "./useStudioLock"
 import { usePendingActionReplay } from "./usePendingActionReplay"
@@ -140,6 +142,7 @@ function ShellFrame() {
               emailVerified={emailVerified}
               onOpenEmailVerify={openEmailVerify}
               onSignOut={() => signOut()} />
+            {user ? <NotificationBell /> : null}
           </div>
         </div>
       </header>
@@ -168,6 +171,7 @@ function ShellFrame() {
       </nav>
 
       <VerifyEmailModal />
+      <OnboardingGate />
       <CookieBanner />
 
       {toast ? (

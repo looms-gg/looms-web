@@ -15,9 +15,22 @@ export type ProfileRow = {
   last_seen_at: string | null
   show_last_seen: boolean
   show_likes: boolean
+  notify_likes: boolean
+  notify_comments: boolean
+  notify_replies: boolean
   username_changed_at: string | null
+  onboarding_complete: boolean
   created_at: string
   updated_at: string
+}
+
+export type ConnectionProvider = "discord" | "google" | "azure"
+
+export type ConnectionRow = {
+  user_id: string
+  provider: ConnectionProvider
+  featured: boolean
+  created_at: string
 }
 
 export type LikeRow = {
@@ -25,6 +38,20 @@ export type LikeRow = {
   user_id: string
   target_type: LikeTargetType
   target_id: string
+  created_at: string
+}
+
+export type NotificationType = "like" | "comment" | "reply"
+export type NotificationTargetType = LikeTargetType
+
+export type NotificationRow = {
+  id: string
+  user_id: string
+  actor_id: string
+  type: NotificationType
+  target_type: NotificationTargetType
+  target_id: string
+  read: boolean
   created_at: string
 }
 
@@ -138,6 +165,12 @@ export type Database = {
         Insert: Partial<Omit<ProfileRow, "last_seen_at">> &
           Pick<ProfileRow, "id" | "username">
         Update: Partial<Omit<ProfileRow, "last_seen_at">>
+        Relationships: []
+      }
+      profile_connections: {
+        Row: ConnectionRow
+        Insert: ConnectionRow
+        Update: Partial<ConnectionRow>
         Relationships: []
       }
       profile_presence: {
@@ -294,6 +327,27 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: NotificationRow
+        Insert: NotificationRow
+        Update: Partial<NotificationRow>
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_reports: {
         Row: ContentReportRow
         Insert: Omit<ContentReportRow, "id" | "created_at"> & {
@@ -366,6 +420,18 @@ export type Database = {
         Args: Record<string, never>
         Returns: undefined
       }
+      complete_onboarding: {
+        Args: { p_username: string }
+        Returns: undefined
+      }
+      unlink_connection: {
+        Args: { p_provider: string }
+        Returns: undefined
+      }
+      set_connection_featured: {
+        Args: { p_provider: string; p_featured: boolean }
+        Returns: undefined
+      }
       get_yesterday_top_look: {
         Args: Record<string, never>
         Returns: Array<
@@ -425,5 +491,11 @@ export const supabase = {
   },
   rpc(...args: unknown[]) {
     return (getSupabase().rpc as (...a: unknown[]) => unknown)(...args)
+  },
+  channel(...args: unknown[]) {
+    return (getSupabase().channel as (...a: unknown[]) => unknown)(...args)
+  },
+  removeChannel(...args: unknown[]) {
+    return (getSupabase().removeChannel as (...a: unknown[]) => unknown)(...args)
   },
 } as unknown as Client

@@ -119,7 +119,7 @@ export function ImageCropModal({
         Drag to reposition, then zoom until it fits.
       </p>
 
-      <CloseButton onClick={onClose} className="absolute right-0 top-0" />
+      <CloseButton onClick={onClose} className="absolute right-3 top-3" />
 
       {/* Preview + drag surface */}
       <div

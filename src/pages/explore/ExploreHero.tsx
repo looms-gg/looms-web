@@ -99,13 +99,12 @@ export function ExploreHero({
       </div>
 
       <div className="hero-copy max-w-xl">
-        <h1 className="text-[2.25rem] font-extrabold leading-[1.1] tracking-tight sm:text-[2.75rem] lg:text-[3.15rem] text-balance">
-          <span className="block">Custom skins.</span>
-          <span className="block text-primary">No art skills needed!</span>
+        <h1 className="text-[clamp(2rem,7vw,3.15rem)] font-extrabold leading-[1.1] tracking-tight text-balance">
+          <span className="block">Your new Minecraft wardrobe.</span>
         </h1>
         <p className="mt-3 max-w-[44ch] text-base leading-[1.6] text-base-content/70 font-medium text-pretty">
-          Mix and match layered clothing, hair, and accessories into custom Minecraft skins. Free
-          to style, export, and wear.
+          Stack clothing layers, swap outfits in seconds, and export a vanilla PNG. No pixel art
+          required. Free to style and wear.
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Link

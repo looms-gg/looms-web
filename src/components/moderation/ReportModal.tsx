@@ -118,7 +118,7 @@ export function ReportModal({
         </div>
         <CloseButton
           onClick={handleClose}
-          className="-mr-1 -mt-1 text-base-content/55"
+          className="-mr-1 -mt-1 relative text-base-content/55"
           label="Close report modal" />
       </div>
 

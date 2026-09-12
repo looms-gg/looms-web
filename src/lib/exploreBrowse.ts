@@ -1,6 +1,6 @@
 import { SLOT_LABEL, type Piece, type Slot } from "../data/catalog"
 
-export const SORTS = ["Newest", "Trending", "Most Saved"] as const
+export const SORTS = ["Trending", "Most Saved", "Newest"] as const
 export type Sort = (typeof SORTS)[number]
 export type SlotFilter = "all" | Slot
 

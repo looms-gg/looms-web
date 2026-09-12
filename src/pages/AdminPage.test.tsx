@@ -33,6 +33,11 @@ function stubAuth(userId: string): AuthContextValue {
     profileError: null,
     dismissProfileError: vi.fn(),
     deleteAccount: vi.fn(),
+    signInWithOAuth: vi.fn(),
+    completeOnboarding: vi.fn(),
+    connections: [],
+    unlinkConnection: vi.fn(),
+    setConnectionFeatured: vi.fn(),
   }
 }
 

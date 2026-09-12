@@ -1,5 +1,5 @@
 // Bakes the signature looms thumb effects — the hard punch shadow and the
-// multi-direction rim highlight — directly into the thumbnail image, once.
+// inner rim highlight — directly into the thumbnail image, once.
 //
 // Why: the previous markup stacked 4 filtered copies of the figure per tile
 // (shadow + 3 rim copies) and pushed each through SVG reference filters
@@ -9,20 +9,26 @@
 // frame composites. Baking moves that cost to one-time canvas work at thumb
 // render and makes every tile a single composited image.
 //
-// Visual recipe (mirrors the old CSS layers in index.css):
+// Visual recipe:
 //  - shadow: hard silhouette in black, offset (-punchX, +punchY), 35% alpha
-//  - rim: hard silhouette in rim fill, offset (+rimX, ±rimY), unioned, then
-//    faded in from the left edge (transparent until 50%, full past 64%)
+//  - rim: the figure's own edge band along the lit top/right sides (silhouette
+//    eroded away from the light), tinted with the rim fill, faded in from the
+//    left edge (transparent until 50%, full past 64%), and drawn OVER the
+//    render as a translucent overlay — not outside it as an outline
 export const ISO_RIM_FILL = "#d4cec2"
 
 // One thickness for the whole baked effect: the punch shadow's offset and the
-// rim highlight's offset must match or one band reads wider than the other.
+// default rim band's depth must match or one reads wider than the other.
+// Single-piece renders pass a thinner `rim` — a full-width band reads heavy
+// on the small silhouette.
 const OUTLINE = 8
 const PUNCH_X = OUTLINE
 const PUNCH_Y = OUTLINE
 const RIM_X = OUTLINE
-const RIM_Y = OUTLINE
 const SHADOW_ALPHA = 0.35
+// The rim rides on top of the render as a light tint, so texture stays
+// visible through it.
+const RIM_ALPHA = 0.6
 // feComponentTransfer discrete tableValues="0 1": alpha ≥ 0.5 → fully opaque.
 const ALPHA_THRESHOLD = 128
 
@@ -171,7 +177,13 @@ export function compositeIsoThumbFx(
   src: CanvasImageSource,
   width: number,
   height: number,
-  options?: { normalize?: boolean; fillW?: number; fillH?: number },
+  options?: {
+    normalize?: boolean
+    fillW?: number
+    fillH?: number
+    rim?: number
+    rimAlpha?: number
+  },
 ): string {
   if (width <= 0 || height <= 0) throw new Error("thumbFx: empty source")
 
@@ -182,6 +194,8 @@ export function compositeIsoThumbFx(
   const normalized = norm?.canvas ?? src
   const figure = norm?.bounds ?? { x: 0, y: 0, w: width, h: height }
   const silhouette = hardSilhouette(normalized, width, height)
+  const rimX = options?.rim ?? RIM_X
+  const rimAlpha = options?.rimAlpha ?? RIM_ALPHA
 
   const shadow = makeCanvas(width, height)
   {
@@ -195,9 +209,12 @@ export function compositeIsoThumbFx(
   {
     const ctx = rim.getContext("2d")
     if (!ctx) throw new Error("thumbFx: 2d context unavailable")
-    ctx.drawImage(silhouette, RIM_X, -RIM_Y)
-    ctx.drawImage(silhouette, RIM_X, 0)
-    ctx.drawImage(silhouette, RIM_X, RIM_Y)
+    ctx.drawImage(silhouette, 0, 0)
+    // Erode the silhouette away from the light (down-left): what survives is a
+    // band hugging the lit top/right edges INSIDE the figure.
+    ctx.globalCompositeOperation = "destination-out"
+    ctx.drawImage(silhouette, -rimX, rimX)
+    ctx.globalCompositeOperation = "source-over"
     recolor(rim, ISO_RIM_FILL)
     applyRimMask(rim, figure)
   }
@@ -208,7 +225,13 @@ export function compositeIsoThumbFx(
   ctx.globalAlpha = SHADOW_ALPHA
   ctx.drawImage(shadow, 0, 0)
   ctx.globalAlpha = 1
-  ctx.drawImage(rim, 0, 0)
   ctx.drawImage(normalized, 0, 0, width, height)
+  // Overlay pass: source-atop keeps the tint on pixels the figure already
+  // covers, so it never regrows into an outline.
+  ctx.globalAlpha = rimAlpha
+  ctx.globalCompositeOperation = "source-atop"
+  ctx.drawImage(rim, 0, 0)
+  ctx.globalCompositeOperation = "source-over"
+  ctx.globalAlpha = 1
   return out.toDataURL("image/png")
 }

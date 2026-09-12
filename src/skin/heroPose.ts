@@ -191,7 +191,9 @@ export async function heroPosedLookThumb(
   // ignores them. (v10→v11 already dropped poisoned { url: "" } failures.)
   // v12→v13: bake the hero camera's framing directly (skip tile normalization)
   // so the bust stays large. v13→v16: thicker rim outline and matching shadow.
-  const key = `hero-bust:v16:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
+  // v17: the rim became an inner overlay tinting the render's lit edge.
+  // v18: hero busts use the lighter piece rim preset to match the app.
+  const key = `hero-bust:v18:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
 
   const hit = memCache.get(key)
   if (hit) return hit

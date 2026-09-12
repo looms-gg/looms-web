@@ -23,3 +23,17 @@ export function absoluteAppUrl(
   return `${origin}${routerBasename(baseUrl)}`
 }
 
+/**
+ * Path (with base) + original hash for recovery links that Supabase dropped at
+ * the Site URL root instead of the requested /reset-password redirect target.
+ * The hash is preserved so supabase-js still consumes the tokens on the page
+ * that actually shows the reset form.
+ */
+export function recoveryRedirectPath(
+  hash: string,
+  baseUrl = import.meta.env.BASE_URL,
+): string | null {
+  if (!hash.includes("type=recovery")) return null
+  return `${withBase("/reset-password", baseUrl)}${hash}`
+}
+
