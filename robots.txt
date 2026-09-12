@@ -1,0 +1,37 @@
+# looms.gg — crawler directives
+# Everything under /studio, /wardrobe, /settings, /admin and /editor requires
+# an account or is a private workspace, so it stays out of the index.
+User-agent: *
+Allow: /
+Disallow: /studio
+Disallow: /wardrobe
+Disallow: /settings
+Disallow: /admin
+Disallow: /editor
+
+# Faceted crawl URLs are state mirrors of the canonical / page — exclude them
+# explicitly so link equity concentrates on the canonical URL.
+Disallow: /*?tab=
+Disallow: /*?sort=
+Disallow: /*?q=
+Disallow: /*?model=
+Disallow: /*?slot=
+Disallow: /*?view=
+
+# Well-behaved AI/analytics crawlers that ignore per-page noindex get a
+# blanket block on private surfaces.
+User-agent: GPTBot
+Disallow: /studio
+Disallow: /wardrobe
+Disallow: /settings
+Disallow: /admin
+Disallow: /editor
+
+User-agent: CCBot
+Disallow: /studio
+Disallow: /wardrobe
+Disallow: /settings
+Disallow: /admin
+Disallow: /editor
+
+Sitemap: https://looms.gg/sitemap.xml

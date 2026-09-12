@@ -1,0 +1,23 @@
+{
+  "name": "looms — Minecraft clothing for skins",
+  "short_name": "looms",
+  "description": "Mix and match modular Minecraft clothing, hair, and accessories into custom skins in 3D. Free to style, export, and wear.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#181a22",
+  "theme_color": "#b482ff",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
