@@ -16,15 +16,15 @@ describe("oauth helpers", () => {
   it("knows the three providers", () => {
     expect(isOAuthProvider("discord")).toBe(true)
     expect(isOAuthProvider("google")).toBe(true)
-    expect(isOAuthProvider("azure")).toBe(true)
+    expect(isOAuthProvider("github")).toBe(true)
+    expect(isOAuthProvider("azure")).toBe(false)
     expect(isOAuthProvider("email")).toBe(false)
-    expect(isOAuthProvider("github")).toBe(false)
   })
 
   it("labels providers in platform voice", () => {
     expect(providerLabel("discord")).toBe("Discord")
     expect(providerLabel("google")).toBe("Google")
-    expect(providerLabel("azure")).toBe("Microsoft")
+    expect(providerLabel("github")).toBe("GitHub")
   })
 
   it("picks a Discord username from metadata", () => {
@@ -45,10 +45,10 @@ describe("oauth helpers", () => {
     ).toBe("SamLee")
     expect(
       pickOAuthUsername({
-        app_metadata: { provider: "azure" },
-        user_metadata: { preferred_username: "sam@outlook.com" },
+        app_metadata: { provider: "google" },
+        user_metadata: { preferred_username: "sam@gmail.com" },
       }),
-    ).toBe("samoutlookcom")
+    ).toBe("samgmailcom")
   })
 
   it("returns empty when nothing usable exists", () => {

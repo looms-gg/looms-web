@@ -62,7 +62,8 @@ describe("AuthModal", () => {
       const labels = [...document.body.querySelectorAll("button")].map((b) => b.textContent)
       expect(labels).toContain("Discord")
       expect(labels).toContain("Google")
-      expect(labels).toContain("Microsoft")
+      expect(labels).toContain("GitHub")
+      expect(labels).not.toContain("Microsoft")
       flushSync(() => root.unmount())
     }
   })

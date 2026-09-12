@@ -43,7 +43,8 @@ describe("ConnectionsSection", () => {
     const host = mountSection()
     expect(host.textContent).toContain("Discord")
     expect(host.textContent).toContain("Google")
-    expect(host.textContent).toContain("Microsoft")
+    expect(host.textContent).toContain("GitHub")
+    expect(host.textContent).not.toContain("Microsoft")
     expect(host.textContent).toContain("Linked")
   })
 

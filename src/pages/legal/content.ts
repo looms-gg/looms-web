@@ -19,7 +19,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
   privacy: {
     id: "privacy",
     title: "Privacy Policy",
-    updated: "2026-09-07",
+    updated: "2026-09-12",
     sections: [
       {
         heading: "Who we are",
@@ -32,6 +32,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         heading: "What we collect",
         paragraphs: [
           "Account data: email address, password (stored hashed by our auth provider), username, and optional Minecraft username.",
+          "Connected accounts: if you sign in with Discord, Google, or GitHub, we receive the email address and basic profile name from that provider through their official sign-in flow. We never see your provider password. For Discord, you can choose to show a Discord badge on your public profile; that badge shows only that you are on Discord, never your handle or any other account detail.",
           "Content you create: saved looks (outfit recipes) and garment textures you upload, plus related metadata such as names, descriptions, and visibility.",
           "Technical preferences: authentication/session cookies, theme preference, and your cookie-consent choice stored in the browser.",
         ],
@@ -40,19 +41,21 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         heading: "How we use data",
         paragraphs: [
           "We use this data to run looms: sign you in, sync wardrobe looks, host uploads within quotas, show your profile cues, and remember theme and cookie preferences.",
-          "We do not sell personal data. We do not run advertising trackers today.",
+          "Connected accounts are used to sign you in and keep your linked providers listed in your settings. Provider data is not used for advertising and is never sold.",
         ],
       },
       {
         heading: "Processors",
         paragraphs: [
           "We use Supabase for authentication, database, and file storage. Supabase processes data on our behalf to provide those services.",
+          "Sign-in with Discord, Google, or GitHub is handled by those providers under their own privacy policies. They send us the sign-in result; we do not send them your looms activity.",
         ],
       },
       {
         heading: "Retention",
         paragraphs: [
           "Account and content data are kept while your account exists, subject to storage quotas and abuse enforcement. You can request deletion via the contact email above.",
+          "You can unlink a connected account any time from Settings. If you unlink every sign-in method without setting a password first, we will ask you to keep at least one way to sign in so you do not lose access to your account.",
         ],
       },
       {

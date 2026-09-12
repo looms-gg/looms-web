@@ -24,7 +24,7 @@ export type ProfileRow = {
   updated_at: string
 }
 
-export type ConnectionProvider = "discord" | "google" | "azure"
+export type ConnectionProvider = "discord" | "google" | "github"
 
 export type ConnectionRow = {
   user_id: string

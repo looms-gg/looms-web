@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowsOutCardinal, ArrowCounterClockwise, Check } from "@phosphor-icons/react"
+import {
+  ArrowsOutCardinal,
+  ArrowCounterClockwise,
+  Check,
+  MagnifyingGlassMinus,
+  MagnifyingGlassPlus,
+} from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
 import { CloseButton } from "../../components/ui/CloseButton"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
@@ -12,18 +18,20 @@ export type CropRect = {
   zoom: number
 }
 
-type DragMode = "move" | "zoom" | null
+type DragMode = "move" | null
 
 const DEFAULT_CROP: CropRect = { cx: 0.5, cy: 0.5, zoom: 1 }
+const MAX_ZOOM = 3
+const FALLBACK_VIEW = 400
 
 /**
  * Interactive crop editor for avatar (square) and banner (3:1) uploads.
  * Returns the chosen crop rect through onConfirm; renders nothing when closed.
  *
- * The image is object-fit inside a fixed preview box; the crop window is the
- * box itself, and the user drags the image and uses a zoom slider to choose
- * which part shows through. The mask previews the real output shape (circle
- * for avatars, rounded rect for banners).
+ * The crop window is the preview box itself: the image is cover-fit behind it
+ * and the user pans the image and zooms to choose which part shows through.
+ * The mask previews the real output shape (circle for avatars, rounded rect
+ * for banners).
  */
 export function ImageCropModal({
   open,
@@ -48,7 +56,13 @@ export function ImageCropModal({
   const [objectUrl, setObjectUrl] = useState<string | null>(null)
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null)
   const [crop, setCrop] = useState<CropRect>(DEFAULT_CROP)
-  const dragState = useRef<{ mode: DragMode; startX: number; startY: number } | null>(null)
+  const [viewW, setViewW] = useState(FALLBACK_VIEW)
+  const previewRef = useRef<HTMLDivElement | null>(null)
+  const dragState = useRef<{
+    mode: DragMode
+    lastX: number
+    lastY: number
+  } | null>(null)
 
   // Load the picked file into an object URL for previewing.
   useEffect(() => {
@@ -72,45 +86,102 @@ export function ImageCropModal({
     if (open) setCrop(DEFAULT_CROP)
   }, [open, objectUrl])
 
+  // The preview box is fluid, so drag math needs the rendered width in px.
+  useEffect(() => {
+    const el = previewRef.current
+    if (!el) return
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width
+        if (width > 0) setViewW(width)
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const viewH = viewW / aspect
+
+  const validCenter = useCallback(
+    (c: CropRect, size: { w: number; h: number } | null, vw: number, vh: number): CropRect => {
+      if (!size) return c
+      const scale = coverScale(size, aspect, vw, vh)
+      const drawW = size.w * scale
+      const drawH = size.h * scale
+      // Pan range shrinks to a point at zoom 1, so the center stays 0.5.
+      const halfX = drawW > vw ? (drawW - vw) / (2 * drawW) : 0
+      const halfY = drawH > vh ? (drawH - vh) / (2 * drawH) : 0
+      return {
+        ...c,
+        cx: clamp(c.cx, 0.5 - halfX, 0.5 + halfX),
+        cy: clamp(c.cy, 0.5 - halfY, 0.5 + halfY),
+      }
+    },
+    [aspect],
+  )
+
   const onPointerDown = useCallback(
     (mode: DragMode) => (e: React.PointerEvent) => {
       if (!mode) return
       e.preventDefault()
       ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
-      dragState.current = { mode, startX: e.clientX, startY: e.clientY }
+      dragState.current = { mode, lastX: e.clientX, lastY: e.clientY }
     },
     [],
   )
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    const drag = dragState.current
-    if (!drag) return
-    if (drag.mode === "move") {
-      setCrop((c) => ({
-        ...c,
-        cx: clamp01(c.cx + e.movementX / PREVIEW_SIZE),
-        cy: clamp01(c.cy + e.movementY / PREVIEW_SIZE),
-      }))
-    }
-  }, [])
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      const drag = dragState.current
+      if (!drag) return
+      const dx = e.clientX - drag.lastX
+      const dy = e.clientY - drag.lastY
+      drag.lastX = e.clientX
+      drag.lastY = e.clientY
+      if (drag.mode === "move" && imgSize) {
+        setCrop((c) => {
+          const scale = coverScale(imgSize, aspect, viewW, viewH) * c.zoom
+          return validCenter(
+            {
+              ...c,
+              // The image follows the cursor, so the centered crop point
+              // shifts opposite the drag, scaled by the drawn image size.
+              cx: c.cx - dx / (imgSize.w * scale),
+              cy: c.cy - dy / (imgSize.h * scale),
+            },
+            imgSize,
+            viewW,
+            viewH,
+          )
+        })
+      }
+    },
+    [aspect, imgSize, validCenter, viewH, viewW],
+  )
 
   const onPointerUp = useCallback(() => {
     dragState.current = null
   }, [])
 
-  const zoomStep = (dir: 1 | -1) => {
-    setCrop((c) => ({ ...c, zoom: clamp(c.zoom + dir * 0.1, 1, 3) }))
-  }
+  const setZoom = useCallback(
+    (next: number) => {
+      setCrop((c) => validCenter({ ...c, zoom: clamp(next, 1, MAX_ZOOM) }, imgSize, viewW, viewH))
+    },
+    [imgSize, validCenter, viewH, viewW],
+  )
+
+  const zoomStep = (dir: 1 | -1) => setZoom(crop.zoom + dir * 0.1)
 
   const canConfirm = Boolean(file && imgSize)
   const circle = shape === "circle"
+  const untouched = crop.cx === 0.5 && crop.cy === 0.5 && crop.zoom === 1
 
   return (
     <ModalOverlay
       open={open}
       onClose={onClose}
       label={title}
-      panelClassName="modal-panel relative w-full max-w-sm rounded-[18px] border border-white/10 bg-base-300 p-5 shadow-2xl"
+      panelClassName="modal-panel relative w-full max-w-md rounded-[18px] border border-white/10 bg-base-300 p-5 shadow-2xl"
     >
       <div className="flex items-center gap-3 pr-8">
         <h2 className="text-lg font-extrabold tracking-tight text-balance">{title}</h2>
@@ -123,8 +194,9 @@ export function ImageCropModal({
 
       {/* Preview + drag surface */}
       <div
-        className="group relative mt-4 select-none overflow-hidden rounded-xl border border-white/10 bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px]"
-        style={{ width: PREVIEW_SIZE, height: PREVIEW_SIZE / aspect }}
+        ref={previewRef}
+        className="group relative mt-4 w-full select-none overflow-hidden rounded-xl border border-white/10 bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px]"
+        style={{ aspectRatio: aspect }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerLeave={onPointerUp}
@@ -138,22 +210,22 @@ export function ImageCropModal({
               src={objectUrl}
               alt="Crop preview"
               draggable={false}
-              className="pointer-events-none absolute left-1/2 top-1/2 max-w-none"
-              style={imgStyle(imgSize, aspect, crop)} />
+              className="pointer-events-none absolute left-0 top-0 max-w-none"
+              style={imgStyle(imgSize, aspect, crop, viewW, viewH)} />
             <span
               aria-hidden
               className={`pointer-events-none absolute inset-0 border-2 border-white/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.35)] ${
                 circle ? "rounded-[50%]" : ""
               }`} />
             {circle ? null : (
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-white/25" />
-            )}
-            {circle ? null : (
-              <span
-                aria-hidden
-                className="pointer-events-none absolute inset-y-0 left-1/2 border-l border-dashed border-white/25" />
+              <>
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-4 top-1/2 border-t border-dashed border-white/20" />
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-4 left-1/2 border-l border-dashed border-white/20" />
+              </>
             )}
             <span
               aria-hidden
@@ -171,36 +243,36 @@ export function ImageCropModal({
       </div>
 
       {/* Zoom controls */}
-      <div className="mt-3 flex items-center gap-1.5">
+      <div className="mt-3 flex items-center gap-1">
         <button
           type="button"
-          className="btn btn-ghost btn-xs size-9 rounded-full font-extrabold transition-transform duration-150 ease-out active:scale-[0.96]"
+          className="btn btn-ghost btn-xs size-9 rounded-full transition-transform duration-150 ease-out hover:text-base-content active:scale-[0.96]"
           aria-label="Zoom out"
-          disabled={!canConfirm || busy}
+          disabled={!canConfirm || busy || crop.zoom <= 1}
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => zoomStep(-1)}
         >
-          −
+          <Icon icon={MagnifyingGlassMinus} size="md" />
         </button>
         <input
           type="range"
           min={1}
-          max={3}
+          max={MAX_ZOOM}
           step={0.05}
           value={crop.zoom}
           disabled={!canConfirm || busy}
           aria-label="Zoom"
           className="range range-primary range-xs h-9 flex-1"
-          onChange={(e) => setCrop((c) => ({ ...c, zoom: Number(e.target.value) }))} />
+          onChange={(e) => setZoom(Number(e.target.value))} />
         <button
           type="button"
-          className="btn btn-ghost btn-xs size-9 rounded-full font-extrabold transition-transform duration-150 ease-out active:scale-[0.96]"
+          className="btn btn-ghost btn-xs size-9 rounded-full transition-transform duration-150 ease-out hover:text-base-content active:scale-[0.96]"
           aria-label="Zoom in"
-          disabled={!canConfirm || busy}
+          disabled={!canConfirm || busy || crop.zoom >= MAX_ZOOM}
           onPointerDown={(e) => e.preventDefault()}
           onClick={() => zoomStep(1)}
         >
-          +
+          <Icon icon={MagnifyingGlassPlus} size="md" />
         </button>
         <span
           className="min-w-10 text-right text-xs font-bold tabular-nums text-base-content/60"
@@ -213,7 +285,7 @@ export function ImageCropModal({
           className="btn btn-ghost btn-xs size-9 rounded-full transition-transform duration-150 ease-out active:scale-[0.96]"
           aria-label="Reset crop"
           title="Reset crop"
-          disabled={!canConfirm || busy || (crop.cx === 0.5 && crop.cy === 0.5 && crop.zoom === 1)}
+          disabled={!canConfirm || busy || untouched}
           onClick={() => setCrop(DEFAULT_CROP)}
         >
           <Icon icon={ArrowCounterClockwise} size="sm" />
@@ -243,44 +315,43 @@ export function ImageCropModal({
   )
 }
 
-const PREVIEW_SIZE = 288
-
-function clamp01(v: number): number {
-  return Math.min(1, Math.max(0, v))
-}
-
 function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v))
+}
+
+function coverScale(
+  imgSize: { w: number; h: number },
+  aspect: number,
+  viewW: number,
+  viewH: number,
+): number {
+  return Math.max(viewW / imgSize.w, viewH / imgSize.h)
 }
 
 /**
  * Compute the CSS transform for the preview image so that the crop rect
  * (cx, cy, zoom) shows through the fixed preview window. Mirrors the math in
- * applyCropToCanvas so what the user sees is exactly what gets uploaded.
+ * fitCropDraw so what the user sees is exactly what gets uploaded.
  */
 function imgStyle(
   imgSize: { w: number; h: number } | null,
   aspect: number,
   crop: CropRect,
+  viewW: number,
+  viewH: number,
 ): React.CSSProperties {
   if (!imgSize) return { visibility: "hidden" }
 
-  // Base "cover" scale: smallest scale where the image fills the window.
-  const coverScale = Math.max(PREVIEW_SIZE / imgSize.w, PREVIEW_SIZE / aspect / imgSize.h)
-  const scale = coverScale * crop.zoom
+  const scale = coverScale(imgSize, aspect, viewW, viewH) * crop.zoom
   const drawW = imgSize.w * scale
   const drawH = imgSize.h * scale
 
   // Center the image, then offset so the (cx, cy) point sits in the window's
   // center, clamped so the image always covers the window.
-  const baseX = (PREVIEW_SIZE - drawW) / 2
-  const baseY = (PREVIEW_SIZE / aspect - drawH) / 2
-  const maxX = 0
-  const minX = PREVIEW_SIZE - drawW
-  const maxY = 0
-  const minY = PREVIEW_SIZE / aspect - drawH
-  const x = clamp(baseX - (crop.cx - 0.5) * drawW, Math.min(minX, maxX), Math.max(minX, maxX))
-  const y = clamp(baseY - (crop.cy - 0.5) * drawH, Math.min(minY, maxY), Math.max(minY, maxY))
+  const baseX = (viewW - drawW) / 2
+  const baseY = (viewH - drawH) / 2
+  const x = clamp(baseX - (crop.cx - 0.5) * drawW, viewW - drawW, 0)
+  const y = clamp(baseY - (crop.cy - 0.5) * drawH, viewH - drawH, 0)
 
   return {
     width: drawW,

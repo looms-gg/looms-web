@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { DiscordLogo, GoogleLogo, WindowsLogo } from "@phosphor-icons/react"
+import { DiscordLogo, GithubLogo, GoogleLogo } from "@phosphor-icons/react"
 import { useAuth } from "../../state/auth"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import {
@@ -13,8 +13,8 @@ import { Icon } from "../../components/ui/Icon"
 
 function providerIcon(provider: OAuthProvider) {
   if (provider === "discord") return DiscordLogo
-  if (provider === "google") return GoogleLogo
-  return WindowsLogo
+  if (provider === "github") return GithubLogo
+  return GoogleLogo
 }
 
 export function ConnectionsSection() {

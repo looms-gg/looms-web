@@ -1,6 +1,6 @@
 import { sanitizeUsername } from "./sanitize"
 
-export const OAUTH_PROVIDERS = ["discord", "google", "azure"] as const
+export const OAUTH_PROVIDERS = ["discord", "google", "github"] as const
 
 export type OAuthProvider = (typeof OAUTH_PROVIDERS)[number]
 
@@ -12,8 +12,8 @@ export function isOAuthProvider(value: string): value is OAuthProvider {
 
 export function providerLabel(provider: OAuthProvider): string {
   if (provider === "discord") return "Discord"
-  if (provider === "google") return "Google"
-  return "Microsoft"
+  if (provider === "github") return "GitHub"
+  return "Google"
 }
 
 const USERNAME_METADATA_KEYS = [

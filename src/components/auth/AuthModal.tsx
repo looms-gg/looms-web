@@ -1,11 +1,12 @@
 import { useEffect, useId, useState, type FormEvent } from "react"
 import {
   DiscordLogo,
+  GithubLogo,
   GoogleLogo,
   Warning,
-  WindowsLogo,
 } from "@phosphor-icons/react"
 import { useAuthOptional } from "../../state/auth"
+
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { isTurnstileEnabled } from "../../lib/turnstile"
 import {
@@ -32,8 +33,8 @@ export interface AuthModalProps {
 
 function providerIcon(provider: OAuthProvider) {
   if (provider === "discord") return DiscordLogo
-  if (provider === "google") return GoogleLogo
-  return WindowsLogo
+  if (provider === "github") return GithubLogo
+  return GoogleLogo
 }
 
 function switchMode(
@@ -394,21 +395,22 @@ export function AuthModal({
                 or
                 <span className="h-px flex-1 bg-base-content/10" />
               </div>
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="oauth-row mt-4">
                 {OAUTH_PROVIDERS.map((provider) => (
                   <button
                     key={provider}
                     type="button"
+                    data-oauth={provider}
                     disabled={oauthBusy || loading}
-                    className="btn btn-outline btn-sm rounded-xl font-bold gap-1.5"
+                    className="oauth-btn"
                     onClick={() => void handleOAuth(provider)}
                   >
                     {oauthBusy ? (
                       <span className="loading loading-spinner loading-xs" />
                     ) : (
-                      <Icon icon={providerIcon(provider)} size="sm" />
+                      <Icon icon={providerIcon(provider)} size="md" />
                     )}
-                    <span className="truncate">{providerLabel(provider)}</span>
+                    <span className="oauth-label">{providerLabel(provider)}</span>
                   </button>
                 ))}
               </div>

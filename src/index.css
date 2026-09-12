@@ -1042,8 +1042,91 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   }
 
   .notification-item,
-  .notification-action {
+  .notification-action,
+  .oauth-btn,
+  .oauth-label {
     transition: none;
+  }
+}
+
+/* ─── OAuth provider dock (AuthModal) ───────────────────────────────────── */
+
+.oauth-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.oauth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-base-content);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background-color 160ms var(--ease-out-quint),
+    border-color 160ms var(--ease-out-quint),
+    scale 140ms var(--ease-out-quint);
+}
+
+.oauth-btn:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--color-base-content) 7%, transparent);
+  border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+}
+
+.oauth-btn:active:not(:disabled) {
+  scale: 0.96;
+}
+
+.oauth-btn:disabled {
+  color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+  cursor: default;
+}
+
+/* Neighbors slide aside as the hovered button grows to reveal its name. */
+.oauth-label {
+  max-width: 0;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  opacity: 0;
+  transition:
+    max-width 240ms var(--ease-out-quint),
+    opacity 180ms var(--ease-out-quint);
+}
+
+.oauth-btn:hover .oauth-label,
+.oauth-btn:focus-visible .oauth-label,
+.oauth-btn:has(:focus-visible) .oauth-label {
+  max-width: 112px;
+  opacity: 1;
+}
+
+/* Touch has no hover: names stay visible and the row behaves like a grid. */
+@media (hover: none) {
+  .oauth-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-items: stretch;
+  }
+
+  .oauth-btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .oauth-label {
+    max-width: none;
+    overflow: visible;
+    opacity: 1;
   }
 }
 
