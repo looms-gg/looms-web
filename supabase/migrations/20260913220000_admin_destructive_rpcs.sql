@@ -115,9 +115,9 @@ $$;
 
 -- 3. Create or update the site announcement banner ------------------------------
 create or replace function public.admin_save_banner(
-  p_id uuid default null,
   p_is_active boolean,
   p_text text,
+  p_id uuid default null,
   p_link_url text default null,
   p_link_label text default null,
   p_style text default 'info',
@@ -201,9 +201,9 @@ revoke all on function public.admin_resolve_report(uuid, text, text) from public
 revoke all on function public.admin_resolve_report(uuid, text, text) from anon;
 grant execute on function public.admin_resolve_report(uuid, text, text) to authenticated;
 
-revoke all on function public.admin_save_banner(uuid, boolean, text, text, text, text, boolean) from public;
-revoke all on function public.admin_save_banner(uuid, boolean, text, text, text, text, boolean) from anon;
-grant execute on function public.admin_save_banner(uuid, boolean, text, text, text, text, boolean) to authenticated;
+revoke all on function public.admin_save_banner(boolean, text, uuid, text, text, text, boolean) from public;
+revoke all on function public.admin_save_banner(boolean, text, uuid, text, text, text, boolean) from anon;
+grant execute on function public.admin_save_banner(boolean, text, uuid, text, text, text, boolean) to authenticated;
 
 -- 4. Server-side attribution ---------------------------------------------------
 -- resolved_by and updated_by are always overwritten with auth.uid() on any

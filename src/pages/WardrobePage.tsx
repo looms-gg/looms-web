@@ -17,6 +17,10 @@ const TABS: { id: WardrobeTab; label: string }[] = [
   { id: "uploads", label: "My Uploads" },
 ]
 
+export function WardrobePage() {
+  const { user } = useAuth()
+  const { looks } = useWardrobe()
+  const { pieces } = useCatalog()
 interface WardrobeTabButtonProps {
   id: WardrobeTab
   label: string
@@ -84,6 +88,10 @@ export function WardrobePage() {
     return pieces.filter((p) => p.userId === user.id)
   }, [pieces, user])
 
+  function selectTab(next: WardrobeTab) {
+    setOptimisticTab(next)
+    setParams({ tab: next })
+  }
   const handleOpenUpload = () => setUploadOpen(true)
   const handleCloseUpload = () => setUploadOpen(false)
 
@@ -101,8 +109,22 @@ export function WardrobePage() {
         >
           <div className="flex flex-wrap gap-2">
             {TABS.map(({ id, label }) => (
+              <button
               <WardrobeTabButton
                 key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                className={`btn btn-sm btn-pill font-extrabold ${tab === id ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => selectTab(id)}
+              >
+                {label}
+                {id === "uploads" && myUploads.length > 0 && (
+                  <span className="badge badge-xs badge-neutral ml-1 tabular-nums">
+                    {myUploads.length}
+                  </span>
+                )}
+              </button>
                 id={id}
                 label={label}
                 isActive={tab === id}
@@ -113,6 +135,7 @@ export function WardrobePage() {
           </div>
           <button
             type="button"
+            onClick={() => setUploadOpen(true)}
             onClick={handleOpenUpload}
             className="btn btn-outline btn-sm rounded-full font-bold"
           >
@@ -128,10 +151,12 @@ export function WardrobePage() {
         <WardrobeUploadsPanel
           user={user}
           myUploads={myUploads}
+          onUpload={() => setUploadOpen(true)} />
           onUpload={handleOpenUpload}
         />
       ) : null}
 
+      <UploadPieceModal isOpen={uploadOpen} onClose={() => setUploadOpen(false)} />
       <UploadPieceModal isOpen={uploadOpen} onClose={handleCloseUpload} />
     </div>
   )

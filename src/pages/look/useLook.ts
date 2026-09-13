@@ -43,3 +43,4 @@ export function useLook(id: string | undefined) {
 
   return { look, setLook, loading, error }
 }
+

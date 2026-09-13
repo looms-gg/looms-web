@@ -150,3 +150,4 @@ describe("ResetPasswordPage", () => {
     expect(dom.textContent).toContain("Password updated")
   })
 })
+

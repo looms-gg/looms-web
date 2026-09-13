@@ -25,3 +25,4 @@ export function useSlotScrollEffect(
     }
   }, [slot, resultsRef])
 }
+
