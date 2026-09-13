@@ -10,7 +10,12 @@ export default defineConfig(() => ({
   test: {
     environment: "happy-dom",
     // scripts/ holds the prerender-contract test guarding the built HTML.
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "scripts/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "scripts/**/*.test.ts",
+      "og-worker/**/*.test.ts",
+    ],
     setupFiles: ["src/test/setupCatalog.ts"],
   },
 }))

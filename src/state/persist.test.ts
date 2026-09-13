@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { DEFAULT_BODY_ID } from "../data/bodies"
-import { clampHue, freshPersist, persistDefaults } from "./persist"
+import { freshPersist, persistDefaults } from "./persist"
+import { clampHue } from "../skin/hue"
 
 describe("persistDefaults", () => {
   it("starts with an empty wardrobe and classic model", () => {

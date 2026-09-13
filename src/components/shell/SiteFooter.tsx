@@ -2,9 +2,7 @@ import { Link } from "react-router-dom"
 import { DiscordLogo, GithubLogo } from "@phosphor-icons/react"
 import { LoomsLogo } from "../ui/LoomsLogo"
 import { useCookieConsent } from "../../state/cookieConsent"
-
-const DISCORD_URL = "https://discord.gg/UNTRgHBBPb"
-const GITHUB_URL = "https://github.com/looms-gg/looms-web"
+import { DISCORD_URL, GITHUB_URL } from "../../lib/seo"
 
 const legalLinks = [
   { to: "/privacy", label: "Privacy" },

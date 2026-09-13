@@ -23,9 +23,6 @@ describe("ExploreRack", () => {
           error={null}
           pieces={[]}
           filtered={[]}
-          slot="all"
-          sort="Newest"
-          query=""
           onReset={() => {}}
         />,
       )
@@ -40,9 +37,6 @@ describe("ExploreRack", () => {
           error="offline"
           pieces={[]}
           filtered={[]}
-          slot="all"
-          sort="Newest"
-          query=""
           onReset={() => {}}
         />,
       )
@@ -63,9 +57,6 @@ describe("ExploreRack", () => {
                     error={null}
                     pieces={pieces.slice(0, 1)}
                     filtered={[]}
-                    slot="all"
-                    sort="Newest"
-                    query="zzz"
                     onReset={onReset}
                   />
                 </WardrobeProvider>
@@ -94,9 +85,6 @@ describe("ExploreRack", () => {
                     error={null}
                     pieces={pieces}
                     filtered={pieces.slice(0, 2)}
-                    slot="all"
-                    sort="Newest"
-                    query=""
                     onReset={() => {}}
                   />
                 </WardrobeProvider>

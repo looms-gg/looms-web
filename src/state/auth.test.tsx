@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { formatErrorMessage } from "../lib/errorFormat"
 import { MAX_LIMITS } from "../lib/sanitize"
 import { supabase } from "../lib/supabase"
 import { absoluteAppUrl } from "../lib/basePath"
@@ -49,6 +48,88 @@ describe("auth module", () => {
     const { getAuth } = mountAuth()
     expect(getAuth().loading).toBe(true)
     expect(getAuth().user).toBeNull()
+  })
+
+  it("derives isAdmin from the admin_users probe", async () => {
+    const user = {
+      id: "user-1",
+      email: "user@example.com",
+      email_confirmed_at: "2026-01-01T00:00:00Z",
+      app_metadata: {},
+      user_metadata: {},
+      aud: "authenticated",
+      created_at: "2026-01-01T00:00:00Z",
+    }
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: {
+        session: { user, access_token: "t", refresh_token: "r", expires_in: 3600, token_type: "bearer" },
+      },
+      error: null,
+    } as never)
+
+    const adminMaybeSingle = vi.fn().mockResolvedValue({ data: { user_id: user.id }, error: null })
+    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+      if (table === "profiles") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        } as never
+      }
+      if (table === "admin_users") {
+        return {
+          select: () => ({
+            eq: () => ({ maybeSingle: adminMaybeSingle }),
+          }),
+        } as never
+      }
+      throw new Error(`unexpected table ${table}`)
+    })
+
+    const { getAuth } = mountAuth()
+    await vi.waitFor(() => {
+      expect(getAuth().isAdmin).toBe(true)
+    })
+    expect(adminMaybeSingle).toHaveBeenCalled()
+  })
+
+  it("isAdmin stays false when the admin_users probe finds no row", async () => {
+    const user = {
+      id: "user-1",
+      email: "user@example.com",
+      email_confirmed_at: "2026-01-01T00:00:00Z",
+      app_metadata: {},
+      user_metadata: {},
+      aud: "authenticated",
+      created_at: "2026-01-01T00:00:00Z",
+    }
+    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
+      data: {
+        session: { user, access_token: "t", refresh_token: "r", expires_in: 3600, token_type: "bearer" },
+      },
+      error: null,
+    } as never)
+
+    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+      if (table === "profiles" || table === "admin_users") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        } as never
+      }
+      throw new Error(`unexpected table ${table}`)
+    })
+
+    const { getAuth } = mountAuth()
+    await vi.waitFor(() => {
+      expect(getAuth().loading).toBe(false)
+    })
+    expect(getAuth().isAdmin).toBe(false)
   })
 
   it("signUpWithPassword sanitizes username before signUp", async () => {
@@ -193,6 +274,15 @@ describe("auth module", () => {
           update,
         } as never
       }
+      if (table === "admin_users") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        } as never
+      }
       throw new Error(`unexpected table ${table}`)
     })
     vi.spyOn(supabase, "rpc").mockResolvedValue({ data: null, error: null } as never)
@@ -224,7 +314,7 @@ describe("auth module", () => {
     expect(payload.bio.length).toBe(MAX_LIMITS.BIO)
   })
 
-  it("signInWithPassword surfaces formatted errors", async () => {
+  it("signInWithPassword passes the raw server message through", async () => {
     const raw = { message: "Rate limit exceeded for this profile" }
     vi.spyOn(supabase.auth, "signInWithPassword").mockResolvedValue({
       data: { user: null, session: null },
@@ -237,8 +327,7 @@ describe("auth module", () => {
       password: "bad",
     })
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toBe(formatErrorMessage(raw))
-    expect(error?.message).toMatch(/Profile update rate limit|Rate limit reached/)
+    expect(error?.message).toBe(raw.message)
   })
 
   it("signUpWithPassword succeeds without a doomed sign-in retry for unconfirmed users", async () => {
@@ -258,6 +347,15 @@ describe("auth module", () => {
           upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
         } as never
       }
+      if (table === "admin_users") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        } as never
+      }
       throw new Error(`unexpected table ${table}`)
     })
 
@@ -273,7 +371,7 @@ describe("auth module", () => {
     expect(signIn).not.toHaveBeenCalled()
   })
 
-  it("signUpWithPassword formats signup API errors", async () => {
+  it("signUpWithPassword passes the raw signup API error through", async () => {
     vi.spyOn(supabase.auth, "signUp").mockResolvedValue({
       data: { user: null, session: null },
       error: { message: "Request rate limit reached" } as never,
@@ -286,7 +384,7 @@ describe("auth module", () => {
       username: "Thomakosxd",
     })
 
-    expect(error?.message).toContain("Too many attempts in a short time")
+    expect(error?.message).toBe("Request rate limit reached")
   })
 
   it("deleteAccount calls the RPC, signs out, and clears local state", async () => {

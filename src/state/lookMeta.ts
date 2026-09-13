@@ -2,7 +2,8 @@ import { MAX_LIMITS, sanitizeText } from "../lib/sanitize"
 import { equippedFromStack } from "../data/outfit"
 import { bodyOrDefault } from "../data/bodies"
 import type { LookRow } from "../lib/supabase"
-import { clampHue, type Look, type LookVisibility } from "./persist"
+import { type Look, type LookVisibility } from "./persist"
+import { clampHue } from "../skin/hue"
 
 export type { LookVisibility }
 

@@ -15,11 +15,22 @@ vi.mock("../../state/auth", async (importOriginal) => {
   }
 })
 
+vi.mock("../../state/connections", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../state/connections")>()
+  return {
+    ...actual,
+    useConnections: () => state.value as unknown as Record<string, unknown>,
+  }
+})
+
 const baseAuth = {
+  signInWithOAuth: vi.fn().mockResolvedValue({ error: null }),
+}
+
+const baseConnections = {
   connections: [{ user_id: "u1", provider: "discord", featured: false, created_at: "x" }],
   unlinkConnection: vi.fn().mockResolvedValue({ error: null }),
   setConnectionFeatured: vi.fn().mockResolvedValue({ error: null }),
-  signInWithOAuth: vi.fn().mockResolvedValue({ error: null }),
 }
 
 function mountSection() {
@@ -39,7 +50,7 @@ describe("ConnectionsSection", () => {
   })
 
   it("lists all three providers with linked state", () => {
-    state.value = baseAuth
+    state.value = { ...baseAuth, ...baseConnections }
     const host = mountSection()
     expect(host.textContent).toContain("Discord")
     expect(host.textContent).toContain("Google")
@@ -49,7 +60,7 @@ describe("ConnectionsSection", () => {
   })
 
   it("shows the feature toggle only for linked Discord", () => {
-    state.value = baseAuth
+    state.value = { ...baseAuth, ...baseConnections }
     const host = mountSection()
     expect(
       host.querySelector('input[type=checkbox][aria-label="Feature Discord on your profile"]'),
@@ -57,7 +68,7 @@ describe("ConnectionsSection", () => {
   })
 
   it("calls unlinkConnection with the provider", async () => {
-    state.value = baseAuth
+    state.value = { ...baseAuth, ...baseConnections }
     const host = mountSection()
     const unlinkButton = [...host.querySelectorAll("button")].find((b) =>
       b.textContent?.includes("Unlink"),
@@ -66,11 +77,11 @@ describe("ConnectionsSection", () => {
       unlinkButton.click()
       await Promise.resolve()
     })
-    expect(baseAuth.unlinkConnection).toHaveBeenCalledWith("discord")
+    expect(baseConnections.unlinkConnection).toHaveBeenCalledWith("discord")
   })
 
   it("calls signInWithOAuth for unlinked providers", async () => {
-    state.value = { ...baseAuth, connections: [] }
+    state.value = { ...baseAuth, ...baseConnections, connections: [] }
     const host = mountSection()
     const connectButton = [...host.querySelectorAll("button")].find((b) =>
       b.textContent?.includes("Connect"),

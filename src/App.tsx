@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react"
+import { lazy, Suspense, useEffect, type ReactNode } from "react"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import { IconContext } from "@phosphor-icons/react"
 import { Shell } from "./components/shell/Shell"
@@ -10,6 +10,7 @@ import { LegalDocument } from "./pages/legal/LegalDocument"
 import { WardrobeProvider } from "./state/wardrobe"
 import { ThemeProvider } from "./state/theme"
 import { AuthProvider } from "./state/auth"
+import { ConnectionsProvider } from "./state/connections"
 import { CatalogProvider } from "./state/catalog"
 import { LikesProvider } from "./state/likes"
 import { NotificationsProvider } from "./state/notifications"
@@ -45,7 +46,7 @@ function RouteFallback() {
   )
 }
 
-export default function App() {
+function useScrollClass() {
   useEffect(() => {
     let scrollTimer: ReturnType<typeof setTimeout> | null = null
     const onScroll = () => {
@@ -65,118 +66,142 @@ export default function App() {
       document.body.classList.remove("is-scrolling")
     }
   }, [])
+}
+
+// AuthProvider must stay outermost of the state stack: Catalog,
+// Connections, Notifications, Likes, and Wardrobe read the session
+// via useAuthOptional and reset themselves when the user changes.
+const STATE_PROVIDERS: Array<({ children }: { children: ReactNode }) => ReactNode> = [
+  ThemeProvider,
+  AuthProvider,
+  ConnectionsProvider,
+  NotificationsProvider,
+  LikesProvider,
+  CatalogProvider,
+  WardrobeProvider,
+]
+
+function AppProviders({ children }: { children: ReactNode }) {
+  return STATE_PROVIDERS.reduceRight<ReactNode>(
+    (acc, Provider) => <Provider>{acc}</Provider>,
+    children,
+  )
+}
+
+export default function App() {
+  useScrollClass()
 
   return (
     // Solid (fill) weight for every Phosphor icon app-wide. The `Icon`
     // wrapper enforces this too, so direct usages stay consistent.
     <IconContext.Provider value={{ weight: "fill" }}>
-    <ThemeProvider>
-      <AuthProvider>
-        <NotificationsProvider>
-          <LikesProvider>
-            <CatalogProvider>
-              <WardrobeProvider>
-                <BrowserRouter basename={routerBasename()}>
-                <Routes>
-                  <Route element={<Shell />}>
-                    <Route index element={<ExplorePage />} />
-                    {/* Prerendered landing page; the SPA aliases it to Explore in looks mode. */}
-                    <Route path="look" element={<ExplorePage />} />
-                    <Route
-                      path="piece/:id"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <PiecePage />
-                        </Suspense>
-                      } />
-                    <Route
-                      path="look/:id"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <LookPage />
-                        </Suspense>
-                      } />
-                    <Route
-                      path="u/:username"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <ProfilePage />
-                        </Suspense>
-                      } />
-                    <Route
-                      path="wardrobe"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <RequireAuth
-                            title="Sign in to open your wardrobe"
-                            body="Save pieces and looks to your account to use them across devices."
-                          >
-                            <WardrobePage />
-                          </RequireAuth>
-                        </Suspense>
-                      } />
-                    <Route
-                      path="studio"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <RequireAuth
-                            title="Sign in to use Studio"
-                            body="Mix layers into a Minecraft skin after you create an account."
-                          >
-                            <StudioPage />
-                          </RequireAuth>
-                        </Suspense>
-                      } />
-                    <Route
-                      path="editor"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <EditorPage />
-                        </Suspense>
-                      } />
-                    <Route
-                      path="settings"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <SettingsRoute />
-                        </Suspense>
-                      } />
-                    <Route
-                      path="reset-password"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <ResetPasswordPage />
-                        </Suspense>
-                      } />
-                    <Route
-                      path="auth/callback"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <AuthCallbackPage />
-                        </Suspense>
-                      } />
-                    <Route path="privacy" element={<LegalDocument docId="privacy" />} />
-                    <Route path="terms" element={<LegalDocument docId="terms" />} />
-                    <Route path="cookies" element={<LegalDocument docId="cookies" />} />
-                    <Route path="guidelines" element={<LegalDocument docId="guidelines" />} />
-                    <Route
-                      path="admin"
-                      element={
-                        <Suspense fallback={<RouteFallback />}>
-                          <AdminGuard>
-                            <AdminPage />
-                          </AdminGuard>
-                        </Suspense>
-                      } />
-                  </Route>
-                </Routes>
-              </BrowserRouter>
-              </WardrobeProvider>
-            </CatalogProvider>
-          </LikesProvider>
-        </NotificationsProvider>
-      </AuthProvider>
-    </ThemeProvider>
+      <AppProviders>
+        <BrowserRouter basename={routerBasename()}>
+          <Routes>
+            <Route element={<Shell />}>
+              <Route index element={<ExplorePage />} />
+              {/* Prerendered landing page; the SPA aliases it to Explore in looks mode. */}
+              <Route path="look" element={<ExplorePage />} />
+              <Route
+                path="piece/:id"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <PiecePage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="look/:id"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <LookPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="u/:username"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <ProfilePage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="wardrobe"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <RequireAuth
+                      title="Sign in to open your wardrobe"
+                      body="Save pieces and looks to your account to use them across devices."
+                    >
+                      <WardrobePage />
+                    </RequireAuth>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="studio"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <RequireAuth
+                      title="Sign in to use Studio"
+                      body="Mix layers into a Minecraft skin after you create an account."
+                    >
+                      <StudioPage />
+                    </RequireAuth>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="editor"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <EditorPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <SettingsRoute />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="reset-password"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <ResetPasswordPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="auth/callback"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <AuthCallbackPage />
+                  </Suspense>
+                }
+              />
+              <Route path="privacy" element={<LegalDocument docId="privacy" />} />
+              <Route path="terms" element={<LegalDocument docId="terms" />} />
+              <Route path="cookies" element={<LegalDocument docId="cookies" />} />
+              <Route path="guidelines" element={<LegalDocument docId="guidelines" />} />
+              <Route
+                path="admin"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <AdminGuard>
+                      <AdminPage />
+                    </AdminGuard>
+                  </Suspense>
+                }
+              />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AppProviders>
     </IconContext.Provider>
   )
 }

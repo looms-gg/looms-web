@@ -1,12 +1,13 @@
 import { describe, expect, it, vi, afterEach } from "vitest"
 import { supabase } from "../lib/supabase"
-import { loadGarments } from "./catalog"
+import { fetchGarments } from "./catalog"
+ // Pure-logic tests live in this .ts file; React/provider tests (mounting CatalogProvider) live in catalog.test.tsx.
 
 afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe("loadGarments", () => {
+describe("fetchGarments", () => {
   it("maps public rows with profile usernames", async () => {
     const order = vi.fn().mockResolvedValue({
       data: [
@@ -34,7 +35,7 @@ describe("loadGarments", () => {
     const select = vi.fn().mockReturnValue({ eq, or: vi.fn().mockReturnValue({ order }) })
     vi.spyOn(supabase, "from").mockReturnValue({ select } as never)
 
-    const pieces = await loadGarments(null)
+    const pieces = await fetchGarments(null)
     expect(supabase.from).toHaveBeenCalledWith("garments")
     expect(eq).toHaveBeenCalledWith("is_public", true)
     expect(pieces).toHaveLength(1)

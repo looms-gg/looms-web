@@ -7,9 +7,10 @@ import {
   crispSkinTexture,
   lightSkinViewer,
   pauseViewerLoop,
-  skinviewModel,
+  viewerModelName,
 } from "./focus"
 import { ensureModel, type SkinModel } from "./convert"
+import { getStoredThumb, setStoredThumb } from "./thumbCache"
 import { compositeIsoThumbFx } from "./thumbFx"
 import { washFromCanvas } from "./wash"
 
@@ -43,61 +44,6 @@ const queue: Job[] = []
 let pumping = false
 let pumpQueued = false
 let viewer: SkinViewer | null = null
-
-const DB_NAME = "looms_iso_cache_v1"
-const STORE_NAME = "thumbnails"
-let dbPromise: Promise<IDBDatabase | null> | null = null
-
-function getDb(): Promise<IDBDatabase | null> {
-  if (typeof indexedDB === "undefined") return Promise.resolve(null)
-  if (!dbPromise) {
-    dbPromise = new Promise((resolve) => {
-      try {
-        const req = indexedDB.open(DB_NAME, 1)
-        req.onupgradeneeded = () => {
-          const db = req.result
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME)
-          }
-        }
-        req.onsuccess = () => resolve(req.result)
-        req.onerror = () => resolve(null)
-      } catch {
-        resolve(null)
-      }
-    })
-  }
-  return dbPromise
-}
-
-async function getStoredThumb(key: string): Promise<IsoThumbResult | null> {
-  const db = await getDb()
-  if (!db) return null
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(STORE_NAME, "readonly")
-      const store = tx.objectStore(STORE_NAME)
-      const req = store.get(key)
-      req.onsuccess = () => resolve((req.result as IsoThumbResult) || null)
-      req.onerror = () => resolve(null)
-    } catch {
-      resolve(null)
-    }
-  })
-}
-
-function setStoredThumb(key: string, data: IsoThumbResult) {
-  void getDb().then((db) => {
-    if (!db) return
-    try {
-      const tx = db.transaction(STORE_NAME, "readwrite")
-      const store = tx.objectStore(STORE_NAME)
-      store.put(data, key)
-    } catch {
-      // ignore
-    }
-  })
-}
 
 function getIsoViewer() {
   if (viewer) return viewer
@@ -147,8 +93,12 @@ function enqueue(key: string, prepare: () => Promise<Prepared>, priority = false
   return jobPromise
 }
 
-/** Piece renders carry a lighter rim than full-figure renders: thinner band,
- *  ~a quarter less opacity. */
+/** Look / outfit renders use a thinner, subtler rim than zoomed pieces to keep
+ *  full characters crisp without an overpowering white band. */
+export const OUTFIT_FX = { rim: 4, rimAlpha: 0.45 } as const
+
+/** Piece renders carry a slightly deeper rim band because zoomed pieces (hair,
+ *  hats) read too thin at full-character widths. */
 export const PIECE_FX = { rim: 6, rimAlpha: 0.45 } as const
 
 /** Bake shadow+rim into a freshly rendered viewer canvas (same-task read). */
@@ -228,8 +178,7 @@ function pump() {
 export async function isoPieceThumb(
   piece: Piece,
   model: SkinModel = "classic",
-  priority = false,
-  bakeFx = true,
+  { priority = false, bakeFx = true }: { priority?: boolean; bakeFx?: boolean } = {},
 ): Promise<IsoThumbResult> {
   // v75: piece rim lifted to 6px — zoomed pieces (hair) read too thin at 4.
   const key = `piece:v75:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
@@ -239,7 +188,7 @@ export async function isoPieceThumb(
   if (pending) return pending
 
   const work = (async () => {
-    const stored = await getStoredThumb(key)
+    const stored = await getStoredThumb<IsoThumbResult>(key)
     if (stored) {
       memCache.set(key, stored)
       return stored
@@ -258,7 +207,7 @@ export async function isoPieceThumb(
           group,
           covers: covers ?? ["head", "torso", "legs"],
           parts: partsFromAtlas(normalized),
-          model: skinviewModel(model),
+          model: viewerModelName(model),
           bakeFx,
           fx: PIECE_FX,
         }
@@ -280,19 +229,19 @@ export async function isoOutfitThumb(
   bodyId = DEFAULT_BODY_ID,
   bodyHue = 0,
   model: SkinModel = "classic",
-  priority = false,
-  bakeFx = true,
+  { priority = false, bakeFx = true }: { priority?: boolean; bakeFx?: boolean } = {},
 ): Promise<IsoThumbResult> {
   const outfitKey = pieces.map((piece) => piece.id).join("|") || "empty"
   // v70: the rim became an inner overlay tinting the render's lit edge.
-  const key = `outfit:v70:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
+  // v71: thinner rim highlight (4px, 0.45 alpha) for full-figure looks.
+  const key = `outfit:v71:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
   const mem = memCache.get(key)
   if (mem) return mem
   const pending = inflight.get(key)
   if (pending) return pending
 
   const work = (async () => {
-    const stored = await getStoredThumb(key)
+    const stored = await getStoredThumb<IsoThumbResult>(key)
     if (stored) {
       memCache.set(key, stored)
       return stored
@@ -307,8 +256,9 @@ export async function isoOutfitThumb(
           wash,
           group: "full" as const,
           covers: ["head", "torso", "legs"] satisfies Group[],
-          model: skinviewModel(model),
+          model: viewerModelName(model),
           bakeFx,
+          fx: OUTFIT_FX,
         }
       },
       priority,

@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent } from "react"
+import { useState, type KeyboardEvent } from "react"
 import { Pencil } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
 
@@ -25,11 +25,13 @@ export function InlineEditableText({
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(value)
+  const [prevValue, setPrevValue] = useState(value)
 
-  useEffect(() => {
+  if (value !== prevValue) {
+    setPrevValue(value)
     setDraft(value)
     setIsEditing(false)
-  }, [value])
+  }
 
   function startEditing() {
     if (disabled) return

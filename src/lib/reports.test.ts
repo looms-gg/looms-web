@@ -78,8 +78,8 @@ describe("reports module", () => {
     expect(reports).toHaveLength(1)
   })
 
-  it("updates report status and records action_taken", async () => {
-    const singleMock = vi.fn().mockResolvedValue({
+  it("updates report status through the admin RPC", async () => {
+    const rpcSpy = vi.spyOn(supabase, "rpc").mockResolvedValue({
       data: {
         id: "rep-1",
         status: "resolved",
@@ -87,43 +87,99 @@ describe("reports module", () => {
         action_taken: "content_deleted",
       },
       error: null,
-    })
-    const selectMock = vi.fn().mockReturnValue({ single: singleMock })
-    const eqMock = vi.fn().mockReturnValue({ select: selectMock })
-    const updateMock = vi.fn().mockReturnValue({ eq: eqMock })
-
-    vi.spyOn(supabase, "from").mockReturnValue({
-      update: updateMock,
-    } as unknown as ReturnType<typeof supabase.from>)
+    } as never)
 
     const result = await updateReportStatus({
       reportId: "rep-1",
       status: "resolved",
-      adminId: "admin-1",
       actionTaken: "content_deleted",
     })
 
-    expect(updateMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: "resolved",
-        resolved_by: "admin-1",
-        action_taken: "content_deleted",
-      }),
-    )
+    expect(rpcSpy).toHaveBeenCalledWith("admin_resolve_report", {
+      p_report_id: "rep-1",
+      p_status: "resolved",
+      p_action_taken: "content_deleted",
+    })
     expect(result.status).toBe("resolved")
   })
 
-  it("deletes look target in adminDeleteContent", async () => {
-    const eqMock = vi.fn().mockResolvedValue({ error: null })
-    const deleteMock = vi.fn().mockReturnValue({ eq: eqMock })
-
-    const fromSpy = vi.spyOn(supabase, "from").mockReturnValue({
-      delete: deleteMock,
-    } as unknown as ReturnType<typeof supabase.from>)
+  it("deletes content through the admin RPC", async () => {
+    const rpcSpy = vi.spyOn(supabase, "rpc").mockResolvedValue({
+      data: null,
+      error: null,
+    } as never)
 
     await adminDeleteContent({ targetType: "look", targetId: "look-999" })
-    expect(fromSpy).toHaveBeenCalledWith("looks")
-    expect(deleteMock).toHaveBeenCalled()
-    expect(eqMock).toHaveBeenCalledWith("id", "look-999")
+    expect(rpcSpy).toHaveBeenCalledWith("admin_delete_content", {
+      p_target_type: "look",
+      p_target_id: "look-999",
+      p_sub_type: null,
+    })
+  })
+
+  it("surfaces RPC errors from adminDeleteContent", async () => {
+    vi.spyOn(supabase, "rpc").mockResolvedValue({
+      data: null,
+      error: { message: "admin_delete_content: caller is not an admin" },
+    } as never)
+
+    await expect(
+      adminDeleteContent({ targetType: "look", targetId: "look-999" }),
+    ).rejects.toThrow(/caller is not an admin/)
+  })
+
+  it("throws error when any query fails in fetchRecentPlatformActivity", async () => {
+    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
+      const mockResult = table === "looks"
+        ? { data: null, error: { message: "Failed to fetch looks" } }
+        : { data: [], error: null }
+      const limitMock = vi.fn().mockResolvedValue(mockResult)
+      const orderMock = vi.fn().mockReturnValue({ limit: limitMock })
+      const selectMock = vi.fn().mockReturnValue({ order: orderMock })
+      return { select: selectMock } as never
+    })
+
+    const { fetchRecentPlatformActivity } = await import("./reports")
+    await expect(fetchRecentPlatformActivity(10)).rejects.toEqual({
+      message: "Failed to fetch looks",
+    })
+  })
+
+  it("calls admin_set_moderation_state RPC with parameters", async () => {
+    const rpcSpy = vi.spyOn(supabase, "rpc").mockResolvedValue({
+      data: null,
+      error: null,
+    } as never)
+
+    const { adminSetModerationState } = await import("./reports")
+    await adminSetModerationState({
+      targetType: "look",
+      targetId: "look-123",
+      state: "hidden",
+      details: { note: "test" },
+    })
+
+    expect(rpcSpy).toHaveBeenCalledWith("admin_set_moderation_state", {
+      p_target_type: "look",
+      p_target_id: "look-123",
+      p_state: "hidden",
+      p_details: { note: "test" },
+    })
+  })
+
+  it("surfaces RPC errors from adminSetModerationState", async () => {
+    vi.spyOn(supabase, "rpc").mockResolvedValue({
+      data: null,
+      error: { message: "caller is not an admin" },
+    } as never)
+
+    const { adminSetModerationState } = await import("./reports")
+    await expect(
+      adminSetModerationState({
+        targetType: "piece",
+        targetId: "garment-456",
+        state: "dmca_down",
+      }),
+    ).rejects.toEqual({ message: "caller is not an admin" })
   })
 })

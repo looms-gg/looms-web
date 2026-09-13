@@ -91,13 +91,9 @@ export function AdminPage() {
 
       {/* Tab Panels */}
       <div className="pt-2">
-        {activeTab === "moderation" && user ? (
-          <ModerationQueue adminId={user.id} />
-        ) : null}
+        {activeTab === "moderation" && user ? <ModerationQueue /> : null}
         {activeTab === "activity" ? <LatestActivityFeed /> : null}
-        {activeTab === "banner" && user ? (
-          <BannerSettings adminId={user.id} />
-        ) : null}
+        {activeTab === "banner" && user ? <BannerSettings /> : null}
         {activeTab === "audit" && user ? <AdminAuditLog /> : null}
       </div>
     </div>

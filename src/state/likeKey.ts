@@ -1,6 +1,5 @@
-import type { LikeTargetType } from "../lib/likeTarget"
-
-export type { LikeTargetType } from "../lib/likeTarget"
+export type { LikeTargetType } from "../data/likeTarget"
+import type { LikeTargetType } from "../data/likeTarget"
 
 export function likeKey(type: LikeTargetType, id: string): string {
   return `${type}:${id}`

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { poseGroupForParts, skinviewModel, visibleSkinParts } from "./focus"
+import { poseGroupForParts, viewerModelName, visibleSkinParts } from "./focus"
 
-describe("skinviewModel", () => {
+describe("viewerModelName", () => {
   it("maps arm fit onto skinview3d model names", () => {
-    expect(skinviewModel("slim")).toBe("slim")
-    expect(skinviewModel("classic")).toBe("default")
+    expect(viewerModelName("slim")).toBe("slim")
+    expect(viewerModelName("classic")).toBe("default")
   })
 })
 

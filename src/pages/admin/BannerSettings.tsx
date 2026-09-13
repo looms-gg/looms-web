@@ -1,30 +1,22 @@
 import { useEffect, useState, type FormEvent } from "react"
-import {
-  Megaphone,
-  Check,
-  Info,
-  FloppyDisk,
-  Warning,
-  Star,
-  ArrowRight,
-  X,
-} from "@phosphor-icons/react"
+import { Check, FloppyDisk, ArrowRight, X } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
+import { bannerStyleClasses } from "../../components/shell/bannerStyles"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { MAX_LIMITS } from "../../lib/sanitize"
 import {
   fetchAdminSiteBanner,
   saveSiteBanner,
 } from "../../lib/siteBanner"
-import type { SiteBannerRow } from "../../lib/supabase"
+import type { BannerStyle, SiteBannerRow } from "../../lib/supabase"
 
-export function BannerSettings({ adminId }: { adminId: string }) {
+export function BannerSettings() {
   const [banner, setBanner] = useState<SiteBannerRow | null>(null)
   const [isActive, setIsActive] = useState(false)
   const [text, setText] = useState("")
   const [linkUrl, setLinkUrl] = useState("")
   const [linkLabel, setLinkLabel] = useState("")
-  const [style, setStyle] = useState<"info" | "accent" | "warning" | "neutral">("info")
+  const [style, setStyle] = useState<BannerStyle>("info")
   const [dismissible, setDismissible] = useState(true)
 
   const [loading, setLoading] = useState(true)
@@ -75,7 +67,6 @@ export function BannerSettings({ adminId }: { adminId: string }) {
         linkLabel: linkLabel.trim() || null,
         style,
         dismissible,
-        adminId,
       })
       setBanner(updated)
       setSuccess(true)
@@ -87,41 +78,7 @@ export function BannerSettings({ adminId }: { adminId: string }) {
     }
   }
 
-  const getPreviewClasses = () => {
-    switch (style) {
-      case "accent":
-        return {
-          wrapper: "bg-secondary/15 text-secondary-content border-secondary/25",
-          icon: Star,
-          iconColor: "text-secondary",
-          btnClass: "btn-secondary",
-        }
-      case "warning":
-        return {
-          wrapper: "bg-warning/15 text-warning-content border-warning/25",
-          icon: Warning,
-          iconColor: "text-warning",
-          btnClass: "btn-warning",
-        }
-      case "neutral":
-        return {
-          wrapper: "bg-base-200 text-base-content border-base-content/10",
-          icon: Megaphone,
-          iconColor: "text-base-content/70",
-          btnClass: "btn-ghost border border-base-content/20",
-        }
-      case "info":
-      default:
-        return {
-          wrapper: "bg-primary/10 text-base-content border-primary/25",
-          icon: Info,
-          iconColor: "text-primary",
-          btnClass: "btn-primary",
-        }
-    }
-  }
-
-  const preview = getPreviewClasses()
+  const preview = bannerStyleClasses(style)
 
   if (loading) {
     return (

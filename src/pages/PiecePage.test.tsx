@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { pieces, upsertPiece } from "../data/catalog"
 import { WardrobeProvider } from "../state/wardrobe"
-import { AuthContext } from "../state/auth"
+import { AuthContext, type AuthContextValue } from "../state/auth"
 import { CatalogProvider } from "../state/catalog"
 import * as catalogState from "../state/catalog"
 import { LikesProvider } from "../state/likes"
@@ -38,12 +38,17 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-function stubAuth(userId: string | null) {
+function stubAuth(userId: string | null): AuthContextValue {
   return {
-    user: userId ? { id: userId, email: "maker@test.dev" } : null,
+    user: userId
+      ? ({ id: userId, email: "maker@test.dev" } as AuthContextValue["user"])
+      : null,
     session: null,
-    profile: userId ? { id: userId, username: "Maker" } : null,
+    profile: userId
+      ? ({ id: userId, username: "Maker" } as AuthContextValue["profile"])
+      : null,
     avatarUrl: null,
+    isAdmin: false,
     loading: false,
     emailVerified: Boolean(userId),
     pendingEmail: null,
@@ -54,7 +59,11 @@ function stubAuth(userId: string | null) {
     signInWithPassword: async () => ({ error: null }),
     signUpWithPassword: async () => ({ error: null }),
     signInWithOtp: async () => ({ error: null }),
+    signInWithOAuth: async () => ({ error: null }),
+    completeOnboarding: async () => ({ error: null }),
+    resetPasswordForEmail: async () => ({ error: null }),
     signOut: async () => ({ error: null }),
+    deleteAccount: async () => ({ error: null }),
     updateProfile: async () => ({ error: null }),
     refreshProfile: async () => {},
     profileError: null,
@@ -72,7 +81,7 @@ function renderPiece(
   flushSync(() => {
     root.render(
       <MemoryRouter initialEntries={[initialEntry]}>
-        <AuthContext.Provider value={stubAuth(userId) as never}>
+        <AuthContext.Provider value={stubAuth(userId)}>
           <LikesProvider>
             <CatalogProvider>
               <WardrobeProvider>
@@ -90,10 +99,6 @@ function renderPiece(
 }
 
 describe("PiecePage", () => {
-  it("exports the piece screen", () => {
-    expect(typeof PiecePage).toBe("function")
-  })
-
   it("links back to Explore by default when no prior state exists", () => {
     const host = renderPiece(`/piece/${pieces[0].id}`)
     const backLink = host.querySelector("a")

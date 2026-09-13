@@ -6,6 +6,7 @@ import {
   DEFAULT_FEATURED_LOOKS,
 } from "./publicLooks"
 import { supabase } from "../lib/supabase"
+import { getBody } from "../data/bodies"
 
 function makeLook(overrides: Partial<PublicLook> & { id: string; name: string }): PublicLook {
   return {
@@ -95,6 +96,12 @@ describe("DEFAULT_FEATURED_LOOKS", () => {
   it("provides 3 distinct starter looks", () => {
     expect(DEFAULT_FEATURED_LOOKS.length).toBe(3)
     expect(new Set(DEFAULT_FEATURED_LOOKS.map((l) => l.id)).size).toBe(3)
+  })
+
+  it("references body ids the bodies registry defines", () => {
+    for (const look of DEFAULT_FEATURED_LOOKS) {
+      expect(getBody(look.bodyId), `${look.id} bodyId ${look.bodyId}`).toBeDefined()
+    }
   })
 })
 

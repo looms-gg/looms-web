@@ -1,15 +1,11 @@
 import { useEffect, useId, useState } from "react"
 import { ArrowBendUpLeft, Trash, Pencil, Flag } from "@phosphor-icons/react"
 import {
-  createGarmentComment,
-  createLookComment,
-  deleteGarmentComment,
-  deleteLookComment,
-  fetchGarmentComments,
-  fetchLookComments,
+  createComment,
+  deleteComment,
+  fetchComments,
   nestComments,
-  updateGarmentComment,
-  updateLookComment,
+  updateComment,
   type CommentItem,
   type CommentTargetType,
 } from "../../state/comments"
@@ -56,15 +52,16 @@ function CommentComposer({
   return (
     <form
       className="space-y-2"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault()
         if (busy || disabled) return
         setBusy(true)
-        void onSubmit(body)
-          .then(() => {
-            setBody("")
-          })
-          .finally(() => setBusy(false))
+        try {
+          await onSubmit(body)
+          setBody("")
+        } finally {
+          setBusy(false)
+        }
       }}
     >
       <label className="sr-only" htmlFor={id}>
@@ -159,19 +156,12 @@ function CommentCard({
             setError(null)
             if (!viewerId) return
             try {
-              if (targetType === "garment") {
-                await updateGarmentComment({
-                  id: comment.id,
-                  userId: viewerId,
-                  body,
-                })
-              } else {
-                await updateLookComment({
-                  id: comment.id,
-                  userId: viewerId,
-                  body,
-                })
-              }
+              await updateComment({
+                targetType,
+                id: comment.id,
+                userId: viewerId,
+                body,
+              })
               setEditing(false)
               onChanged()
             } catch (err) {
@@ -218,16 +208,15 @@ function CommentCard({
             type="button"
             className="btn btn-ghost btn-xs min-h-9 rounded-full font-bold text-error active:scale-[0.96] transition-transform"
             title="Delete comment"
-            onClick={() => {
+            onClick={async () => {
               if (!viewerId) return
               setError(null)
-              const delPromise =
-                targetType === "garment"
-                  ? deleteGarmentComment({ id: comment.id, userId: viewerId })
-                  : deleteLookComment({ id: comment.id, userId: viewerId })
-              void delPromise
-                .then(() => onChanged())
-                .catch((err) => setError(formatErrorMessage(err)))
+              try {
+                await deleteComment({ targetType, id: comment.id, userId: viewerId })
+                onChanged()
+              } catch (err) {
+                setError(formatErrorMessage(err))
+              }
             }}
           >
             <Icon icon={Trash} size="xs" className="mr-1" />
@@ -269,21 +258,13 @@ function CommentCard({
             setError(null)
             if (!viewerId) return
             try {
-              if (targetType === "garment") {
-                await createGarmentComment({
-                  garmentId: comment.targetId,
-                  userId: viewerId,
-                  parentId: comment.id,
-                  body,
-                })
-              } else {
-                await createLookComment({
-                  lookId: comment.targetId,
-                  userId: viewerId,
-                  parentId: comment.id,
-                  body,
-                })
-              }
+              await createComment({
+                targetType,
+                targetId: comment.targetId,
+                userId: viewerId,
+                parentId: comment.id,
+                body,
+              })
               setReplyOpen(false)
               onChanged()
             } catch (err) {
@@ -343,10 +324,7 @@ export function CommentsSection({
   async function reload() {
     setLoading(true)
     try {
-      const comments: CommentItem[] =
-        targetType === "garment"
-          ? await fetchGarmentComments(targetId)
-          : await fetchLookComments(targetId)
+      const comments: CommentItem[] = await fetchComments(targetType, targetId)
       setError(null)
       setThreads(nestComments(comments))
     } catch (err) {
@@ -384,19 +362,12 @@ export function CommentsSection({
             onSubmit={async (body) => {
               setError(null)
               try {
-                if (targetType === "garment") {
-                  await createGarmentComment({
-                    garmentId: targetId,
-                    userId: user.id,
-                    body,
-                  })
-                } else {
-                  await createLookComment({
-                    lookId: targetId,
-                    userId: user.id,
-                    body,
-                  })
-                }
+                await createComment({
+                  targetType,
+                  targetId,
+                  userId: user.id,
+                  body,
+                })
                 await reload()
               } catch (err) {
                 setError(formatErrorMessage(err))

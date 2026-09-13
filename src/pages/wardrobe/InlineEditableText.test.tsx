@@ -149,4 +149,43 @@ describe("InlineEditableText", () => {
     expect(host.querySelector('input[aria-label="Look name"]')).toBeNull()
     expect(onCommit).not.toHaveBeenCalled()
   })
+
+  it("syncs draft and closes editor when value prop changes", () => {
+    const onCommit = vi.fn()
+    const host = document.createElement("div")
+    document.body.appendChild(host)
+    const root = createRoot(host)
+
+    flushSync(() => {
+      root.render(
+        <InlineEditableText
+          value="Initial"
+          maxLength={50}
+          onCommit={onCommit}
+          ariaLabel="Look name"
+          editAriaLabel="Edit name"
+        />,
+      )
+    })
+
+    flushSync(() => {
+      ;(host.querySelector('button[aria-label="Edit name"]') as HTMLButtonElement).click()
+    })
+    expect(host.querySelector('input[aria-label="Look name"]')).not.toBeNull()
+
+    flushSync(() => {
+      root.render(
+        <InlineEditableText
+          value="Updated"
+          maxLength={50}
+          onCommit={onCommit}
+          ariaLabel="Look name"
+          editAriaLabel="Edit name"
+        />,
+      )
+    })
+
+    expect(host.querySelector('input[aria-label="Look name"]')).toBeNull()
+    expect(host.querySelector("h2")?.textContent).toBe("Updated")
+  })
 })

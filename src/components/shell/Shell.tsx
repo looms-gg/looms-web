@@ -69,6 +69,63 @@ function DockLinks({ pathname, from }: { pathname: string; from?: string }) {
   })
 }
 
+function resolveActiveToast(
+  notice: string | null,
+  dismissNotice: () => void,
+  profileError: string | null,
+  dismissProfileError: () => void,
+  likesLoadError: string | null,
+  dismissLikesLoadError: () => void,
+) {
+  if (notice != null) return { message: notice, onDismiss: dismissNotice }
+  if (profileError != null) return { message: profileError, onDismiss: dismissProfileError }
+  if (likesLoadError != null) return { message: likesLoadError, onDismiss: dismissLikesLoadError }
+  return null
+}
+
+function ShellToast({ toast }: { toast: { message: string; onDismiss: () => void } | null }) {
+  if (!toast) return null
+  return (
+    <div className="toast toast-end z-[60] pb-24 md:pb-6">
+      <div className="alert border-0 bg-base-300 text-base-content shadow-none">
+        <span className="font-bold">{toast.message}</span>
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs rounded-full"
+          onClick={toast.onDismiss}
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ShellDock({
+  dockRef,
+  dockThumb,
+  pathname,
+  from,
+}: {
+  dockRef: React.RefObject<HTMLElement | null>
+  dockThumb: { ready: boolean; x: number; w: number }
+  pathname: string
+  from?: string
+}) {
+  return (
+    <nav ref={dockRef} className="plaza-dock md:hidden" aria-label="Primary">
+      {dockThumb.ready ? (
+        <span
+          className="plaza-dock-thumb"
+          aria-hidden
+          style={{ transform: `translateX(${dockThumb.x}px)`, width: dockThumb.w }}
+        />
+      ) : null}
+      <DockLinks pathname={pathname} from={from} />
+    </nav>
+  )
+}
+
 export function Shell() {
   return (
     <CookieConsentProvider>
@@ -83,6 +140,7 @@ function ShellFrame() {
     user,
     profile,
     avatarUrl,
+    isAdmin,
     signOut,
     emailVerified,
     openEmailVerify,
@@ -98,14 +156,14 @@ function ShellFrame() {
   usePendingActionReplay()
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "Player"
-  const toast =
-    notice != null
-      ? { message: notice, onDismiss: dismissNotice }
-      : profileError != null
-        ? { message: profileError, onDismiss: dismissProfileError }
-        : likesLoadError != null
-          ? { message: likesLoadError, onDismiss: dismissLoadError }
-          : null
+  const toast = resolveActiveToast(
+    notice,
+    dismissNotice,
+    profileError,
+    dismissProfileError,
+    likesLoadError,
+    dismissLoadError,
+  )
 
   return (
     <div
@@ -127,7 +185,8 @@ function ShellFrame() {
               <span
                 className="nav-thumb"
                 aria-hidden
-                style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }} />
+                style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }}
+              />
             ) : null}
             <HeaderPills pathname={location.pathname} from={from} />
           </nav>
@@ -135,13 +194,15 @@ function ShellFrame() {
             <ThemeToggle />
             <ShellAuthControls
               user={user}
+              isAdmin={isAdmin}
               displayName={displayName}
               username={profile?.username}
               minecraftUsername={profile?.minecraft_username}
               avatarUrl={avatarUrl}
               emailVerified={emailVerified}
               onOpenEmailVerify={openEmailVerify}
-              onSignOut={() => signOut()} />
+              onSignOut={() => signOut()}
+            />
             {user ? <NotificationBell /> : null}
           </div>
         </div>
@@ -160,34 +221,13 @@ function ShellFrame() {
 
       {!studio ? <SiteFooter /> : null}
 
-      <nav ref={dockRef} className="plaza-dock md:hidden" aria-label="Primary">
-        {dockThumb.ready ? (
-          <span
-            className="plaza-dock-thumb"
-            aria-hidden
-            style={{ transform: `translateX(${dockThumb.x}px)`, width: dockThumb.w }} />
-        ) : null}
-        <DockLinks pathname={location.pathname} from={from} />
-      </nav>
+      <ShellDock dockRef={dockRef} dockThumb={dockThumb} pathname={location.pathname} from={from} />
 
       <VerifyEmailModal />
       <OnboardingGate />
       <CookieBanner />
 
-      {toast ? (
-        <div className="toast toast-end z-[60] pb-24 md:pb-6">
-          <div className="alert border-0 bg-base-300 text-base-content shadow-none">
-            <span className="font-bold">{toast.message}</span>
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs rounded-full"
-              onClick={toast.onDismiss}
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <ShellToast toast={toast} />
     </div>
   )
 }

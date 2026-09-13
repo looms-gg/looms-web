@@ -1,12 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react"
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import { useWardrobe } from "../state/wardrobe"
-import {
-  DEFAULT_FEATURED_LOOKS,
-  fetchLookById,
-  publicLookToLook,
-  type PublicLook,
-} from "../state/publicLooks"
+import { publicLookToLook, type PublicLook } from "../state/publicLooks"
 import { equippedFromStack, piecesFromEquipped } from "../data/outfit"
 import { HeadMeta } from "../components/shell/HeadMeta"
 import {
@@ -14,35 +9,36 @@ import {
   lookCanonicalUrl,
   lookSeoDescription,
   lookSeoTitle,
+  SITE_ORIGIN,
 } from "../lib/seo"
 import { tryDownloadSkinFile } from "../skin/compose"
 import { CommentsSection } from "../components/comments/CommentsSection"
 import { AuthModal } from "../components/auth/AuthModal"
 import { useAuthOptional } from "../state/auth"
 import { setPendingAction } from "../lib/pendingAction"
-import { formatErrorMessage } from "../lib/errorFormat"
 import { EmptyState } from "../components/ui/EmptyState"
 import { ButtonLink } from "../components/ui/Button"
 import { LookSheet } from "./look/LookSheet"
+import { useLook } from "./look/useLook"
 import { PieceSkeleton } from "./piece/PieceSkeleton"
 
 function revealStyle(i: number): CSSProperties {
   return { "--piece-i": i } as CSSProperties
 }
 
-export function LookPage() {
-  const { id } = useParams()
-  const location = useLocation()
-  const navigate = useNavigate()
-  const auth = useAuthOptional()
-  const user = auth?.user ?? null
-  const { loadLook, notify } = useWardrobe()
+function resolveBackLink(locationState: unknown): { to: string; label: string } {
+  const stateFrom = (locationState as { from?: string } | null)?.from
+  const to = stateFrom || "/"
+  if (stateFrom?.startsWith("/wardrobe")) {
+    return { to, label: "← Wardrobe" }
+  }
+  if (stateFrom?.startsWith("/u/")) {
+    return { to, label: "← Profile" }
+  }
+  return { to, label: "← Explore" }
+}
 
-  const [look, setLook] = useState<PublicLook | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [authOpen, setAuthOpen] = useState(false)
-
+function useScrollToTop(key: string, id: string | undefined) {
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
@@ -53,74 +49,72 @@ export function LookPage() {
       if (document.documentElement) document.documentElement.scrollTop = 0
       if (document.body) document.body.scrollTop = 0
     }
-  }, [id, location.key])
+  }, [id, key])
+}
 
-  useEffect(() => {
-    if (!id) {
-      setLoading(false)
-      return
-    }
+function LookPageMeta({ look }: { look: PublicLook }) {
+  const shareUrl = lookCanonicalUrl(look.id)
+  const metaDesc = lookSeoDescription(look)
+  const ogImage = `${SITE_ORIGIN}/og/outfit-default.png`
 
-    // Check if it's one of the default featured looks first
-    const defaultLook = DEFAULT_FEATURED_LOOKS.find((l) => l.id === id)
-    if (defaultLook) {
-      setLook(defaultLook)
-      setLoading(false)
-      return
-    }
+  return (
+    <HeadMeta
+      title={lookSeoTitle(look)}
+      description={metaDesc}
+      url={shareUrl}
+      image={ogImage}
+      // Indexation quality gate: only public looks may be indexed; private
+      // or unlisted outfits stay crawlable for the owner but out of search.
+      index={look.visibility === "public"}
+      jsonLd={creativeWorkJsonLd({
+        name: look.name,
+        description: metaDesc,
+        url: shareUrl,
+        image: ogImage,
+      })}
+    />
+  )
+}
 
-    let active = true
-    setLoading(true)
-    void fetchLookById(id)
-      .then((res) => {
-        if (active) {
-          setLook(res)
-          setLoading(false)
+function LookNotFound({ error }: { error: string | null }) {
+  return (
+    <div className="mx-auto max-w-md py-16">
+      <EmptyState
+        title={error ? "Couldn't load this look" : "Look not found"}
+        body={error ?? "This look may have been removed, or the link is wrong."}
+        action={
+          <ButtonLink to="/" variant="primary" className="mt-4 font-extrabold">
+            Explore looks
+          </ButtonLink>
         }
-      })
-      .catch((err) => {
-        if (active) {
-          setError(formatErrorMessage(err))
-          setLoading(false)
-        }
-      })
+      />
+    </div>
+  )
+}
 
-    return () => {
-      active = false
-    }
-  }, [id])
+export function LookPage() {
+  const { id } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const auth = useAuthOptional()
+  const user = auth?.user ?? null
+  const { loadLook, notify } = useWardrobe()
 
-  const stateFrom = (location.state as { from?: string } | null)?.from
-  const backTo = stateFrom || "/"
-  const backLabel = stateFrom?.startsWith("/wardrobe")
-    ? "← Wardrobe"
-    : stateFrom?.startsWith("/u/")
-    ? "← Profile"
-    : "← Explore"
+  const { look, setLook, loading, error } = useLook(id)
+  const [authOpen, setAuthOpen] = useState(false)
+
+  useScrollToTop(location.key, id)
 
   if (loading) {
     return <PieceSkeleton />
   }
 
   if (!look) {
-    return (
-      <div className="mx-auto max-w-md py-16">
-        <EmptyState
-          title={error ? "Couldn't load this look" : "Look not found"}
-          body={error ?? "This look may have been removed, or the link is wrong."}
-          action={
-            <ButtonLink to="/" variant="primary" className="mt-4 font-extrabold">
-              Explore looks
-            </ButtonLink>
-          }
-        />
-      </div>
-    )
+    return <LookNotFound error={error} />
   }
 
+  const { to: backTo, label: backLabel } = resolveBackLink(location.state)
   const outfit = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
-  const shareUrl = lookCanonicalUrl(look.id)
-  const metaDesc = lookSeoDescription(look)
 
   const handleWear = () => {
     if (!user) {
@@ -138,29 +132,15 @@ export function LookPage() {
       outfit,
       look.bodyId,
       look.bodyHue,
-      look.name.trim() || "looms-look",
       look.model,
+      { filename: look.name.trim() || "looms-look" },
     )
     if (!ok) notify("Couldn't export that skin.")
   }
 
   return (
     <div className="space-y-6">
-      <HeadMeta
-        title={lookSeoTitle(look)}
-        description={metaDesc}
-        url={shareUrl}
-        image={`https://looms.gg/og/outfit-default.png`}
-        // Indexation quality gate: only public looks may be indexed; private
-        // or unlisted outfits stay crawlable for the owner but out of search.
-        index={look.visibility === "public"}
-        jsonLd={creativeWorkJsonLd({
-          name: look.name,
-          description: metaDesc,
-          url: shareUrl,
-          image: `https://looms.gg/og/outfit-default.png`,
-        })}
-      />
+      <LookPageMeta look={look} />
       <Link
         to={backTo}
         className="piece-reveal link inline-flex min-h-11 items-center text-sm font-bold text-primary no-underline"
@@ -172,7 +152,9 @@ export function LookPage() {
       <LookSheet
         look={look}
         outfit={outfit}
-        onLikeCountChange={(nextCount) => setLook((prev) => (prev ? { ...prev, likeCount: nextCount } : null))}
+        onLikeCountChange={(nextCount) =>
+          setLook((prev) => (prev ? { ...prev, likeCount: nextCount } : null))
+        }
         onWear={handleWear}
         onDownload={() => void handleDownload()}
       />

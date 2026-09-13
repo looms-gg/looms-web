@@ -11,7 +11,7 @@ import {
   formatLastSeen,
   initialsFromUsername,
   resolveAvatarUrl,
-} from "../../state/profileDisplay"
+} from "../../lib/profileDisplay"
 
 /**
  * Display-only profile header. Editing (avatar, banner, username, bio,
@@ -23,8 +23,6 @@ export function ProfileHeader({
 }: {
   profile: ProfileRow
   isOwner: boolean
-  /** Kept for API compatibility; settings owns saving now. */
-  onSaved?: () => void | Promise<void>
 }) {
   const { user } = useAuth()
   const [authOpen, setAuthOpen] = useState(false)

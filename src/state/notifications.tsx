@@ -8,12 +8,38 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import type { RealtimeChannel } from "@supabase/supabase-js"
+import type { RealtimeChannel, RealtimePostgresInsertPayload } from "@supabase/supabase-js"
 import { formatErrorMessage } from "../lib/errorFormat"
-import { supabase, type NotificationRow } from "../lib/supabase"
+import { startBackoffPoll } from "../lib/backoffPoll"
+import {
+  supabase,
+  type NotificationRow,
+  type NotificationTargetType,
+  type NotificationType,
+} from "../lib/supabase"
 import { useAuthOptional } from "./auth"
 
 export type { NotificationRow } from "../lib/supabase"
+
+const VALID_NOTIFICATION_TYPES = new Set<NotificationType>(["like", "comment", "reply"])
+const VALID_NOTIFICATION_TARGET_TYPES = new Set<NotificationTargetType>(["look", "garment"])
+
+export function isNotificationRow(val: unknown): val is NotificationRow {
+  if (!val || typeof val !== "object") return false
+  const r = val as Record<string, unknown>
+  return (
+    typeof r.id === "string" &&
+    typeof r.user_id === "string" &&
+    typeof r.actor_id === "string" &&
+    typeof r.type === "string" &&
+    VALID_NOTIFICATION_TYPES.has(r.type as NotificationType) &&
+    typeof r.target_type === "string" &&
+    VALID_NOTIFICATION_TARGET_TYPES.has(r.target_type as NotificationTargetType) &&
+    typeof r.target_id === "string" &&
+    typeof r.read === "boolean" &&
+    typeof r.created_at === "string"
+  )
+}
 
 export const MAX_NOTIFICATIONS = 20
 
@@ -67,15 +93,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     setLoading(true)
 
-    void supabase
-      .from("notifications")
-      .select("*, profiles!notifications_actor_id_fkey(username, avatar_url)", {
-        count: "exact",
-      })
+    void supabase.from("notifications")
+      .select("*, profiles!notifications_actor_id_fkey(username, avatar_url)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(MAX_NOTIFICATIONS)
-      .then(({ data, count, error }) => {
+      .then(({ data, error }) => {
         if (cancelled) return
         if (error) {
           setLoadError(formatErrorMessage(error))
@@ -95,7 +118,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
             actor: Array.isArray(row.profiles) ? row.profiles[0] : row.profiles,
           }))
           setNotifications(rows)
-          setUnreadCount(Math.max(count ?? 0, rows.filter((r) => !r.read).length))
+          // The badge counts unread only. The list query is limit-bounded and
+          // counts all rows, so the exact unread total comes from a head-only
+          // query — same shape the poll tick uses.
+          void supabase.from("notifications")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .eq("read", false)
+            .then(({ count: unread }) => {
+              if (!cancelled && typeof unread === "number") setUnreadCount(unread)
+            })
         }
         setLoading(false)
       })
@@ -113,21 +145,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     realtimeHealthyRef.current = false
     let channel: RealtimeChannel | null = null
 
-    const onInsert = (payload: { new: Record<string, unknown> | null }) => {
+    const onInsert = (payload: RealtimePostgresInsertPayload<Record<string, unknown>>) => {
       const next = payload?.new
-      if (!next || next.user_id !== userId) return
+      if (!isNotificationRow(next) || next.user_id !== userId) return
       setUnreadCount((c) => c + 1)
       setNotifications((prev) => {
         if (prev.some((r) => r.id === next.id)) return prev
         const row: NotificationWithType = {
-          id: String(next.id),
-          user_id: String(next.user_id),
-          actor_id: String(next.actor_id),
-          type: next.type as NotificationRow["type"],
-          target_type: next.target_type as NotificationRow["target_type"],
-          target_id: String(next.target_id),
-          read: Boolean(next.read),
-          created_at: String(next.created_at),
+          ...next,
           actor: null,
         }
         return [row, ...prev].slice(0, MAX_NOTIFICATIONS)
@@ -144,7 +169,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           table: "notifications",
           filter: `user_id=eq.${userId}`,
         },
-        onInsert as never,
+        onInsert,
       )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") realtimeHealthyRef.current = true
@@ -164,50 +189,20 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!userId) return
     const uid = userId
-    let cancelled = false
-    let running = false
-    let delayMs = POLL_INITIAL_MS
-    let timer: number | null = null
-
-    async function tick() {
-      if (cancelled || running || document.visibilityState === "hidden") return
-      if (realtimeHealthyRef.current) return
-      running = true
-      try {
+    return startBackoffPoll(
+      async (isCancelled) => {
+        if (realtimeHealthyRef.current) return
         const { count, error } = await supabase
           .from("notifications")
           .select("id", { count: "exact", head: true })
           .eq("user_id", uid)
           .eq("read", false)
-        if (!cancelled && !error && typeof count === "number") {
+        if (!isCancelled() && !error && typeof count === "number") {
           setUnreadCount(count)
         }
-      } catch {
-        // Transient network failure — the next scheduled attempt retries.
-      } finally {
-        running = false
-      }
-    }
-
-    function scheduleNext() {
-      if (cancelled) return
-      timer = window.setTimeout(() => {
-        void tick().finally(scheduleNext)
-      }, delayMs)
-      delayMs = Math.min(delayMs * 2, POLL_MAX_MS)
-    }
-
-    scheduleNext()
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void tick()
-    }
-    document.addEventListener("visibilitychange", onVisible)
-
-    return () => {
-      cancelled = true
-      if (timer) window.clearTimeout(timer)
-      document.removeEventListener("visibilitychange", onVisible)
-    }
+      },
+      { initialMs: POLL_INITIAL_MS, maxMs: POLL_MAX_MS },
+    )
   }, [userId])
 
   const dismissLoadError = useCallback(() => {
@@ -289,12 +284,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   return <NotificationsContext value={value}>{children}</NotificationsContext>
 }
 
-export function useNotificationsOptional(): NotificationsContextValue | null {
-  return useContext(NotificationsContext)
-}
-
 export function useNotifications(): NotificationsContextValue {
   const ctx = useContext(NotificationsContext)
   if (!ctx) throw new Error("useNotifications must be used within a NotificationsProvider")
   return ctx
+}
+
+export function useNotificationsOptional(): NotificationsContextValue | null {
+  return useContext(NotificationsContext)
 }

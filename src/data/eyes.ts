@@ -11,7 +11,6 @@ export type Eye = {
   id: string
   name: string
   skin: string
-  thumb: string
   hasWhites: boolean
 }
 
@@ -115,7 +114,6 @@ export const bundledEyes: Eye[] = Object.keys(skinModules)
       id,
       name: `Eyes #${String(num).padStart(2, "0")}`,
       skin: skinUrl,
-      thumb: "",
       hasWhites: EYES_WITH_WHITES.has(id),
     }
   })

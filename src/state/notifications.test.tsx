@@ -9,6 +9,7 @@ import {
   NotificationsProvider,
   useNotifications,
   notificationTargetPath,
+  isNotificationRow,
 } from "./notifications"
 
 function stubAuth(userId: string | null): AuthContextValue {
@@ -19,6 +20,7 @@ function stubAuth(userId: string | null): AuthContextValue {
       ? ({ id: userId, username: "Tester" } as AuthContextValue["profile"])
       : null,
     avatarUrl: null,
+    isAdmin: false,
     loading: false,
     emailVerified: Boolean(userId),
     pendingEmail: null,
@@ -38,9 +40,6 @@ function stubAuth(userId: string | null): AuthContextValue {
     deleteAccount: vi.fn(),
     signInWithOAuth: vi.fn(),
     completeOnboarding: vi.fn(),
-    connections: [],
-    unlinkConnection: vi.fn(),
-    setConnectionFeatured: vi.fn(),
   }
 }
 
@@ -75,12 +74,14 @@ type SelectResult = {
 type NotificationsMock = {
   fromSpy: ReturnType<typeof vi.spyOn>
   holdSelect: Deferred<SelectResult>
+  holdUnread: Deferred<{ count: number | null; error: { message: string } | null }>
   holdMarkAll: Deferred<{ error: { message: string } | null }>
   holdClearAll: Deferred<{ error: { message: string } | null }>
 }
 
 function mockNotificationsTable(): NotificationsMock {
   const holdSelect = deferred<SelectResult>()
+  const holdUnread = deferred<{ count: number | null; error: { message: string } | null }>()
   const holdMarkAll = deferred<{ error: { message: string } | null }>()
   const holdClearAll = deferred<{ error: { message: string } | null }>()
 
@@ -88,6 +89,8 @@ function mockNotificationsTable(): NotificationsMock {
     if (table !== "notifications") {
       return {} as never
     }
+    // Two select shapes: the bounded list query (eq → order → limit → then)
+    // and the head-only unread count (eq → eq → then).
     return {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -97,6 +100,11 @@ function mockNotificationsTable(): NotificationsMock {
               catch: holdSelect.promise.catch.bind(holdSelect.promise),
               finally: holdSelect.promise.finally.bind(holdSelect.promise),
             }),
+          }),
+          eq: vi.fn().mockReturnValue({
+            then: holdUnread.promise.then.bind(holdUnread.promise),
+            catch: holdUnread.promise.catch.bind(holdUnread.promise),
+            finally: holdUnread.promise.finally.bind(holdUnread.promise),
           }),
         }),
       }),
@@ -111,7 +119,7 @@ function mockNotificationsTable(): NotificationsMock {
     } as never
   })
 
-  return { fromSpy, holdSelect, holdMarkAll, holdClearAll }
+  return { fromSpy, holdSelect, holdUnread, holdMarkAll, holdClearAll }
 }
 
 function mountNotifications(userId: string | null) {
@@ -161,12 +169,17 @@ function mountNotifications(userId: string | null) {
   }
 }
 
-async function settleSelect(mock: NotificationsMock, result: SelectResult) {
+async function settleSelect(
+  mock: NotificationsMock,
+  result: SelectResult,
+  unreadCount: number | null = null,
+) {
   await vi.waitFor(() => {
     expect(mock.fromSpy).toHaveBeenCalled()
   })
   await act(async () => {
     mock.holdSelect.resolve(result)
+    mock.holdUnread.resolve({ count: unreadCount, error: null })
   })
   await act(async () => {})
 }
@@ -224,7 +237,7 @@ describe("NotificationsProvider", () => {
       expect(mounted.read().loading).toBe(true)
     })
 
-    await settleSelect(mock, selectResult([{ id: "n1" }], 1))
+    await settleSelect(mock, selectResult([{ id: "n1" }]), 1)
 
     await vi.waitFor(() => {
       expect(mounted.read().loading).toBe(false)
@@ -239,7 +252,7 @@ describe("NotificationsProvider", () => {
   it("marks all read optimistically and rolls back on error", async () => {
     const mock = mockNotificationsTable()
     const mounted = mountNotifications("user-a")
-    await settleSelect(mock, selectResult([{ id: "n1" }], 1))
+    await settleSelect(mock, selectResult([{ id: "n1" }]), 1)
     expect(mounted.read().count).toBe(1)
 
     let markPromise!: Promise<void>
@@ -259,7 +272,7 @@ describe("NotificationsProvider", () => {
   it("clears all rows and rolls back on error", async () => {
     const mock = mockNotificationsTable()
     const mounted = mountNotifications("user-a")
-    await settleSelect(mock, selectResult([{ id: "n1", read: true }], 0))
+    await settleSelect(mock, selectResult([{ id: "n1", read: true }]), 0)
     expect(mounted.read().list).toBe("n1")
 
     let clearPromise!: Promise<void>
@@ -308,7 +321,7 @@ describe("NotificationsProvider", () => {
     })
 
     const mounted = mountNotifications("user-a")
-    await settleSelect(mock, { data: [], count: 0, error: null })
+    await settleSelect(mock, { data: [], count: 0, error: null }, 0)
     expect(mounted.read().list).toBe("")
 
     await act(async () => {
@@ -330,5 +343,105 @@ describe("NotificationsProvider", () => {
     expect(mounted.read().count).toBe(1)
     expect(channelSpy).toHaveBeenCalled()
     mounted.unmount()
+  })
+
+  it("ignores malformed or invalid realtime insert payloads", async () => {
+    const mock = mockNotificationsTable()
+    let insertHandler: ((payload: { new: Record<string, unknown> }) => void) | null = null
+
+    vi.spyOn(supabase, "channel").mockImplementation(() => {
+      const ch = {
+        on: (_e: string, _o: unknown, cb: (p: { new: Record<string, unknown> }) => void) => {
+          insertHandler = cb
+          return ch
+        },
+        subscribe: (cb: (s: string) => void) => {
+          cb("SUBSCRIBED")
+          return { unsubscribe: vi.fn() }
+        },
+      }
+      return ch as never
+    })
+
+    const mounted = mountNotifications("user-a")
+    await settleSelect(mock, { data: [], count: 0, error: null }, 0)
+
+    await act(async () => {
+      // Invalid notification type
+      insertHandler?.({
+        new: {
+          id: "bad-1",
+          user_id: "user-a",
+          actor_id: "user-b",
+          type: "unknown_type",
+          target_type: "look",
+          target_id: "look-1",
+          read: false,
+          created_at: new Date().toISOString(),
+        },
+      })
+      // Invalid target type
+      insertHandler?.({
+        new: {
+          id: "bad-2",
+          user_id: "user-a",
+          actor_id: "user-b",
+          type: "like",
+          target_type: "profile",
+          target_id: "profile-1",
+          read: false,
+          created_at: new Date().toISOString(),
+        },
+      })
+      // Missing id / wrong user
+      insertHandler?.({
+        new: {
+          user_id: "user-other",
+          type: "like",
+        },
+      })
+    })
+
+    expect(mounted.read().list).toBe("")
+    expect(mounted.read().count).toBe(0)
+    mounted.unmount()
+  })
+})
+
+describe("isNotificationRow", () => {
+  const valid = {
+    id: "n1",
+    user_id: "u1",
+    actor_id: "u2",
+    type: "like",
+    target_type: "look",
+    target_id: "l1",
+    read: false,
+    created_at: "2026-09-08T00:00:00Z",
+  }
+
+  it("accepts valid notification rows", () => {
+    expect(isNotificationRow(valid)).toBe(true)
+    expect(isNotificationRow({ ...valid, type: "comment", target_type: "garment" })).toBe(true)
+    expect(isNotificationRow({ ...valid, type: "reply", read: true })).toBe(true)
+  })
+
+  it("rejects non-objects and null", () => {
+    expect(isNotificationRow(null)).toBe(false)
+    expect(isNotificationRow(undefined)).toBe(false)
+    expect(isNotificationRow("string")).toBe(false)
+    expect(isNotificationRow(123)).toBe(false)
+  })
+
+  it("rejects invalid types and target types", () => {
+    expect(isNotificationRow({ ...valid, type: "poke" })).toBe(false)
+    expect(isNotificationRow({ ...valid, target_type: "user" })).toBe(false)
+  })
+
+  it("rejects missing or wrong-typed fields", () => {
+    expect(isNotificationRow({ ...valid, read: "false" })).toBe(false)
+    expect(isNotificationRow({ ...valid, id: 123 })).toBe(false)
+    const { id: _, ...missingId } = valid
+    expect(isNotificationRow(missingId)).toBe(false)
   })
 })

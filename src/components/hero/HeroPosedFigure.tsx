@@ -92,8 +92,6 @@ export function HeroPosedFigure({
   look?: PublicLook
   pose: HeroPose
   labelAlign?: "auto" | "center"
-  rank?: 1 | 2 | 3
-  onWear?: (look: PublicLook) => void
   loading?: boolean
   className?: string
 }) {

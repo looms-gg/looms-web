@@ -67,7 +67,12 @@ export function clearPendingAction() {
   }
 }
 
-/** Read the pending action without consuming it. Expired or corrupt entries return null. */
+/**
+ * Read the pending action without consuming it: a returned action stays in
+ * storage for consumePendingAction(). Self-cleans expired or corrupt entries
+ * on the way through, so those return null and the side effect is storage GC,
+ * never losing a still-valid action.
+ */
 export function peekPendingAction(): PendingAction | null {
   let parsed: unknown
   try {

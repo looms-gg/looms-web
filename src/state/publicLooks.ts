@@ -1,9 +1,11 @@
 import { supabase } from "../lib/supabase"
-import type { SkinModel } from "../skin/convert"
+import type { SkinModel } from "../data/model"
 import { bodyOrDefault } from "../data/bodies"
-import { clampHue, type Look } from "./persist"
+import { type Look } from "./persist"
+import { clampHue } from "../skin/hue"
 import { asLookDescription, asLookVisibility } from "./lookMeta"
 import { equippedFromStack } from "../data/outfit"
+import { coerceProfileEmbed } from "../lib/profileEmbed"
 
 export type LookSort = "Trending" | "Popular" | "Newest"
 export type LookModelFilter = "all" | "classic" | "slim"
@@ -24,25 +26,8 @@ export type PublicLook = {
   maker: string
   makerAvatarUrl: string | null
   recentLikeCount?: number
-}
-
-function asMakerProfileEmbed(value: unknown): { username: string; avatar_url: string | null } {
-  if (value == null) return { username: "maker", avatar_url: null }
-  if (Array.isArray(value)) {
-    const first = value[0] as { username?: unknown; avatar_url?: unknown } | undefined
-    return {
-      username: typeof first?.username === "string" ? first.username : "maker",
-      avatar_url: typeof first?.avatar_url === "string" ? first.avatar_url : null,
-    }
-  }
-  if (typeof value === "object") {
-    const obj = value as { username?: unknown; avatar_url?: unknown }
-    return {
-      username: typeof obj.username === "string" ? obj.username : "maker",
-      avatar_url: typeof obj.avatar_url === "string" ? obj.avatar_url : null,
-    }
-  }
-  return { username: "maker", avatar_url: null }
+  /** True only for the bundled DEFAULT_FEATURED_LOOKS fixtures, never for DB rows. */
+  featured?: boolean
 }
 
 export function mapLookEmbedRow(row: {
@@ -70,7 +55,7 @@ export function mapLookEmbedRow(row: {
     maker = row.username
     makerAvatarUrl = row.avatar_url ?? null
   } else if (row.profiles) {
-    const p = asMakerProfileEmbed(row.profiles)
+    const p = coerceProfileEmbed(row.profiles)
     maker = p.username
     makerAvatarUrl = p.avatar_url
   }
@@ -113,11 +98,12 @@ export const DEFAULT_FEATURED_LOOKS: PublicLook[] = [
   {
     id: "featured-winter-explorer",
     userId: "system",
+    featured: true,
     name: "Winter Explorer",
     description: "Cozy winter layers for exploring snowy biomes.",
     visibility: "public",
     stack: ["ash-crop", "winter-coat", "dark-sweatpants", "knee-high-converse"],
-    bodyId: "slate",
+    bodyId: "body-1",
     bodyHue: 0,
     model: "classic",
     likeCount: 42,
@@ -130,11 +116,12 @@ export const DEFAULT_FEATURED_LOOKS: PublicLook[] = [
   {
     id: "featured-streetwear-classic",
     userId: "system",
+    featured: true,
     name: "Street Casual",
     description: "Urban streetwear with fresh sneakers and relaxed jacket.",
     visibility: "public",
     stack: ["ink-fall", "open-plaid", "baggy-skull-pants", "sneakers"],
-    bodyId: "sand",
+    bodyId: "body-3",
     bodyHue: 0,
     model: "classic",
     likeCount: 31,
@@ -147,11 +134,12 @@ export const DEFAULT_FEATURED_LOOKS: PublicLook[] = [
   {
     id: "featured-cyber-wanderer",
     userId: "system",
+    featured: true,
     name: "Cyber Wanderer",
     description: "Futuristic neon accents with sleek boots and dark visor.",
     visibility: "public",
     stack: ["rose-drape", "striped-coat", "camo-pants", "brown-shoes"],
-    bodyId: "ash",
+    bodyId: "body-5",
     bodyHue: 200,
     model: "slim",
     likeCount: 27,
@@ -200,6 +188,11 @@ export function filterAndSortPublicLooks(
   })
 }
 
+/**
+ * Never rejects: any failure (network, schema, RLS) resolves to [] so the
+ * caller renders its empty state. Callers that need a distinct error state
+ * should wrap the call in their own timeout, not catch this one.
+ */
 export async function fetchPublicLooksFeed(): Promise<PublicLook[]> {
   try {
     const { data, error } = await supabase
@@ -217,6 +210,12 @@ export async function fetchPublicLooksFeed(): Promise<PublicLook[]> {
   }
 }
 
+/**
+ * Never rejects, and never returns fewer than `limit` looks: the RPC result
+ * is padded from the like-sorted public feed, then from DEFAULT_FEATURED_LOOKS.
+ * A broken backend still renders a full hero slate — callers cannot rely on
+ * rejection or emptiness to detect an outage.
+ */
 export async function fetchTrendingLooksPastDay(limit = 3): Promise<PublicLook[]> {
   try {
     // 1. Try get_trending_looks_past_day RPC
@@ -280,6 +279,10 @@ export async function fetchYesterdayTopLook(): Promise<PublicLook | null> {
   }
 }
 
+/**
+ * Never rejects: null means "not found or lookup failed". Featured looks
+ * short-circuit before the DB so the hero renders offline.
+ */
 export async function fetchLookById(id: string): Promise<PublicLook | null> {
   const featured = DEFAULT_FEATURED_LOOKS.find((l) => l.id === id)
   if (featured) return featured

@@ -1,9 +1,28 @@
-import { logAdminAction } from "./adminAudit"
 import { MAX_LIMITS, sanitizeText, sanitizeUrl } from "./sanitize"
-import { supabase, type SiteBannerRow } from "./supabase"
+import { supabase, type BannerStyle, type SiteBannerRow } from "./supabase"
 
 const DISMISSED_BANNER_STORAGE_KEY = "looms_dismissed_site_banner"
 const LAST_BANNER_STORAGE_KEY = "looms_last_site_banner"
+
+const VALID_STYLES = new Set(["info", "accent", "warning", "neutral"])
+
+function isSiteBannerRow(val: unknown): val is SiteBannerRow {
+  if (!val || typeof val !== "object") return false
+  const r = val as Record<string, unknown>
+  return (
+    typeof r.id === "string" &&
+    typeof r.is_active === "boolean" &&
+    typeof r.text === "string" &&
+    (r.link_url === null || typeof r.link_url === "string") &&
+    (r.link_label === null || typeof r.link_label === "string") &&
+    typeof r.style === "string" &&
+    VALID_STYLES.has(r.style) &&
+    typeof r.dismissible === "boolean" &&
+    typeof r.created_at === "string" &&
+    typeof r.updated_at === "string" &&
+    (r.updated_by === null || typeof r.updated_by === "string")
+  )
+}
 
 /**
  * Returns the last banner seen by this browser (from localStorage), or null.
@@ -14,7 +33,8 @@ export function getCachedActiveBanner(): SiteBannerRow | null {
   try {
     const stored = localStorage.getItem(LAST_BANNER_STORAGE_KEY)
     if (!stored) return null
-    return JSON.parse(stored) as SiteBannerRow
+    const parsed = JSON.parse(stored) as unknown
+    return isSiteBannerRow(parsed) ? parsed : null
   } catch {
     return null
   }
@@ -33,7 +53,10 @@ function setCachedActiveBanner(banner: SiteBannerRow | null) {
 }
 
 /**
- * Fetches the currently active site announcement banner for display.
+ * Fetches the currently active site announcement banner for public display.
+ * Never throws: null also covers fetch failure so the page renders bannerless;
+ * a broken fetch must not block the page shell. Admin edits use
+ * fetchAdminSiteBanner, which throws so the admin editor surfaces the error.
  */
 export async function fetchActiveSiteBanner(): Promise<SiteBannerRow | null> {
   const { data, error } = await supabase
@@ -49,11 +72,13 @@ export async function fetchActiveSiteBanner(): Promise<SiteBannerRow | null> {
     return null
   }
   setCachedActiveBanner(data)
-  return data as SiteBannerRow | null
+  return data
 }
 
 /**
- * Fetches the latest site banner config (active or inactive) for admin management.
+ * Fetches the latest site banner config (active or inactive) for admin
+ * management. Throws on failure — the admin editor surfaces the error, unlike
+ * the display path in fetchActiveSiteBanner which swallows to null.
  */
 export async function fetchAdminSiteBanner(): Promise<SiteBannerRow | null> {
   const { data, error } = await supabase
@@ -64,7 +89,7 @@ export async function fetchAdminSiteBanner(): Promise<SiteBannerRow | null> {
     .maybeSingle()
 
   if (error) throw error
-  return data as SiteBannerRow | null
+  return data
 }
 
 export type SaveSiteBannerInput = {
@@ -73,13 +98,14 @@ export type SaveSiteBannerInput = {
   text: string
   linkUrl?: string | null
   linkLabel?: string | null
-  style: "info" | "accent" | "warning" | "neutral"
+  style: BannerStyle
   dismissible: boolean
-  adminId: string
 }
 
 /**
- * Creates or updates the site announcement banner.
+ * Creates or updates the site announcement banner via the admin_save_banner
+ * SECURITY DEFINER RPC, which sets updated_by from the server session and
+ * writes the audit row in the same transaction.
  */
 export async function saveSiteBanner(input: SaveSiteBannerInput): Promise<SiteBannerRow> {
   const cleanText = sanitizeText(input.text, MAX_LIMITS.SITE_BANNER_TEXT)
@@ -92,49 +118,29 @@ export async function saveSiteBanner(input: SaveSiteBannerInput): Promise<SiteBa
     ? sanitizeText(input.linkLabel, MAX_LIMITS.SITE_BANNER_LINK_LABEL)
     : null
 
-  const payload = {
-    is_active: input.isActive,
-    text: cleanText,
-    link_url: cleanUrl,
-    link_label: cleanLabel,
-    style: input.style,
-    dismissible: input.dismissible,
-    updated_at: new Date().toISOString(),
-    updated_by: input.adminId,
-  }
-
-  if (input.id) {
-    const { data, error } = await supabase
-      .from("site_banners")
-      .update(payload)
-      .eq("id", input.id)
-      .select()
-      .single()
-
-    if (error) throw error
-    await logAdminAction({
-      action: "update_banner",
-      targetTable: "site_banners",
-      targetId: data.id,
-      details: { isActive: input.isActive, style: input.style },
-    })
-    return data as SiteBannerRow
-  }
-
-  const { data, error } = await supabase
-    .from("site_banners")
-    .insert(payload)
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc("admin_save_banner", {
+    p_id: input.id ?? null,
+    p_is_active: input.isActive,
+    p_text: cleanText,
+    p_link_url: cleanUrl,
+    p_link_label: cleanLabel,
+    p_style: input.style,
+    p_dismissible: input.dismissible,
+  })
 
   if (error) throw error
-  await logAdminAction({
-    action: "create_banner",
-    targetTable: "site_banners",
-    targetId: data.id,
-    details: { isActive: input.isActive, style: input.style },
-  })
   return data as SiteBannerRow
+}
+
+type DismissedBannerRecord = {
+  bannerId: string
+  dismissedAt: string
+}
+
+function isDismissedBannerRecord(val: unknown): val is DismissedBannerRecord {
+  if (!val || typeof val !== "object") return false
+  const r = val as Record<string, unknown>
+  return typeof r.bannerId === "string" && typeof r.dismissedAt === "string"
 }
 
 /**
@@ -144,7 +150,8 @@ export function isBannerDismissed(bannerId: string, updatedAt: string): boolean 
   try {
     const stored = localStorage.getItem(DISMISSED_BANNER_STORAGE_KEY)
     if (!stored) return false
-    const parsed = JSON.parse(stored) as { bannerId: string; dismissedAt: string }
+    const parsed = JSON.parse(stored) as unknown
+    if (!isDismissedBannerRecord(parsed)) return false
     return parsed.bannerId === bannerId && parsed.dismissedAt >= updatedAt
   } catch {
     return false

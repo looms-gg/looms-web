@@ -3,10 +3,9 @@ import { Link } from "react-router-dom"
 import { ShieldCheck, ArrowLeft } from "@phosphor-icons/react"
 import { Icon } from "../ui/Icon"
 import { useAuth } from "../../state/auth"
-import { isAdmin } from "../../lib/admin"
 
 export function AdminGuard({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, isAdmin, loading } = useAuth()
 
   if (loading) {
     return (
@@ -16,7 +15,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
     )
   }
 
-  if (!user || !isAdmin(user.id)) {
+  if (!user || !isAdmin) {
     return (
       <div className="mx-auto max-w-md py-16 text-center space-y-5">
         <div className="mx-auto grid size-16 place-items-center rounded-[18px] bg-error/10 text-error">

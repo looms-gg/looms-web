@@ -1,9 +1,14 @@
+import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { describe, expect, it, vi } from "vitest"
-import { supabase } from "../../lib/supabase"
 import { AuthContext, type AuthContextValue } from "../../state/auth"
+import { uploadProfileImage } from "../profile/uploadProfileImage"
 import { useProfileImageUpload } from "./useProfileImageUpload"
+
+vi.mock("../profile/uploadProfileImage", () => ({
+  uploadProfileImage: vi.fn(),
+}))
 
 function stubAuth(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
   return {
@@ -24,6 +29,7 @@ function stubAuth(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
       updated_at: "",
     } as AuthContextValue["profile"],
     avatarUrl: null,
+    isAdmin: false,
     loading: false,
     emailVerified: true,
     pendingEmail: null,
@@ -39,9 +45,6 @@ function stubAuth(overrides: Partial<AuthContextValue> = {}): AuthContextValue {
     deleteAccount: vi.fn(),
     signInWithOAuth: vi.fn(),
     completeOnboarding: vi.fn(),
-    connections: [],
-    unlinkConnection: vi.fn(),
-    setConnectionFeatured: vi.fn(),
     updateProfile: vi.fn(async () => ({ error: null })),
     refreshProfile: vi.fn(),
     profileError: null,
@@ -69,39 +72,43 @@ function mountWithAuth(auth: AuthContextValue) {
 
 describe("useProfileImageUpload", () => {
   it("uploads, updates the profile, and reports success", async () => {
-    const from = vi.spyOn(supabase.storage, "from").mockReturnValue({
-      upload: vi.fn().mockResolvedValue({ error: null }),
-      getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: "https://x.test/a.png" } }),
-    } as never)
+    vi.mocked(uploadProfileImage).mockResolvedValue("https://x.test/a.png")
     const updateProfile = vi.fn(async () => ({ error: null }))
     const { getHook } = mountWithAuth(stubAuth({ updateProfile }))
 
-    const ok = await getHook().upload(
-      "avatar",
-      new File([new Uint8Array(4)], "a.png", { type: "image/png" }),
-    )
+    let ok = false
+    await act(async () => {
+      ok = await getHook().upload(
+        "avatar",
+        new File([new Uint8Array(4)], "a.png", { type: "image/png" }),
+      )
+    })
 
     expect(ok).toBe(true)
-    expect(from).toHaveBeenCalled()
+    expect(uploadProfileImage).toHaveBeenCalledWith(
+      "u1",
+      "avatar",
+      expect.any(File),
+      undefined,
+    )
     expect(updateProfile).toHaveBeenCalledWith({ avatar_url: "https://x.test/a.png" })
     expect(getHook().errorMsg).toBeNull()
     expect(getHook().uploading).toBeNull()
   })
 
   it("surfaces failures without throwing", async () => {
-    vi.spyOn(supabase.storage, "from").mockReturnValue({
-      upload: vi.fn().mockResolvedValue({ error: { message: "storage down" } }),
-    } as never)
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    vi.mocked(uploadProfileImage).mockRejectedValue(new Error("storage down"))
     const { getHook } = mountWithAuth(stubAuth())
 
-    const ok = await getHook().upload(
-      "banner",
-      new File([new Uint8Array(4)], "b.png", { type: "image/png" }),
-    )
+    let ok = true
+    await act(async () => {
+      ok = await getHook().upload(
+        "banner",
+        new File([new Uint8Array(4)], "b.png", { type: "image/png" }),
+      )
+    })
 
     expect(ok).toBe(false)
     expect(getHook().errorMsg).toMatch(/storage down/i)
-    errSpy.mockRestore()
   })
 })

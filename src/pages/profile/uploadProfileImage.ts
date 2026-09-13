@@ -27,7 +27,9 @@ export async function uploadProfileImage(
     throw new Error(sizeCheck.error ?? "File is too large.")
   }
 
-  const compressed = await compressProfileImage(file, kind, crop)
+  const compressed = await (crop
+    ? compressProfileImage(file, kind, crop)
+    : compressProfileImage(file, kind))
 
   const compressedCheck = validateFileSize(compressed, MAX_LIMITS.FILE_SIZE_BYTES)
   if (!compressedCheck.valid) {

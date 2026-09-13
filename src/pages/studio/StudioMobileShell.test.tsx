@@ -21,6 +21,7 @@ function makeBoard() {
     setRack: vi.fn(),
     hueOpen: false,
     outfit: [],
+    owned: [] as string[],
     ownedBySlot: emptyOwnedBySlot(),
     racks: [] as never[],
     stackTopFirst: [],

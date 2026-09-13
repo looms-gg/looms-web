@@ -16,15 +16,13 @@ import type { Group } from "../data/catalog"
 import { flattenSkinMaterials } from "./materials"
 import { SKIN_PARTS, type SkinPart } from "./compose"
 
-export { flattenSkinMaterials } from "./materials"
-
 const PARTS = SKIN_PARTS
 const BACK = 0.42
 const AWAY = -1.6
 const LEG_BACK = 0.18
 const LEG_AWAY = -0.55
 
-export function skinviewModel(model: SkinModel = "classic"): "slim" | "default" {
+export function viewerModelName(model: SkinModel = "classic"): "slim" | "default" {
   return model === "slim" ? "slim" : "default"
 }
 
@@ -149,7 +147,7 @@ const HEAD_FILL = VIEW_FILL
   return { w: maxX - minX, h: maxY - minY }
 }
 
-function expandVisible(obj: Object3D, box: Box3) {
+export function expandVisible(obj: Object3D, box: Box3) {
   if (!obj.visible) return
   const mesh = obj as Mesh
   if (mesh.isMesh && mesh.geometry) {

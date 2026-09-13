@@ -222,15 +222,20 @@ export async function composeSkin(
   return base
 }
 
+export type DownloadSkinOptions = {
+  filename?: string
+}
+
 export async function downloadSkinFile(
   outfit: Piece[],
   bodyId = DEFAULT_BODY_ID,
   bodyHue = 0,
-  filename = "looms-look",
   model: SkinModel = "classic",
+  options: DownloadSkinOptions | string = "looms-look",
 ) {
   const canvas = await composeSkin(outfit, bodyId, bodyHue, model)
-  const stem = filename.trim() || "looms-look"
+  const rawFilename = typeof options === "string" ? options : options?.filename
+  const stem = rawFilename?.trim() || "looms-look"
   const a = document.createElement("a")
   // composeSkin may hand back a cached canvas shared with live viewers; export
   // from a private copy so nothing else can ever see later mutations.
@@ -247,11 +252,11 @@ export async function tryDownloadSkinFile(
   outfit: Piece[],
   bodyId = DEFAULT_BODY_ID,
   bodyHue = 0,
-  filename = "looms-look",
   model: SkinModel = "classic",
+  options: DownloadSkinOptions | string = "looms-look",
 ) {
   try {
-    await downloadSkinFile(outfit, bodyId, bodyHue, filename, model)
+    await downloadSkinFile(outfit, bodyId, bodyHue, model, options)
     return true
   } catch {
     return false

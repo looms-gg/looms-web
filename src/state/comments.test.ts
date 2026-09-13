@@ -5,7 +5,6 @@ function comment(partial: Partial<CommentItem> & Pick<CommentItem, "id">): Comme
   return {
     targetType: "garment",
     targetId: "g1",
-    garmentId: "g1",
     userId: "u1",
     parentId: null,
     body: "hi",
@@ -46,7 +45,6 @@ describe("mapCommentRow", () => {
     expect(mapped.id).toBe("c-look-1")
     expect(mapped.targetType).toBe("look")
     expect(mapped.targetId).toBe("look-xyz")
-    expect(mapped.lookId).toBe("look-xyz")
     expect(mapped.username).toBe("SkinStylist")
     expect(mapped.body).toBe("Stunning combo!")
   })

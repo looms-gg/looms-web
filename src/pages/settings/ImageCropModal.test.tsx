@@ -3,7 +3,15 @@ import { flushSync } from "react-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ImageCropModal } from "./ImageCropModal"
 
+let root: ReturnType<typeof createRoot> | null = null
+
 afterEach(() => {
+  if (root) {
+    flushSync(() => {
+      root?.unmount()
+    })
+    root = null
+  }
   document.body.innerHTML = ""
 })
 
@@ -12,8 +20,9 @@ const pngFile = new File([new Uint8Array(4)], "pick.png", { type: "image/png" })
 function renderModal(props: Partial<Parameters<typeof ImageCropModal>[0]> = {}) {
   const host = document.createElement("div")
   document.body.appendChild(host)
+  root = createRoot(host)
   flushSync(() => {
-    createRoot(host).render(
+    root?.render(
       <ImageCropModal
         open={props.open ?? true}
         file={props.file ?? pngFile}

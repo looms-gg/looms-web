@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useState,
   type Dispatch,
   type FormEvent,
@@ -50,23 +51,26 @@ export async function exportLook(
   outfit: Piece[],
   bodyId: string,
   bodyHue: number,
-  name: string,
   model: SkinModel,
-  notify: (message: string) => void,
+  name: string,
+  { notify }: { notify: (message: string) => void },
 ) {
   const ok = await tryDownloadSkinFile(
     outfit,
     bodyId,
     bodyHue,
-    name.trim() || "looms-look",
     model,
+    { filename: name.trim() || "looms-look" },
   )
   if (!ok) notify("Couldn't export that skin.")
 }
 
-export function useStudioBoard() {
-  const wardrobe = useWardrobe()
-  const { pieces: catalogPieces } = useCatalog()
+function findLookByName(looks: Look[], name: string): Look | undefined {
+  const target = name.trim().toLowerCase()
+  return looks.find((l) => l.name.trim().toLowerCase() === target)
+}
+
+function useStudioLook(wardrobe: ReturnType<typeof useWardrobe>) {
   const matchingSavedLook =
     wardrobe.activeLook ??
     findMatchingLook(
@@ -87,6 +91,83 @@ export function useStudioBoard() {
     setPrevLookId(null)
   }
 
+  const onSave = (event: FormEvent) => {
+    event.preventDefault()
+    const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
+    const existing = findLookByName(wardrobe.looks, clean)
+    if (existing) {
+      setConfirmOverwriteLook(existing)
+      return
+    }
+    void wardrobe.saveLook(clean)
+    setName(clean)
+  }
+
+  const onConfirmOverwrite = () => {
+    if (confirmOverwriteLook) {
+      const clean =
+        sanitizeText(name, MAX_LIMITS.LOOK_NAME) || confirmOverwriteLook.name
+      void wardrobe.overwriteLook(confirmOverwriteLook.id, clean)
+      setName(clean)
+      setConfirmOverwriteLook(null)
+    }
+  }
+
+  const onSaveAsNew = () => {
+    const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
+    void wardrobe.saveLook(clean)
+    setName(clean)
+    setConfirmOverwriteLook(null)
+  }
+
+  const onCancelOverwrite = () => {
+    setConfirmOverwriteLook(null)
+  }
+
+  return {
+    name,
+    setName,
+    confirmOverwriteLook,
+    onSave,
+    onConfirmOverwrite,
+    onSaveAsNew,
+    onCancelOverwrite,
+  }
+}
+
+function useStudioEyes(
+  equippedEyes: string | undefined,
+  wear: (pieceId: string) => void,
+) {
+  const parsedEye = equippedEyes ? parseEyeId(equippedEyes) : null
+  const eyeOffset = parsedEye?.offset ?? 0
+
+  const setEyeOffset = (offset: number) => {
+    if (!equippedEyes) return
+    const { baseId } = parseEyeId(equippedEyes)
+    const clamped = clampEyeOffset(offset)
+    wear(formatEyeId(baseId, clamped))
+  }
+
+  const wearEye = (id: string, offset?: number) => {
+    const targetOffset = offset !== undefined ? offset : eyeOffset
+    const { baseId } = parseEyeId(id)
+    wear(formatEyeId(baseId, targetOffset))
+  }
+
+  return {
+    eyeOffset,
+    setEyeOffset,
+    wearEye,
+  }
+}
+
+export function useStudioBoard() {
+  const wardrobe = useWardrobe()
+  const { pieces: catalogPieces } = useCatalog()
+  const lookState = useStudioLook(wardrobe)
+  const eyeState = useStudioEyes(wardrobe.equipped.eyes, wardrobe.wear)
+
   const [rack, setRack] = useState<StudioRackTab>("all")
   const [hueOpen, setHueOpen] = useState(false)
   const outfit = piecesFromEquipped(wardrobe.equipped, wardrobe.stack)
@@ -95,74 +176,54 @@ export function useStudioBoard() {
   const body = bodyOrDefault(wardrobe.bodyId)
   const bodyTint = shiftHex(body.swatch, wardrobe.bodyHue)
 
-  const parsedEye = wardrobe.equipped.eyes ? parseEyeId(wardrobe.equipped.eyes) : null
-  const eyeOffset = parsedEye?.offset ?? 0
+  const pickTone = useCallback(
+    (id: string) => pickBodyTone(id, wardrobe.bodyId, wardrobe.setBody, setHueOpen),
+    [wardrobe.bodyId, wardrobe.setBody],
+  )
 
-  const setEyeOffset = (offset: number) => {
-    if (!wardrobe.equipped.eyes) return
-    const { baseId } = parseEyeId(wardrobe.equipped.eyes)
-    const clamped = clampEyeOffset(offset)
-    wardrobe.wear(formatEyeId(baseId, clamped))
-  }
+  const downloadSkin = useCallback(
+    () =>
+      exportLook(outfit, wardrobe.bodyId, wardrobe.bodyHue, wardrobe.model, lookState.name, {
+        notify: wardrobe.notify,
+      }),
+    [outfit, wardrobe.bodyId, wardrobe.bodyHue, wardrobe.model, lookState.name, wardrobe.notify],
+  )
 
-  const wearEye = (id: string, offset?: number) => {
-    const targetOffset = offset !== undefined ? offset : eyeOffset
-    const { baseId } = parseEyeId(id)
-    wardrobe.wear(formatEyeId(baseId, targetOffset))
-  }
-
+  // Narrow handoff: expose only the wardrobe fields the studio panels
+  // consume, so the page-to-state boundary stays minimal and greppable.
+  // Anything else remains available directly via useWardrobe().
   return {
-    ...wardrobe,
-    name,
-    setName,
-    rack,
-    setRack,
-    hueOpen,
-    outfit,
+    owned: wardrobe.owned,
     ownedBySlot,
     racks,
-    stackTopFirst: [...outfit].reverse(),
+    rack,
+    setRack,
+    equipped: wardrobe.equipped,
+    wear: wardrobe.wear,
+    wearEye: eyeState.wearEye,
+    clearSlot: wardrobe.clearSlot,
+    moveStack: wardrobe.moveStack,
+    setModel: wardrobe.setModel,
     body,
     bodyTint,
     bodies,
-    eyeOffset,
-    setEyeOffset,
-    wearEye,
-    pickTone: (id: string) =>
-      pickBodyTone(id, wardrobe.bodyId, wardrobe.setBody, setHueOpen),
-    confirmOverwriteLook,
-    onSave: (event: FormEvent) => {
-      event.preventDefault()
-      const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
-      const existing = wardrobe.looks.find(
-        (l) => l.name.trim().toLowerCase() === clean.toLowerCase(),
-      )
-      if (existing) {
-        setConfirmOverwriteLook(existing)
-        return
-      }
-      void wardrobe.saveLook(clean)
-      setName(clean)
-    },
-    onConfirmOverwrite: () => {
-      if (confirmOverwriteLook) {
-        const clean =
-          sanitizeText(name, MAX_LIMITS.LOOK_NAME) || confirmOverwriteLook.name
-        void wardrobe.overwriteLook(confirmOverwriteLook.id, clean)
-        setName(clean)
-        setConfirmOverwriteLook(null)
-      }
-    },
-    onSaveAsNew: () => {
-      const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
-      void wardrobe.saveLook(clean)
-      setName(clean)
-      setConfirmOverwriteLook(null)
-    },
-    onCancelOverwrite: () => {
-      setConfirmOverwriteLook(null)
-    },
-    downloadSkin: () =>
-      exportLook(outfit, wardrobe.bodyId, wardrobe.bodyHue, name, wardrobe.model, wardrobe.notify),
+    bodyId: wardrobe.bodyId,
+    bodyHue: wardrobe.bodyHue,
+    setBodyHue: wardrobe.setBodyHue,
+    model: wardrobe.model,
+    hueOpen,
+    outfit,
+    stackTopFirst: [...outfit].reverse(),
+    eyeOffset: eyeState.eyeOffset,
+    setEyeOffset: eyeState.setEyeOffset,
+    name: lookState.name,
+    setName: lookState.setName,
+    pickTone,
+    confirmOverwriteLook: lookState.confirmOverwriteLook,
+    onSave: lookState.onSave,
+    onConfirmOverwrite: lookState.onConfirmOverwrite,
+    onSaveAsNew: lookState.onSaveAsNew,
+    onCancelOverwrite: lookState.onCancelOverwrite,
+    downloadSkin,
   }
 }

@@ -98,7 +98,8 @@ export function sanitizeUrl(url: string | null | undefined): string | null {
 }
 
 /**
- * Validates an uploaded file's size against a byte limit.
+ * Validates an uploaded file's size against a byte limit. The error label
+ * switches between MB and KB so tight limits (a few KB) never read as "0 MB".
  */
 export function validateFileSize(
   file: File,

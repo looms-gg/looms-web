@@ -1,22 +1,9 @@
 import type { Equipped } from "../data/outfit"
 import { DEFAULT_BODY_ID } from "../data/bodies"
-import { HUE_MAX, HUE_MIN } from "../skin/hue"
-import type { SkinModel } from "../skin/convert"
+import type { SkinModel } from "../data/model"
+import type { Look } from "../data/look"
 
-export type LookVisibility = "private" | "public"
-
-export type Look = {
-  id: string
-  name: string
-  equipped: Equipped
-  stack: string[]
-  bodyId: string
-  bodyHue: number
-  model: SkinModel
-  savedAt: number
-  description: string
-  visibility: LookVisibility
-}
+export type { Look, LookVisibility } from "../data/look"
 
 export type Persist = {
   owned: string[]
@@ -51,9 +38,4 @@ export function freshPersist(): Persist {
     stack: [],
     looks: [],
   }
-}
-
-export function clampHue(value: unknown) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return 0
-  return Math.max(HUE_MIN, Math.min(HUE_MAX, Math.round(value)))
 }

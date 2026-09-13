@@ -36,7 +36,14 @@
         applyHeroCameraPose(viewer.playerObject, pose)
         frameHeroCamera(viewer, pose)
         viewer.render()
-        payload[`hero-pose-${pose}`] = { url: compositeIsoThumbFx(viewer.canvas, viewer.canvas.width, viewer.canvas.height), wash: "" }
+        payload[`hero-pose-${pose}`] = {
+          url: compositeIsoThumbFx(viewer.canvas, viewer.canvas.width, viewer.canvas.height, {
+            normalize: false,
+            rim: 4,
+            rimAlpha: 0.45,
+          }),
+          wash: "",
+        }
         viewer.dispose()
         log(`rendered ${pose}`)
       }

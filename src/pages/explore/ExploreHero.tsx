@@ -1,38 +1,19 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { PaintBrush } from "@phosphor-icons/react"
-import type { Piece } from "../../data/catalog"
 import { Icon } from "../../components/ui/Icon"
 import { DEFAULT_FEATURED_LOOKS, type PublicLook } from "../../state/publicLooks"
 import { HeroPosedFigure } from "../../components/hero/HeroPosedFigure"
-
-const FEATURED_PIECE_IDS = [
-  "ink-fall",
-  "winter-coat",
-  "dark-sweatpants",
-  "knee-high-converse",
-] as const
-
-export function pickFeaturedPieces(pieces: Piece[]): Piece[] {
-  return FEATURED_PIECE_IDS.map((id) => pieces.find((p) => p.id === id)).filter(
-    (p): p is Piece => p != null,
-  )
-}
+import { DISCORD_URL } from "../../lib/seo"
 
 export function ExploreHero({
   trendingLooks = DEFAULT_FEATURED_LOOKS,
   loading = false,
   yesterdayTop = null,
-  onWearLook: _onWearLook,
-  featuredPieces: _featuredPieces,
-  onWearFeatured: _onWearFeatured,
 }: {
   trendingLooks?: PublicLook[]
   loading?: boolean
   yesterdayTop?: PublicLook | null
-  onWearLook?: (look: PublicLook) => void
-  featuredPieces?: Piece[]
-  onWearFeatured?: () => void
 }) {
   const [mobileTab, setMobileTab] = useState<0 | 1 | 2>(0)
   const looks = trendingLooks.length >= 3 ? trendingLooks : DEFAULT_FEATURED_LOOKS
@@ -100,7 +81,10 @@ export function ExploreHero({
 
       <div className="hero-copy max-w-xl">
         <h1 className="text-[clamp(2rem,7vw,3.15rem)] font-extrabold leading-[1.1] tracking-tight text-balance">
-          <span className="block">Your new Minecraft wardrobe.</span>
+          <span className="block">Meet your new</span>
+          <span className="block">
+            <span style={{ color: "var(--neon-pink)" }}>Minecraft</span>&nbsp;wardrobe.
+          </span>
         </h1>
         <p className="mt-3 max-w-[44ch] text-base leading-[1.6] text-base-content/70 font-medium text-pretty">
           Stack clothing layers, swap outfits in seconds, and export a vanilla PNG. No pixel art
@@ -115,7 +99,7 @@ export function ExploreHero({
             Open Studio
           </Link>
           <a
-            href="https://discord.gg/UNTRgHBBPb"
+            href={DISCORD_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-ghost rounded-full font-bold border border-base-content/20 hover:border-[#5865F2] hover:text-[#5865F2] active:scale-[0.96] transition-transform gap-2 pl-4 pr-5"

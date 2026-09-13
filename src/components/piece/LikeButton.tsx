@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Heart } from "@phosphor-icons/react"
 import { AuthModal } from "../auth/AuthModal"
 import { Icon } from "../ui/Icon"
@@ -24,11 +24,14 @@ export function LikeButton({
   const [authOpen, setAuthOpen] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [displayCount, setDisplayCount] = useState(Math.max(0, count))
-  const liked = likes?.isLiked(type, id) ?? false
+  const [prevCount, setPrevCount] = useState(count)
 
-  useEffect(() => {
+  if (count !== prevCount) {
+    setPrevCount(count)
     setDisplayCount(Math.max(0, count))
-  }, [count])
+  }
+
+  const liked = likes?.isLiked(type, id) ?? false
 
   return (
     <>
@@ -62,11 +65,15 @@ export function LikeButton({
               setErrorMsg(formatErrorMessage(error))
               return
             }
-            const next = wasLiked
-              ? Math.max(0, displayCount - 1)
-              : displayCount + 1
-            setDisplayCount(next)
-            onCountChange?.(next)
+            // Derive from the latest displayCount, not the click-time
+            // snapshot: rapid re-clicks re-read current state in the .then.
+            setDisplayCount((current) => {
+              const next = wasLiked
+                ? Math.max(0, current - 1)
+                : current + 1
+              onCountChange?.(next)
+              return next
+            })
             if (wasLiked) btn.blur()
           })
         }}

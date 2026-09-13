@@ -7,6 +7,9 @@
 
 export const SITE_ORIGIN = "https://looms.gg"
 export const SITE_NAME = "looms"
+export const DISCORD_URL = "https://discord.gg/UNTRgHBBPb"
+export const GITHUB_URL = "https://github.com/looms-gg/looms-web"
+export const SCHEMA_ORG_CONTEXT = "https://schema.org"
 
 export type PieceSeoInput = {
   id: string
@@ -107,7 +110,7 @@ export function creativeWorkJsonLd(input: {
   genre?: string
 }): Record<string, unknown> {
   return {
-    "@context": "https://schema.org",
+    "@context": SCHEMA_ORG_CONTEXT,
     "@type": "CreativeWork",
     name: input.name,
     description: input.description,
@@ -118,3 +121,17 @@ export function creativeWorkJsonLd(input: {
     inLanguage: "en",
   }
 }
+
+export function websiteJsonLd(): Record<string, unknown> {
+  return {
+    "@context": SCHEMA_ORG_CONTEXT,
+    "@type": "WebSite",
+    name: "looms",
+    alternateName: "looms.gg",
+    url: `${SITE_ORIGIN}/`,
+    description:
+      "Free modular wardrobe for Minecraft skins: browse community clothing layers, stack outfits in Studio, export a vanilla 64×64 PNG.",
+    isAccessibleForFree: true,
+  }
+}
+

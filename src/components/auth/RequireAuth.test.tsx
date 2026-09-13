@@ -13,6 +13,7 @@ function stubAuth(userId: string | null, loading = false): AuthContextValue {
       ? ({ id: userId, username: "Tester" } as AuthContextValue["profile"])
       : null,
     avatarUrl: null,
+    isAdmin: false,
     loading,
     emailVerified: Boolean(userId),
     pendingEmail: null,
@@ -32,9 +33,6 @@ function stubAuth(userId: string | null, loading = false): AuthContextValue {
     deleteAccount: vi.fn(),
     signInWithOAuth: vi.fn(),
     completeOnboarding: vi.fn(),
-    connections: [],
-    unlinkConnection: vi.fn(),
-    setConnectionFeatured: vi.fn(),
   }
 }
 

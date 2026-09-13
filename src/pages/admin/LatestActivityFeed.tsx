@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { Link } from "react-router-dom"
 import {
   ChatCircle,
@@ -12,14 +12,80 @@ import {
 import { Icon, type IconType } from "../../components/ui/Icon"
 import { EmptyState } from "../../components/ui/EmptyState"
 import { Bone } from "../../components/ui/Bone"
-import { formatErrorMessage } from "../../lib/errorFormat"
-import {
-  adminDeleteContent,
-  fetchRecentPlatformActivity,
-  type RecentActivityFeed,
-} from "../../lib/reports"
+import type { RecentActivityFeed } from "../../lib/reports"
+import { useLatestActivity } from "./useLatestActivity"
 
 type ActivityFilter = "all" | "looks" | "pieces" | "comments" | "profiles"
+
+type SimpleFeedRow = {
+  id: string
+  title: string
+  meta: string
+  href: string
+  deleteType?: "look" | "piece"
+}
+
+// The looks/pieces/profiles ledgers share one row shape (title, meta, view
+// link, optional delete) and render from this descriptor table. The comments
+// ledger below stays a hand-written variant: its rows carry a badge, a body
+// excerpt, and a target link that the simple shape cannot express.
+type SimpleFeedSection = {
+  key: Exclude<ActivityFilter, "all" | "comments">
+  icon: IconType
+  iconColor: string
+  label: string
+  viewTitle: string
+  rows: (data: RecentActivityFeed) => SimpleFeedRow[]
+}
+
+const SIMPLE_SECTIONS: SimpleFeedSection[] = [
+  {
+    key: "looks",
+    icon: Stack,
+    iconColor: "text-primary",
+    label: "Latest Looks",
+    viewTitle: "View Look",
+    rows: (data) =>
+      data.looks.map((look) => ({
+        id: look.id,
+        title: look.name,
+        meta: `By user: ${look.user_id.slice(0, 8)}... · ${new Date(look.created_at).toLocaleDateString()}`,
+        href: `/look/${look.id}`,
+        deleteType: "look" as const,
+      })),
+  },
+  {
+    key: "pieces",
+    icon: TShirt,
+    iconColor: "text-secondary",
+    label: "Latest Pieces",
+    viewTitle: "View Piece",
+    rows: (data) =>
+      data.pieces.map((piece) => ({
+        id: piece.id,
+        title: piece.name,
+        meta: `Slot: ${piece.slot} · ${new Date(piece.created_at).toLocaleDateString()}`,
+        href: `/piece/${piece.id}`,
+        deleteType: "piece" as const,
+      })),
+  },
+  {
+    key: "profiles",
+    icon: User,
+    iconColor: "text-info",
+    label: "Latest Profiles",
+    viewTitle: "View Profile",
+    rows: (data) =>
+      data.profiles.map((profile) => ({
+        id: profile.id,
+        title: `@${profile.username}`,
+        meta: `Joined ${new Date(profile.created_at).toLocaleDateString()}`,
+        href: `/u/${profile.username}`,
+      })),
+  },
+]
+
+const ACTIVITY_FILTERS: ActivityFilter[] = ["all", "looks", "pieces", "comments", "profiles"]
 
 function LedgerSection({
   icon,
@@ -91,79 +157,262 @@ function IconAction({
   )
 }
 
-export function LatestActivityFeed() {
-  const [data, setData] = useState<RecentActivityFeed | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<ActivityFilter>("all")
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+function ActivityFilterTabs({
+  current,
+  onChange,
+  onRefresh,
+  loading,
+}: {
+  current: ActivityFilter
+  onChange: (filter: ActivityFilter) => void
+  onRefresh: () => void
+  loading: boolean
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-base-content/10 pb-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {ACTIVITY_FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            className={`btn btn-sm btn-pill font-bold capitalize transition-colors active:scale-[0.96] transition-transform ${
+              current === f ? "btn-primary shadow-sm" : "btn-ghost text-base-content/70 hover:text-base-content"
+            }`}
+            onClick={() => onChange(f)}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await fetchRecentPlatformActivity(25)
-      setData(result)
-    } catch (err) {
-      setError(formatErrorMessage(err))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+      <button
+        type="button"
+        disabled={loading}
+        onClick={onRefresh}
+        className="btn btn-ghost btn-sm font-bold gap-1.5 text-base-content/70 hover:text-base-content transition-colors active:scale-[0.96] transition-transform"
+        title="Refresh activity"
+      >
+        <Icon icon={ArrowsClockwise} className={loading ? "animate-spin" : ""} />
+        Refresh
+      </button>
+    </div>
+  )
+}
 
-  useEffect(() => {
-    void load()
-  }, [load])
+function ActivitySkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading recent activity">
+      <div className="space-y-2">
+        <Bone className="h-4 w-32" rounded="rounded-md" />
+        <div className="flex flex-col divide-y divide-base-content/10 overflow-hidden rounded-[18px] border border-base-content/10 bg-base-200/40">
+          {[0, 1, 2, 3, 4, 5].map((n) => (
+            <div key={n} className="flex items-center gap-3 px-3.5 py-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Bone className="h-4 w-2/5" rounded="rounded-md" delay={n} />
+                <Bone className="h-3 w-3/5" rounded="rounded-md" delay={n} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
-  const handleDelete = async (
-    targetType: "look" | "piece" | "comment",
-    targetId: string,
-    subType?: string,
-  ) => {
-    const ok = window.confirm(`Permanently delete this ${targetType}?`)
-    if (!ok) return
-
-    setDeletingId(targetId)
-    setError(null)
-    try {
-      await adminDeleteContent({ targetType, targetId, subType })
-      await load()
-    } catch (err) {
-      setError(formatErrorMessage(err))
-    } finally {
-      setDeletingId(null)
+function SimpleActivityRow({
+  row,
+  viewTitle,
+  deletingId,
+  onDelete,
+}: {
+  row: SimpleFeedRow
+  viewTitle: string
+  deletingId: string | null
+  onDelete: (targetType: "look" | "piece", targetId: string) => void
+}) {
+  const handleDelete = () => {
+    if (row.deleteType) {
+      onDelete(row.deleteType, row.id)
     }
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-base-content/10 pb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {(["all", "looks", "pieces", "comments", "profiles"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              className={`btn btn-sm btn-pill font-bold capitalize transition-colors active:scale-[0.96] transition-transform ${
-                filter === f ? "btn-primary shadow-sm" : "btn-ghost text-base-content/70 hover:text-base-content"
-              }`}
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => void load()}
-          className="btn btn-ghost btn-sm font-bold gap-1.5 text-base-content/70 hover:text-base-content transition-colors active:scale-[0.96] transition-transform"
-          title="Refresh activity"
-        >
-          <Icon icon={ArrowsClockwise} className={loading ? "animate-spin" : ""} />
-          Refresh
-        </button>
+    <LedgerRow>
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <h4 className="truncate text-sm font-bold text-base-content">{row.title}</h4>
+        <p className="truncate text-xs text-base-content/50 tabular-nums">{row.meta}</p>
       </div>
+      <div className="flex shrink-0 items-center gap-1">
+        <IconAction to={row.href} title={viewTitle} tone="primary">
+          <Icon icon={Eye} size="sm" />
+        </IconAction>
+        {row.deleteType ? (
+          <IconAction
+            title={`Delete ${row.deleteType === "look" ? "Look" : "Piece"}`}
+            tone="error"
+            disabled={deletingId === row.id}
+            onClick={handleDelete}
+          >
+            <Icon icon={Trash} size="sm" />
+          </IconAction>
+        ) : null}
+      </div>
+    </LedgerRow>
+  )
+}
+
+function SimpleActivitySection({
+  section,
+  data,
+  deletingId,
+  onDelete,
+}: {
+  section: SimpleFeedSection
+  data: RecentActivityFeed
+  deletingId: string | null
+  onDelete: (targetType: "look" | "piece", targetId: string) => void
+}) {
+  const rows = section.rows(data)
+  if (rows.length === 0) return null
+
+  return (
+    <LedgerSection
+      icon={section.icon}
+      iconColor={section.iconColor}
+      label={section.label}
+      count={rows.length}
+    >
+      {rows.map((row) => (
+        <SimpleActivityRow
+          key={row.id}
+          row={row}
+          viewTitle={section.viewTitle}
+          deletingId={deletingId}
+          onDelete={onDelete}
+        />
+      ))}
+    </LedgerSection>
+  )
+}
+
+function CommentActivityRow({
+  comment,
+  deletingId,
+  onDelete,
+}: {
+  comment: RecentActivityFeed["comments"][number]
+  deletingId: string | null
+  onDelete: (targetType: "comment", targetId: string, subType: string) => void
+}) {
+  const handleDelete = () => {
+    onDelete(
+      "comment",
+      comment.id,
+      comment.targetType === "look" ? "look_comment" : "garment_comment",
+    )
+  }
+
+  return (
+    <LedgerRow align="start">
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex items-center gap-2 text-xs font-semibold text-base-content/50">
+          <span className="badge badge-xs badge-ghost font-extrabold text-xs">
+            {comment.targetType}
+          </span>
+          <span className="tabular-nums font-mono text-xs">
+            User: {comment.userId.slice(0, 8)}...
+          </span>
+          <span>·</span>
+          <span className="tabular-nums text-xs">
+            {new Date(comment.createdAt).toLocaleString()}
+          </span>
+        </div>
+        <p className="line-clamp-2 text-xs font-medium leading-relaxed text-base-content text-pretty">
+          {comment.body}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5 self-center">
+        <Link
+          to={comment.targetType === "look" ? `/look/${comment.targetId}` : `/piece/${comment.targetId}`}
+          target="_blank"
+          rel="noreferrer"
+          className="btn btn-ghost btn-xs min-h-[28px] gap-1 px-2.5 text-primary active:scale-[0.96] transition-transform"
+          title="View thread"
+        >
+          <Icon icon={Eye} size="xs" />
+          Target
+        </Link>
+        <IconAction
+          title="Delete Comment"
+          tone="error"
+          disabled={deletingId === comment.id}
+          onClick={handleDelete}
+        >
+          <Icon icon={Trash} size="sm" />
+        </IconAction>
+      </div>
+    </LedgerRow>
+  )
+}
+
+function CommentsLedgerSection({
+  comments,
+  deletingId,
+  onDelete,
+}: {
+  comments: RecentActivityFeed["comments"]
+  deletingId: string | null
+  onDelete: (targetType: "comment", targetId: string, subType: string) => void
+}) {
+  return (
+    <LedgerSection
+      icon={ChatCircle}
+      iconColor="text-accent"
+      label="Latest Comments"
+      count={comments.length}
+    >
+      {comments.map((comment) => (
+        <CommentActivityRow
+          key={comment.id}
+          comment={comment}
+          deletingId={deletingId}
+          onDelete={onDelete}
+        />
+      ))}
+    </LedgerSection>
+  )
+}
+
+function isFeedEmpty(data: RecentActivityFeed | null): boolean {
+  if (!data) return true
+  return (
+    data.looks.length === 0 &&
+    data.pieces.length === 0 &&
+    data.comments.length === 0 &&
+    data.profiles.length === 0
+  )
+}
+
+export function LatestActivityFeed() {
+  const { data, loading, error, deletingId, load, handleDelete } = useLatestActivity()
+  const [filter, setFilter] = useState<ActivityFilter>("all")
+
+  const handleDeleteSimple = (type: "look" | "piece", id: string) => {
+    void handleDelete(type, id)
+  }
+
+  const handleDeleteComment = (type: "comment", id: string, sub: string) => {
+    void handleDelete(type, id, sub)
+  }
+
+  return (
+    <div className="space-y-6">
+      <ActivityFilterTabs
+        current={filter}
+        onChange={setFilter}
+        onRefresh={() => void load()}
+        loading={loading}
+      />
 
       {error ? (
         <div className="alert alert-error text-sm font-bold" role="alert">
@@ -172,170 +421,34 @@ export function LatestActivityFeed() {
       ) : null}
 
       {loading ? (
-        <div className="space-y-6" aria-busy="true" aria-label="Loading recent activity">
-          <div className="space-y-2">
-            <Bone className="h-4 w-32" rounded="rounded-md" />
-            <div className="flex flex-col divide-y divide-base-content/10 overflow-hidden rounded-[18px] border border-base-content/10 bg-base-200/40">
-              {[0, 1, 2, 3, 4, 5].map((n) => (
-                <div key={n} className="flex items-center gap-3 px-3.5 py-3">
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <Bone className="h-4 w-2/5" rounded="rounded-md" delay={n} />
-                    <Bone className="h-3 w-3/5" rounded="rounded-md" delay={n} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : !data ||
-        (data.looks.length === 0 &&
-          data.pieces.length === 0 &&
-          data.comments.length === 0 &&
-          data.profiles.length === 0) ? (
+        <ActivitySkeleton />
+      ) : isFeedEmpty(data) ? (
         <EmptyState
           title="Nothing to review yet"
           body="New community looks, pieces, and comments will show up here."
         />
       ) : (
         <div className="space-y-8">
-          {(filter === "all" || filter === "looks") && data.looks.length > 0 ? (
-            <LedgerSection icon={Stack} iconColor="text-primary" label="Latest Looks" count={data.looks.length}>
-              {data.looks.map((look) => (
-                <LedgerRow key={look.id}>
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <h4 className="truncate text-sm font-bold text-base-content">{look.name}</h4>
-                    <p className="truncate text-xs text-base-content/50 tabular-nums">
-                      By user: {look.user_id.slice(0, 8)}... · {new Date(look.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <IconAction to={`/look/${look.id}`} title="View Look" tone="primary">
-                      <Icon icon={Eye} size="sm" />
-                    </IconAction>
-                    <IconAction
-                      title="Delete Look"
-                      tone="error"
-                      disabled={deletingId === look.id}
-                      onClick={() => void handleDelete("look", look.id)}
-                    >
-                      <Icon icon={Trash} size="sm" />
-                    </IconAction>
-                  </div>
-                </LedgerRow>
-              ))}
-            </LedgerSection>
-          ) : null}
+          {SIMPLE_SECTIONS.filter(
+            (section) => filter === "all" || filter === section.key,
+          ).map((section) => (
+            <SimpleActivitySection
+              key={section.key}
+              section={section}
+              data={data!}
+              deletingId={deletingId}
+              onDelete={handleDeleteSimple}
+            />
+          ))}
 
-          {(filter === "all" || filter === "pieces") && data.pieces.length > 0 ? (
-            <LedgerSection icon={TShirt} iconColor="text-secondary" label="Latest Pieces" count={data.pieces.length}>
-              {data.pieces.map((piece) => (
-                <LedgerRow key={piece.id}>
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <h4 className="truncate text-sm font-bold text-base-content">{piece.name}</h4>
-                    <p className="truncate text-xs text-base-content/50 tabular-nums">
-                      Slot: {piece.slot} · {new Date(piece.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <IconAction to={`/piece/${piece.id}`} title="View Piece" tone="primary">
-                      <Icon icon={Eye} size="sm" />
-                    </IconAction>
-                    <IconAction
-                      title="Delete Piece"
-                      tone="error"
-                      disabled={deletingId === piece.id}
-                      onClick={() => void handleDelete("piece", piece.id)}
-                    >
-                      <Icon icon={Trash} size="sm" />
-                    </IconAction>
-                  </div>
-                </LedgerRow>
-              ))}
-            </LedgerSection>
-          ) : null}
-
-          {(filter === "all" || filter === "comments") && data.comments.length > 0 ? (
-            <LedgerSection
-              icon={ChatCircle}
-              iconColor="text-accent"
-              label="Latest Comments"
-              count={data.comments.length}
-            >
-              {data.comments.map((comment) => (
-                <LedgerRow key={comment.id} align="start">
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-base-content/50">
-                      <span className="badge badge-xs badge-ghost font-extrabold text-xs">
-                        {comment.targetType}
-                      </span>
-                      <span className="tabular-nums font-mono text-xs">
-                        User: {comment.userId.slice(0, 8)}...
-                      </span>
-                      <span>·</span>
-                      <span className="tabular-nums text-xs">
-                        {new Date(comment.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="line-clamp-2 text-xs font-medium leading-relaxed text-base-content text-pretty">
-                      {comment.body}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1.5 self-center">
-                    <Link
-                      to={comment.targetType === "look" ? `/look/${comment.targetId}` : `/piece/${comment.targetId}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-ghost btn-xs min-h-[28px] gap-1 px-2.5 text-primary active:scale-[0.96] transition-transform"
-                      title="View thread"
-                    >
-                      <Icon icon={Eye} size="xs" />
-                      Target
-                    </Link>
-                    <IconAction
-                      title="Delete Comment"
-                      tone="error"
-                      disabled={deletingId === comment.id}
-                      onClick={() =>
-                        void handleDelete(
-                          "comment",
-                          comment.id,
-                          comment.targetType === "look" ? "look_comment" : "garment_comment",
-                        )
-                      }
-                    >
-                      <Icon icon={Trash} size="sm" />
-                    </IconAction>
-                  </div>
-                </LedgerRow>
-              ))}
-            </LedgerSection>
-          ) : null}
-
-          {(filter === "all" || filter === "profiles") && data.profiles.length > 0 ? (
-            <LedgerSection icon={User} iconColor="text-info" label="Latest Profiles" count={data.profiles.length}>
-              {data.profiles.map((profile) => (
-                <LedgerRow key={profile.id}>
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <h4 className="truncate text-sm font-bold text-base-content">
-                      @{profile.username}
-                    </h4>
-                    <p className="truncate text-xs text-base-content/50 tabular-nums">
-                      Joined {new Date(profile.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Link
-                    to={`/u/${profile.username}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn btn-ghost btn-xs min-h-[28px] px-2.5 text-primary active:scale-[0.96] transition-transform"
-                    title="View Profile"
-                  >
-                    <Icon icon={Eye} size="xs" className="mr-1" />
-                    View
-                  </Link>
-                </LedgerRow>
-              ))}
-            </LedgerSection>
+          {/* Documented variant: comments rows carry a target badge, a body
+              excerpt, and a target link the simple row shape cannot express. */}
+          {(filter === "all" || filter === "comments") && data ? (
+            <CommentsLedgerSection
+              comments={data.comments}
+              deletingId={deletingId}
+              onDelete={handleDeleteComment}
+            />
           ) : null}
         </div>
       )}

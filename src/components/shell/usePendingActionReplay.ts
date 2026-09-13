@@ -50,10 +50,10 @@ export function usePendingActionReplay() {
 
     void runPendingAction({
       owns: (pieceId) => wardrobeRef.current.owns(pieceId),
-      addToWardrobe: (pieceId) => wardrobeRef.current.addToWardrobe(pieceId),
-      wear: (pieceId) => wardrobeRef.current.wear(pieceId),
-      addAndWear: (pieceId) => wardrobeRef.current.addAndWear(pieceId),
-      loadLook: (look) => wardrobeRef.current.loadLook(look),
+      addToWardrobe: (pieceId, options) => wardrobeRef.current.addToWardrobe(pieceId, options),
+      wear: (pieceId, options) => wardrobeRef.current.wear(pieceId, options),
+      addAndWear: (pieceId, options) => wardrobeRef.current.addAndWear(pieceId, options),
+      loadLook: (look, options) => wardrobeRef.current.loadLook(look, options),
       getLook: async (lookId) => {
         const publicLook = await fetchLookById(lookId)
         return publicLook ? publicLookToLook(publicLook) : null

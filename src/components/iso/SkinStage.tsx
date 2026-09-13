@@ -3,7 +3,7 @@ import type { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../../data/bodies"
 import { preparePreview, type Piece } from "../../data/catalog"
 import { composePieceSkin, composeSkin, groupsFromAtlas, partsFromAtlas } from "../../skin/compose"
-import { applyGroupFocus, crispSkinTexture, isoPoseAnimation, mountLiveViewer, poseGroupForParts, skinviewModel } from "../../skin/focus"
+import { applyGroupFocus, crispSkinTexture, isoPoseAnimation, mountLiveViewer, poseGroupForParts, viewerModelName } from "../../skin/focus"
 import type { SkinModel } from "../../skin/convert"
 import { ISO_RIM_FILL } from "../../skin/thumbFx"
 
@@ -11,6 +11,7 @@ import { ISO_RIM_FILL } from "../../skin/thumbFx"
 // Single-piece renders carry a lighter rim (thinner band, less opacity).
 const RIM_CSS_PX = 4
 const PIECE_RIM_CSS_PX = 3
+const RIM_OPACITY = 0.45
 const PIECE_RIM_OPACITY = 0.45
 
 function copySilhouette(from: HTMLCanvasElement, to: HTMLCanvasElement, fill: string) {
@@ -210,7 +211,7 @@ export function SkinStage({
     void Promise.all([composeSkin(outfitRef.current, bodyId, bodyHue, model), partsPromise])
       .then(([skin, paintedParts]) => {
         if (cancelled || viewerRef.current !== viewer) return
-        viewer.loadSkin(skin, { model: skinviewModel(model) })
+        viewer.loadSkin(skin, { model: viewerModelName(model) })
         crispSkinTexture(viewer)
         if (poseChanged) {
           const next = outfitRef.current
@@ -292,7 +293,7 @@ export function SkinStage({
               fxRefs.current[1] = node
             }}
             className="skin-stage-fx iso-thumb-rim"
-            style={piecePreview ? { opacity: PIECE_RIM_OPACITY } : undefined}
+            style={{ opacity: piecePreview ? PIECE_RIM_OPACITY : RIM_OPACITY }}
             aria-hidden
           />
         ) : null}

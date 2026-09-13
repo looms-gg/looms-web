@@ -3,8 +3,7 @@ import { Link } from "react-router-dom"
 import { MagicWand, PaintBrush, Stack, UploadSimple } from "@phosphor-icons/react"
 import { Icon, type IconType } from "../../components/ui/Icon"
 import { Bone as SkeletonBone } from "../../components/ui/Bone"
-
-const DISCORD_URL = "https://discord.gg/UNTRgHBBPb"
+import { DISCORD_URL } from "../../lib/seo"
 
 const FEATURES: { icon: IconType; label: string }[] = [
   { icon: PaintBrush, label: "Paint pixel-perfect textures on a live 3D figure" },

@@ -12,6 +12,7 @@
     "test": "vitest run",
     "preview": "vite preview",
     "db:push": "supabase db push",
+    "db:test": "supabase test db",
     "db:types": "supabase gen types typescript > /tmp/looms-database.types.ts && echo 'Wrote /tmp/looms-database.types.ts — diff against src/lib/supabase.ts and merge by hand (supabase.ts is the only Database owner).'",
     "db:seed-garments": "python3 scripts/seed-garments.py"
   },

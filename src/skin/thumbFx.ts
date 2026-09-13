@@ -17,18 +17,19 @@
 //    render as a translucent overlay — not outside it as an outline
 export const ISO_RIM_FILL = "#d4cec2"
 
-// One thickness for the whole baked effect: the punch shadow's offset and the
-// default rim band's depth must match or one reads wider than the other.
-// Single-piece renders pass a thinner `rim` — a full-width band reads heavy
-// on the small silhouette.
+// Punch shadow offset (8px) for hard silhouette depth.
 const OUTLINE = 8
 const PUNCH_X = OUTLINE
 const PUNCH_Y = OUTLINE
-const RIM_X = OUTLINE
+// Default rim band depth (4px) and opacity (0.45) for full figures and hero
+// busts — subtle, crisp lit edge without overpowering the texture underneath.
+// Zoomed piece crops pass a deeper band (6px) via PIECE_FX.
+const DEFAULT_RIM = 2
+const RIM_X = DEFAULT_RIM
 const SHADOW_ALPHA = 0.35
 // The rim rides on top of the render as a light tint, so texture stays
 // visible through it.
-const RIM_ALPHA = 0.6
+const RIM_ALPHA = 0.45
 // feComponentTransfer discrete tableValues="0 1": alpha ≥ 0.5 → fully opaque.
 const ALPHA_THRESHOLD = 128
 

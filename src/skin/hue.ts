@@ -86,3 +86,9 @@ export function hueRamp(hex: string, min = -120, max = 120, steps = 9) {
 
 export const HUE_MIN = -120
 export const HUE_MAX = 120
+
+/** Clamp an arbitrary hue value into the slider range; garbage becomes 0. */
+export function clampHue(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0
+  return Math.max(HUE_MIN, Math.min(HUE_MAX, Math.round(value)))
+}

@@ -968,17 +968,6 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   text-align: center;
 }
 
-.notification-empty-icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 4px;
-  border-radius: 14px;
-  background: color-mix(in oklab, var(--color-primary) 14%, transparent);
-  color: color-mix(in oklab, var(--color-primary) 70%, transparent);
-}
-
 .notification-empty-title {
   font-size: 0.8125rem;
   font-weight: 800;
@@ -1060,11 +1049,10 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
 .oauth-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
   height: 44px;
   padding: 0 12px;
   border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
-  border-radius: 999px;
+  border-radius: 14px;
   background: transparent;
   color: var(--color-base-content);
   cursor: pointer;
@@ -1100,6 +1088,7 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   opacity: 0;
   transition:
     max-width 240ms var(--ease-out-quint),
+    margin-left 240ms var(--ease-out-quint),
     opacity 180ms var(--ease-out-quint);
 }
 
@@ -1107,6 +1096,7 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
 .oauth-btn:focus-visible .oauth-label,
 .oauth-btn:has(:focus-visible) .oauth-label {
   max-width: 112px;
+  margin-left: 7px;
   opacity: 1;
 }
 
@@ -1125,6 +1115,7 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
 
   .oauth-label {
     max-width: none;
+    margin-left: 7px;
     overflow: visible;
     opacity: 1;
   }

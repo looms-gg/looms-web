@@ -7,16 +7,21 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { pieces as registryPieces, replaceCatalog, upsertPiece, type Piece } from "../data/catalog"
+import {
+  pieces as registryPieces,
+  replaceCatalog,
+  subscribeToCatalog,
+  upsertPiece,
+  type Piece,
+} from "../data/catalog"
 import { garmentToPiece } from "../data/garment"
 import { supabase, type GarmentRow } from "../lib/supabase"
-import { AuthContext } from "./auth"
+import { useAuthOptional } from "./auth"
 import { formatErrorMessage } from "../lib/errorFormat"
-
-type MakerProfileEmbed = { username: string } | { username: string }[] | null
+import { coerceProfileEmbed } from "../lib/profileEmbed"
 
 type GarmentEmbedRow = GarmentRow & {
-  profiles: MakerProfileEmbed
+  profiles: unknown
 }
 
 type CatalogContextValue = {
@@ -29,31 +34,11 @@ type CatalogContextValue = {
 
 const CatalogContext = createContext<CatalogContextValue | null>(null)
 
-function asMakerProfileEmbed(value: unknown): MakerProfileEmbed {
-  if (value == null) return null
-  if (Array.isArray(value)) {
-    return value
-      .filter((item): item is { username: string } =>
-        Boolean(item) && typeof item === "object" && typeof (item as { username?: unknown }).username === "string",
-      )
-      .map((item) => ({ username: item.username }))
-  }
-  if (typeof value === "object" && typeof (value as { username?: unknown }).username === "string") {
-    return { username: (value as { username: string }).username }
-  }
-  return null
-}
-
-function makerFromEmbed(profiles: MakerProfileEmbed) {
-  const profile = Array.isArray(profiles) ? profiles[0] : profiles
-  return profile?.username?.trim() || "maker"
-}
-
 export function mapGarmentEmbed(row: GarmentEmbedRow): Piece {
-  return garmentToPiece(row, makerFromEmbed(row.profiles))
+  return garmentToPiece(row, coerceProfileEmbed(row.profiles).username)
 }
 
-export async function loadGarments(userId?: string | null): Promise<Piece[]> {
+export async function fetchGarments(userId?: string | null): Promise<Piece[]> {
   let query = supabase.from("garments").select("*, profiles!garments_user_id_fkey(username)")
   query = userId
     ? query.or(`is_public.eq.true,user_id.eq.${userId}`)
@@ -78,7 +63,7 @@ export async function loadGarments(userId?: string | null): Promise<Piece[]> {
       is_public: row.is_public,
       tags: row.tags,
       created_at: row.created_at,
-      profiles: asMakerProfileEmbed(row.profiles),
+      profiles: row.profiles,
     }),
   )
 }
@@ -86,7 +71,7 @@ export async function loadGarments(userId?: string | null): Promise<Piece[]> {
 const RELOAD_BACKOFF_MS = [0, 1500, 4000] as const
 
 export function CatalogProvider({ children }: { children: ReactNode }) {
-  const auth = useContext(AuthContext)
+  const auth = useAuthOptional()
   const userId = auth?.user?.id ?? null
   const [pieces, setPieces] = useState<Piece[]>(registryPieces)
   const [loading, setLoading] = useState(true)
@@ -94,13 +79,19 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
 
   const apply = useCallback((next: Piece[]) => {
     replaceCatalog(next)
-    setPieces(next)
   }, [])
+
+  // The registry is the single source of truth; this state mirror only exists
+  // to trigger React re-renders when the registry changes.
+  useEffect(
+    () => subscribeToCatalog(() => setPieces(registryPieces)),
+    [],
+  )
 
   const reload = useCallback(async () => {
     setLoading(true)
     try {
-      const next = await loadGarments(userId)
+      const next = await fetchGarments(userId)
       apply(next)
       setError(null)
     } catch (err) {
@@ -134,7 +125,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   }, [reload])
 
   const upsert = useCallback((piece: Piece) => {
-    setPieces(upsertPiece(piece))
+    upsertPiece(piece)
   }, [])
 
   const value = useMemo(
@@ -145,6 +136,11 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
   return <CatalogContext value={value}>{children}</CatalogContext>
 }
 
+// Hook family convention for state contexts: every provider exposes useX
+// (throws outside the provider) followed by useXOptional (returns null) only
+// when some consumer can genuinely render outside the provider. theme,
+// wardrobe, and cookieConsent deliberately omit Optional variants — their
+// consumers are always mounted inside the provider tree.
 export function useCatalog() {
   const ctx = useContext(CatalogContext)
   if (!ctx) throw new Error("useCatalog must be used in CatalogProvider")
@@ -153,6 +149,6 @@ export function useCatalog() {
 
 // Tolerant variant for components that may render outside the provider
 // (e.g. tests, or decorative previews): null instead of throwing.
-export function useCatalogOptional() {
+export function useCatalogOptional(): CatalogContextValue | null {
   return useContext(CatalogContext)
 }

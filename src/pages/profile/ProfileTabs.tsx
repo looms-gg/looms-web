@@ -7,7 +7,7 @@ import { lookRowToLook } from "../../state/lookMeta"
 import { piecesFromEquipped } from "../../data/outfit"
 import type { GarmentRow, LookRow } from "../../lib/supabase"
 import { useLikesOptional } from "../../state/likes"
-import type { ProfileTab } from "../profileTab"
+import type { ProfileTab } from "./profileTab"
 import type { LikedContent } from "./profileApi"
 import { EmptyState } from "../../components/ui/EmptyState"
 

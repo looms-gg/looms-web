@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { parseTheme } from "./theme"
+ // Pure-logic tests live in this .ts file; React/provider tests (mounting ThemeProvider) live in theme.test.tsx.
 
 describe("parseTheme", () => {
   it("accepts the two looms themes and legacy skinplex themes", () => {

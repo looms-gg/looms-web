@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
   dismissBanner,
   fetchActiveSiteBanner,
+  getCachedActiveBanner,
   isBannerDismissed,
   saveSiteBanner,
 } from "./siteBanner"
@@ -25,6 +26,54 @@ describe("siteBanner module", () => {
     // If banner updated later, it is no longer dismissed
     const newerUpdatedAt = "2026-09-08T01:00:00.000Z"
     expect(isBannerDismissed(bannerId, newerUpdatedAt)).toBe(false)
+  })
+
+  it("handles invalid or corrupted dismissal records safely", () => {
+    localStorage.setItem("looms_dismissed_site_banner", "not-json{")
+    expect(isBannerDismissed("banner-1", "2026-09-08T00:00:00.000Z")).toBe(false)
+
+    localStorage.setItem("looms_dismissed_site_banner", JSON.stringify({ wrong: "shape" }))
+    expect(isBannerDismissed("banner-1", "2026-09-08T00:00:00.000Z")).toBe(false)
+
+    localStorage.setItem("looms_dismissed_site_banner", JSON.stringify(null))
+    expect(isBannerDismissed("banner-1", "2026-09-08T00:00:00.000Z")).toBe(false)
+  })
+
+  it("returns cached banner when valid and null when missing or invalid", () => {
+    expect(getCachedActiveBanner()).toBeNull()
+
+    const validBanner = {
+      id: "b-1",
+      is_active: true,
+      text: "Active announcement",
+      link_url: "https://example.com",
+      link_label: "Link",
+      style: "accent",
+      dismissible: true,
+      created_at: "2026-09-08T00:00:00Z",
+      updated_at: "2026-09-08T00:00:00Z",
+      updated_by: null,
+    }
+    localStorage.setItem("looms_last_site_banner", JSON.stringify(validBanner))
+    expect(getCachedActiveBanner()).toEqual(validBanner)
+
+    // Corrupted JSON
+    localStorage.setItem("looms_last_site_banner", "corrupt-json")
+    expect(getCachedActiveBanner()).toBeNull()
+
+    // Invalid style
+    localStorage.setItem(
+      "looms_last_site_banner",
+      JSON.stringify({ ...validBanner, style: "invalid-style" }),
+    )
+    expect(getCachedActiveBanner()).toBeNull()
+
+    // Missing required fields
+    localStorage.setItem(
+      "looms_last_site_banner",
+      JSON.stringify({ id: "b-1", text: "Missing other fields" }),
+    )
+    expect(getCachedActiveBanner()).toBeNull()
   })
 
   it("fetches active banner from supabase", async () => {
@@ -52,7 +101,7 @@ describe("siteBanner module", () => {
   })
 
   it("sanitizes text and link before saving", async () => {
-    const singleMock = vi.fn().mockResolvedValue({
+    const rpcSpy = vi.spyOn(supabase, "rpc").mockResolvedValue({
       data: {
         id: "b-saved",
         is_active: true,
@@ -63,13 +112,7 @@ describe("siteBanner module", () => {
         dismissible: true,
       },
       error: null,
-    })
-    const selectMock = vi.fn().mockReturnValue({ single: singleMock })
-    const insertMock = vi.fn().mockReturnValue({ select: selectMock })
-
-    vi.spyOn(supabase, "from").mockReturnValue({
-      insert: insertMock,
-    } as unknown as ReturnType<typeof supabase.from>)
+    } as never)
 
     const result = await saveSiteBanner({
       isActive: true,
@@ -78,20 +121,17 @@ describe("siteBanner module", () => {
       linkLabel: "<b>Studio</b>",
       style: "accent",
       dismissible: true,
-      adminId: "admin-uuid",
     })
 
-    expect(insertMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        is_active: true,
-        text: "Clean text",
-        link_url: "https://looms.gg/studio",
-        link_label: "Studio",
-        style: "accent",
-        dismissible: true,
-        updated_by: "admin-uuid",
-      }),
-    )
+    expect(rpcSpy).toHaveBeenCalledWith("admin_save_banner", {
+      p_id: null,
+      p_is_active: true,
+      p_text: "Clean text",
+      p_link_url: "https://looms.gg/studio",
+      p_link_label: "Studio",
+      p_style: "accent",
+      p_dismissible: true,
+    })
     expect(result.id).toBe("b-saved")
   })
 
@@ -102,7 +142,6 @@ describe("siteBanner module", () => {
         text: "   ",
         style: "info",
         dismissible: true,
-        adminId: "admin-uuid",
       }),
     ).rejects.toThrow(/Banner text cannot be empty/i)
   })

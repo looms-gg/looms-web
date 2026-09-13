@@ -1,10 +1,15 @@
-import { logAdminAction } from "./adminAudit"
 import { MAX_LIMITS, sanitizeText } from "./sanitize"
-import { supabase, type ContentReportRow, type GarmentRow, type LookRow, type ProfileRow } from "./supabase"
+import {
+  supabase,
+  type ContentReportRow,
+  type GarmentRow,
+  type LookRow,
+  type ProfileRow,
+  type ReportStatus,
+  type ReportTargetType,
+} from "./supabase"
 
-export type { ContentReportRow }
-export type ReportTargetType = "look" | "piece" | "comment" | "profile"
-export type ReportStatus = "pending" | "resolved" | "dismissed"
+export type { ContentReportRow, ReportStatus, ReportTargetType }
 
 export type CreateReportInput = {
   reporterId: string
@@ -53,7 +58,7 @@ export async function createContentReport(input: CreateReportInput): Promise<Con
     .single()
 
   if (error) throw error
-  return data as ContentReportRow
+  return data
 }
 
 /**
@@ -80,91 +85,85 @@ export async function fetchReports(options?: {
 
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []) as ContentReportRow[]
+  return data ?? []
 }
 
 /**
- * Updates a report's status (resolved, dismissed, action_taken).
+ * Updates a report's status via the admin_resolve_report SECURITY DEFINER
+ * RPC, which sets resolved_by from the server session and writes the audit
+ * row in the same transaction.
  */
 export async function updateReportStatus({
   reportId,
   status,
-  adminId,
   actionTaken,
 }: {
   reportId: string
   status: "resolved" | "dismissed"
-  adminId: string
   actionTaken?: string
 }): Promise<ContentReportRow> {
-  const { data, error } = await supabase
-    .from("content_reports")
-    .update({
-      status,
-      resolved_by: adminId,
-      resolved_at: new Date().toISOString(),
-      action_taken: actionTaken ?? "none",
-    })
-    .eq("id", reportId)
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc("admin_resolve_report", {
+    p_report_id: reportId,
+    p_status: status,
+    p_action_taken: actionTaken ?? null,
+  })
 
   if (error) throw error
-  await logAdminAction({
-    action: `report_${status}`,
-    targetTable: "content_reports",
-    targetId: reportId,
-    details: { actionTaken: actionTaken ?? "none" },
-  })
   return data as ContentReportRow
 }
 
+/** Targets the admin_delete_content RPC can delete; profiles have no content row. */
+export type AdminDeletableTarget = Exclude<ReportTargetType, "profile">
+
 /**
- * Admin action to delete offending content across table types.
+ * Admin action to delete offending content across table types, via the
+ * admin_delete_content SECURITY DEFINER RPC (is_admin gate + audit in the
+ * same transaction). Comment targets can arrive without a subType (older
+ * reports); the RPC falls back to deleting from both comment tables and
+ * audits whichever actually held the row. Profile targets are rejected by
+ * the RPC's type check as well — they have no deletable content row.
  */
 export async function adminDeleteContent({
   targetType,
   targetId,
   subType,
 }: {
-  targetType: ReportTargetType
+  targetType: AdminDeletableTarget
   targetId: string
   subType?: string | null
 }): Promise<void> {
-  if (targetType === "look") {
-    const { error } = await supabase.from("looks").delete().eq("id", targetId)
-    if (error) throw error
-    await logAdminAction({ action: "delete_look", targetTable: "looks", targetId })
-  } else if (targetType === "piece") {
-    const { error } = await supabase.from("garments").delete().eq("id", targetId)
-    if (error) throw error
-    await logAdminAction({ action: "delete_garment", targetTable: "garments", targetId })
-  } else if (targetType === "comment") {
-    if (subType === "look_comment") {
-      const { error } = await supabase.from("look_comments").delete().eq("id", targetId)
-      if (error) throw error
-      await logAdminAction({ action: "delete_look_comment", targetTable: "look_comments", targetId })
-    } else if (subType === "garment_comment") {
-      const { error } = await supabase.from("garment_comments").delete().eq("id", targetId)
-      if (error) throw error
-      await logAdminAction({ action: "delete_garment_comment", targetTable: "garment_comments", targetId })
-    } else {
-      // Try both
-      const [garmentRes, lookRes] = await Promise.all([
-        supabase.from("garment_comments").delete().eq("id", targetId),
-        supabase.from("look_comments").delete().eq("id", targetId),
-      ])
-      if (garmentRes.error && lookRes.error) {
-        throw garmentRes.error
-      }
-      if (!garmentRes.error) {
-        await logAdminAction({ action: "delete_garment_comment", targetTable: "garment_comments", targetId })
-      }
-      if (!lookRes.error) {
-        await logAdminAction({ action: "delete_look_comment", targetTable: "look_comments", targetId })
-      }
-    }
-  }
+  const { error } = await supabase.rpc("admin_delete_content", {
+    p_target_type: targetType,
+    p_target_id: targetId,
+    p_sub_type: subType ?? null,
+  })
+  if (error) throw error
+}
+
+export type ModerationState = "ok" | "hidden" | "dmca_down"
+
+/**
+ * Admin action to set moderation state ('ok', 'hidden', 'dmca_down') on looks
+ * or garments via the admin_set_moderation_state SECURITY DEFINER RPC.
+ */
+export async function adminSetModerationState({
+  targetType,
+  targetId,
+  state,
+  details = null,
+}: {
+  targetType: "look" | "piece"
+  targetId: string
+  state: ModerationState
+  details?: Record<string, unknown> | null
+}): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_moderation_state", {
+    p_target_type: targetType,
+    p_target_id: targetId,
+    p_state: state,
+    p_details: details,
+  })
+  if (error) throw error
 }
 
 export type RecentActivityFeed = {
@@ -178,7 +177,7 @@ export type RecentActivityFeed = {
     body: string
     createdAt: string
   }>
-  profiles: ProfileRow[]
+  profiles: Array<Omit<ProfileRow, "last_seen_at">>
 }
 
 /**
@@ -192,6 +191,10 @@ export async function fetchRecentPlatformActivity(limit = 20): Promise<RecentAct
     supabase.from("look_comments").select("*").order("created_at", { ascending: false }).limit(limit),
     supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(limit),
   ])
+
+  for (const res of [looksRes, piecesRes, garmentCommentsRes, lookCommentsRes, profilesRes]) {
+    if (res.error) throw res.error
+  }
 
   const comments: RecentActivityFeed["comments"] = []
 
@@ -220,9 +223,9 @@ export async function fetchRecentPlatformActivity(limit = 20): Promise<RecentAct
   comments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   return {
-    looks: (looksRes.data ?? []) as LookRow[],
-    pieces: (piecesRes.data ?? []) as GarmentRow[],
+    looks: looksRes.data ?? [],
+    pieces: piecesRes.data ?? [],
     comments: comments.slice(0, limit),
-    profiles: (profilesRes.data ?? []) as ProfileRow[],
+    profiles: profilesRes.data ?? [],
   }
 }

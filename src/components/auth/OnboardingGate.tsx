@@ -43,20 +43,17 @@ export function OnboardingGate() {
         busy={busy}
         error={errorMsg}
         initialUsername={prefill}
-        onSubmit={(username) => {
+        onSubmit={async (username) => {
           setBusy(true)
           setErrorMsg(null)
-          void auth
-            .completeOnboarding(username)
-            .then(async ({ error }) => {
-              if (error) {
-                setErrorMsg(formatErrorMessage(error))
-                setBusy(false)
-                return
-              }
-              await auth.refreshProfile()
-              setBusy(false)
-            })
+          const { error } = await auth.completeOnboarding(username)
+          if (error) {
+            setErrorMsg(formatErrorMessage(error))
+            setBusy(false)
+            return
+          }
+          await auth.refreshProfile()
+          setBusy(false)
         }} />
       <button
         type="button"

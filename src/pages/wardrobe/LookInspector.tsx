@@ -111,8 +111,8 @@ export function LookInspector({
                   outfit,
                   look.bodyId,
                   look.bodyHue,
-                  look.name.trim() || "looms-look",
                   look.model,
+                  { filename: look.name.trim() || "looms-look" },
                 )
                 if (!ok) notify("Couldn't export that skin.")
               })()

@@ -130,16 +130,11 @@ function sourceSize(source: ImageBitmap | HTMLImageElement): { w: number; h: num
   return { w: source.width, h: source.height }
 }
 
-/**
- * Resize + re-encode a profile avatar or banner for storage.
- * Prefers WebP; falls back to JPEG. Loops quality down toward targets.
- */
-export async function compressProfileImage(
-  file: File,
+function renderImageToCanvas(
+  source: ImageBitmap | HTMLImageElement,
   kind: "avatar" | "banner",
   crop?: ProfileCrop,
-): Promise<File> {
-  const source = await decodeBitmap(file)
+): HTMLCanvasElement {
   const { w, h } = sourceSize(source)
   if (w < 1 || h < 1) {
     throw new Error("Couldn't decode image.")
@@ -150,7 +145,6 @@ export async function compressProfileImage(
   if (!ctx) throw new Error("2d canvas unavailable")
 
   if (crop) {
-    // Explicit crop from the settings modal wins over the auto center-crop.
     const aspect = kind === "avatar" ? 1 : BANNER_MAX_W / BANNER_MAX_H
     const draw = fitCropDraw(w, h, aspect, crop)
     canvas.width = draw.dw
@@ -174,11 +168,14 @@ export async function compressProfileImage(
     ctx.drawImage(source, 0, 0, w, h, 0, 0, size.dw, size.dh)
   }
 
-  if ("close" in source && typeof source.close === "function") {
-    source.close()
-  }
+  return canvas
+}
 
-  const mime = pickMime(canvas)
+async function compressCanvasToBlob(
+  canvas: HTMLCanvasElement,
+  kind: "avatar" | "banner",
+  mime: "image/webp" | "image/jpeg",
+): Promise<Blob> {
   const target = kind === "avatar" ? AVATAR_TARGET_BYTES : BANNER_TARGET_BYTES
   let quality = kind === "avatar" ? 0.72 : 0.7
   let best: Blob | null = null
@@ -195,5 +192,31 @@ export async function compressProfileImage(
     throw new Error("Couldn't compress image.")
   }
 
-  return blobToFile(best, kind, mime === "image/webp" ? "image/webp" : "image/jpeg")
+  return best
+}
+
+function closeImageSource(source: ImageBitmap | HTMLImageElement): void {
+  if ("close" in source && typeof source.close === "function") {
+    source.close()
+  }
+}
+
+/**
+ * Resize + re-encode a profile avatar or banner for storage.
+ * Prefers WebP; falls back to JPEG. Loops quality down toward targets.
+ */
+export async function compressProfileImage(
+  file: File,
+  kind: "avatar" | "banner",
+  crop?: ProfileCrop,
+): Promise<File> {
+  const source = await decodeBitmap(file)
+  try {
+    const canvas = renderImageToCanvas(source, kind, crop)
+    const mime = pickMime(canvas)
+    const best = await compressCanvasToBlob(canvas, kind, mime)
+    return blobToFile(best, kind, mime === "image/webp" ? "image/webp" : "image/jpeg")
+  } finally {
+    closeImageSource(source)
+  }
 }

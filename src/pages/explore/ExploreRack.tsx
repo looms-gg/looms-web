@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react"
 import type { Piece } from "../../data/catalog"
-import type { SlotFilter, Sort } from "../../lib/exploreBrowse"
-import type { LookModelFilter, LookSort, PublicLook } from "../../state/publicLooks"
+import type { PublicLook } from "../../state/publicLooks"
 import { PieceTile } from "../../components/piece/PieceTile"
 import { LookTile } from "../../components/look/LookTile"
 import { RackGrid } from "../../components/piece/RackGrid"
@@ -26,11 +25,6 @@ export function ExploreRack({
   filtered: Piece[]
   looks?: PublicLook[]
   filteredLooks?: PublicLook[]
-  slot: SlotFilter
-  sort: Sort
-  lookSort?: LookSort
-  model?: LookModelFilter
-  query: string
   onReset: () => void
   onLookLikeCountChange?: (lookId: string, count: number) => void
 }) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ChangeEvent } from "react"
+import { useState, useRef, type ChangeEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import {
   CloudArrowUp,
@@ -9,14 +9,98 @@ import {
 import { Icon } from "../../components/ui/Icon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { SLOT_LABEL, type Piece } from "../../data/catalog"
-import { validateDimensions } from "../../components/piece/UploadPieceModal"
-import { MAX_LIMITS, sanitizeText, validateFileSize } from "../../lib/sanitize"
+import { validatePngTexture } from "../../lib/textureValidation"
+import { MAX_LIMITS, sanitizeText } from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { useWardrobe } from "../../state/wardrobe"
 import { useCatalog } from "../../state/catalog"
 import { useAuthOptional } from "../../state/auth"
 import { supabase } from "../../lib/supabase"
 import { InlineEditableText } from "./InlineEditableText"
+
+async function updateGarmentName(pieceId: string, ownerId: string, name: string): Promise<void> {
+  const { error } = await supabase
+    .from("garments")
+    .update({ name })
+    .eq("id", pieceId)
+    .eq("user_id", ownerId)
+  if (error) throw error
+}
+
+async function updateGarmentDescription(
+  pieceId: string,
+  ownerId: string,
+  description: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from("garments")
+    .update({ description })
+    .eq("id", pieceId)
+    .eq("user_id", ownerId)
+  if (error) throw error
+}
+
+async function updateGarmentVisibility(
+  pieceId: string,
+  ownerId: string,
+  isPublic: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("garments")
+    .update({ is_public: isPublic })
+    .eq("id", pieceId)
+    .eq("user_id", ownerId)
+  if (error) throw error
+}
+
+async function deleteGarment(pieceId: string, ownerId: string): Promise<void> {
+  const { error } = await supabase
+    .from("garments")
+    .delete()
+    .eq("id", pieceId)
+    .eq("user_id", ownerId)
+  if (error) throw error
+}
+
+async function uploadPieceTexture(
+  ownerId: string,
+  pieceId: string,
+  file: File,
+): Promise<{ cacheBustedUrl: string; added: number }> {
+  const storagePath = `${ownerId}/${pieceId}.png`
+  const { error: uploadError } = await supabase.storage
+    .from("garments")
+    .upload(storagePath, file, {
+      contentType: "image/png",
+      upsert: true,
+    })
+
+  if (uploadError) {
+    throw new Error(`Upload failed: ${uploadError.message}`)
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("garments").getPublicUrl(storagePath)
+
+  const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`
+  const now = Date.now()
+
+  const { error: dbError } = await supabase
+    .from("garments")
+    .update({
+      texture_url: cacheBustedUrl,
+      added: now,
+    })
+    .eq("id", pieceId)
+    .eq("user_id", ownerId)
+
+  if (dbError) {
+    throw new Error(`Database update failed: ${dbError.message}`)
+  }
+
+  return { cacheBustedUrl, added: now }
+}
 
 export function UploadInspector({
   piece,
@@ -37,13 +121,16 @@ export function UploadInspector({
   const [replacing, setReplacing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [prevPieceKey, setPrevPieceKey] = useState(`${piece.id}:${piece.isPublic}`)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
+  const currentPieceKey = `${piece.id}:${piece.isPublic}`
+  if (currentPieceKey !== prevPieceKey) {
+    setPrevPieceKey(currentPieceKey)
     setIsPublic(piece.isPublic ?? true)
     setConfirmDelete(false)
     setErrorMsg(null)
-  }, [piece.id, piece.isPublic])
+  }
 
   function requireOwner(): string | null {
     if (!user) {
@@ -66,14 +153,7 @@ export function UploadInspector({
 
     void (async () => {
       try {
-        const { error } = await supabase
-          .from("garments")
-          .update({ name: next })
-          .eq("id", piece.id)
-          .eq("user_id", ownerId)
-
-        if (error) throw error
-
+        await updateGarmentName(piece.id, ownerId, next)
         upsert({ ...piece, name: next })
         notify(`Renamed garment to "${next}".`)
       } catch (err) {
@@ -92,14 +172,7 @@ export function UploadInspector({
 
     void (async () => {
       try {
-        const { error } = await supabase
-          .from("garments")
-          .update({ description: next || null })
-          .eq("id", piece.id)
-          .eq("user_id", ownerId)
-
-        if (error) throw error
-
+        await updateGarmentDescription(piece.id, ownerId, next || null)
         upsert({ ...piece, blurb: next })
         notify("Updated garment description.")
       } catch (err) {
@@ -115,14 +188,7 @@ export function UploadInspector({
     if (!ownerId) return
     setIsPublic(nextPublic)
     try {
-      const { error } = await supabase
-        .from("garments")
-        .update({ is_public: nextPublic })
-        .eq("id", piece.id)
-        .eq("user_id", ownerId)
-
-      if (error) throw error
-
+      await updateGarmentVisibility(piece.id, ownerId, nextPublic)
       upsert({ ...piece, isPublic: nextPublic })
       notify(nextPublic ? "Piece is now public in Explore." : "Piece is now private.")
     } catch (err) {
@@ -142,82 +208,29 @@ export function UploadInspector({
     const ownerId = requireOwner()
     if (!ownerId) return
 
-    if (file.type !== "image/png") {
-      setErrorMsg("Only PNG files are supported for Minecraft garment textures.")
+    const result = await validatePngTexture(file)
+    if (!result.ok) {
+      setErrorMsg(result.error)
       return
     }
+    URL.revokeObjectURL(result.objectUrl)
 
-    const sizeCheck = validateFileSize(file, MAX_LIMITS.FILE_SIZE_BYTES)
-    if (!sizeCheck.valid) {
-      setErrorMsg(sizeCheck.error ?? "File size too large.")
-      return
+    setReplacing(true)
+    setErrorMsg(null)
+    try {
+      const { cacheBustedUrl, added } = await uploadPieceTexture(ownerId, piece.id, file)
+      upsert({
+        ...piece,
+        skin: cacheBustedUrl,
+        added,
+      })
+      notify(`Uploaded new version for "${piece.name}"!`)
+    } catch (err) {
+      setErrorMsg(formatErrorMessage(err))
+    } finally {
+      setReplacing(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
     }
-
-    const objectUrl = URL.createObjectURL(file)
-    const img = new Image()
-
-    img.onload = async () => {
-      const { valid, error } = validateDimensions(img.width, img.height)
-      URL.revokeObjectURL(objectUrl)
-      if (!valid) {
-        setErrorMsg(error ?? "Invalid texture dimensions.")
-        return
-      }
-
-      setReplacing(true)
-      setErrorMsg(null)
-      try {
-        const storagePath = `${ownerId}/${piece.id}.png`
-        const { error: uploadError } = await supabase.storage
-          .from("garments")
-          .upload(storagePath, file, {
-            contentType: "image/png",
-            upsert: true,
-          })
-
-        if (uploadError) {
-          throw new Error(`Upload failed: ${uploadError.message}`)
-        }
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("garments").getPublicUrl(storagePath)
-
-        const cacheBustedUrl = `${publicUrl}?v=${Date.now()}`
-        const now = Date.now()
-
-        const { error: dbError } = await supabase
-          .from("garments")
-          .update({
-            texture_url: cacheBustedUrl,
-            added: now,
-          })
-          .eq("id", piece.id)
-          .eq("user_id", ownerId)
-
-        if (dbError) {
-          throw new Error(`Database update failed: ${dbError.message}`)
-        }
-
-        upsert({
-          ...piece,
-          skin: cacheBustedUrl,
-          added: now,
-        })
-        notify(`Uploaded new version for "${piece.name}"!`)
-      } catch (err) {
-        setErrorMsg(formatErrorMessage(err))
-      } finally {
-        setReplacing(false)
-        if (fileInputRef.current) fileInputRef.current.value = ""
-      }
-    }
-
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl)
-      setErrorMsg("Could not load image file.")
-    }
-    img.src = objectUrl
   }
 
   async function handleDelete() {
@@ -229,13 +242,7 @@ export function UploadInspector({
     if (!ownerId) return
 
     try {
-      const { error } = await supabase
-        .from("garments")
-        .delete()
-        .eq("id", piece.id)
-        .eq("user_id", ownerId)
-      if (error) throw error
-
+      await deleteGarment(piece.id, ownerId)
       notify(`Deleted "${piece.name}".`)
       await reload()
       onDeleted?.()
@@ -269,7 +276,8 @@ export function UploadInspector({
             onCommit={commitName}
             ariaLabel="Garment name"
             editAriaLabel="Edit garment name"
-            title={piece.name} />
+            title={piece.name}
+          />
           <p className="mt-1 text-xs font-semibold text-base-content/60">
             Added {new Date(piece.added).toLocaleDateString()}
           </p>
@@ -283,7 +291,8 @@ export function UploadInspector({
             onCommit={commitDescription}
             ariaLabel="Garment description"
             editAriaLabel="Edit garment description"
-            placeholder="Add a description" />
+            placeholder="Add a description"
+          />
         </div>
 
         <div className="flex items-center justify-between border-t border-base-content/10 pt-3">
@@ -297,7 +306,8 @@ export function UploadInspector({
               aria-label="Public garment"
               checked={isPublic}
               onChange={(e) => void handleTogglePublic(e.target.checked)}
-              className="toggle toggle-primary toggle-sm" />
+              className="toggle toggle-primary toggle-sm"
+            />
           </label>
         </div>
 
@@ -308,7 +318,8 @@ export function UploadInspector({
             onChange={handleReplaceTexture}
             accept="image/png"
             className="hidden"
-            aria-label="Upload new garment texture version" />
+            aria-label="Upload new garment texture version"
+          />
           <button
             type="button"
             className="btn btn-outline btn-sm rounded-full font-bold w-full"

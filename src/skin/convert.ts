@@ -1,4 +1,7 @@
-export type SkinModel = "classic" | "slim"
+import type { SkinModel } from "../data/model"
+
+export type { SkinModel } from "../data/model"
+
 export type ArmModelDetection = SkinModel | "universal"
 
 const ATLAS = 64

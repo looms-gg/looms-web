@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { clampHue } from "../state/persist"
+import { clampHue } from "./hue"
 import { shiftHex, shiftRgb } from "./hue"
 
 describe("hue", () => {

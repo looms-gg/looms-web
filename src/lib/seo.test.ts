@@ -10,6 +10,7 @@ import {
   isThinPieceSeo,
   truncateSeoText,
   creativeWorkJsonLd,
+  websiteJsonLd,
   THIN_SEO_TEXT_LENGTH,
 } from "./seo"
 
@@ -123,3 +124,15 @@ describe("creativeWorkJsonLd", () => {
     expect(ld.inLanguage).toBe("en")
   })
 })
+
+describe("websiteJsonLd", () => {
+  it("builds a schema.org WebSite with the required fields", () => {
+    const ld = websiteJsonLd()
+    expect(ld["@context"]).toBe("https://schema.org")
+    expect(ld["@type"]).toBe("WebSite")
+    expect(ld.name).toBe("looms")
+    expect(ld.url).toBe("https://looms.gg/")
+    expect(ld.isAccessibleForFree).toBe(true)
+  })
+})
+

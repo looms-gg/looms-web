@@ -50,7 +50,7 @@ describe("pendingActionExecutor", () => {
     setPendingAction({ action: "add", pieceId: "winter-coat" })
     const deps = makeDeps()
     await runPendingAction(deps)
-    expect(deps.addToWardrobe).toHaveBeenCalledWith("winter-coat")
+    expect(deps.addToWardrobe).toHaveBeenCalledWith("winter-coat", { notify: false })
     expect(deps.navigate).not.toHaveBeenCalled()
   })
 
@@ -58,7 +58,7 @@ describe("pendingActionExecutor", () => {
     setPendingAction({ action: "wear", pieceId: "winter-coat" })
     const deps = makeDeps({ owns: () => true })
     await runPendingAction(deps)
-    expect(deps.wear).toHaveBeenCalledWith("winter-coat")
+    expect(deps.wear).toHaveBeenCalledWith("winter-coat", { notify: false })
     expect(deps.addAndWear).not.toHaveBeenCalled()
   })
 
@@ -66,7 +66,7 @@ describe("pendingActionExecutor", () => {
     setPendingAction({ action: "wear", pieceId: "winter-coat" })
     const deps = makeDeps({ owns: () => false })
     await runPendingAction(deps)
-    expect(deps.addAndWear).toHaveBeenCalledWith("winter-coat")
+    expect(deps.addAndWear).toHaveBeenCalledWith("winter-coat", { notify: false })
     expect(deps.wear).not.toHaveBeenCalled()
   })
 
@@ -74,7 +74,7 @@ describe("pendingActionExecutor", () => {
     setPendingAction({ action: "addAndWear", pieceId: "winter-coat" })
     const deps = makeDeps()
     await runPendingAction(deps)
-    expect(deps.addAndWear).toHaveBeenCalledWith("winter-coat")
+    expect(deps.addAndWear).toHaveBeenCalledWith("winter-coat", { notify: false })
   })
 
   it("replays wearLook by loading the look and opening Studio", async () => {
@@ -82,7 +82,7 @@ describe("pendingActionExecutor", () => {
     const deps = makeDeps()
     await runPendingAction(deps)
     expect(deps.getLook).toHaveBeenCalledWith("look-77")
-    expect(deps.loadLook).toHaveBeenCalledWith(mockLook)
+    expect(deps.loadLook).toHaveBeenCalledWith(mockLook, { notify: false })
     expect(deps.navigate).toHaveBeenCalledWith("/studio")
   })
 

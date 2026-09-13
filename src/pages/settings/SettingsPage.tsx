@@ -6,25 +6,17 @@ import {
   Eye,
   Gear,
   Plugs,
-  SignIn,
   UserCircle,
 } from "@phosphor-icons/react"
 import { Icon, type IconType } from "../../components/ui/Icon"
 import { HeadMeta } from "../../components/shell/HeadMeta"
 import { RequireAuth } from "../../components/auth/RequireAuth"
 import { useAuth } from "../../state/auth"
-import { isEmailVerified } from "../../state/emailStatus"
 import { formatErrorMessage } from "../../lib/errorFormat"
-import {
-  canChangeUsername,
-  formatLastSeen,
-  resolveAvatarUrl,
-  usernameLockMessage,
-} from "../../state/profileDisplay"
-import { DangerZoneModal } from "../profile/DangerZoneModal"
 import { parseSettingsTab, settingsTabQuery, type SettingsTab } from "./settingsTab"
 import { ProfileSection } from "./ProfileSection"
 import { ConnectionsSection } from "./ConnectionsSection"
+import { AccountSection } from "./AccountSection"
 
 const TABS: { id: SettingsTab; label: string; description: string; icon: IconType }[] = [
   {
@@ -71,7 +63,7 @@ function Section({
   return (
     <section className="rounded-[18px] bg-base-200 p-5 sm:p-6">
       <h2 className="text-lg font-extrabold tracking-tight">{title}</h2>
-      <p className="mt-0.5 text-sm text-base-content/65">{description}</p>
+      <p className="mt-0.5 text-sm text-base-content/75">{description}</p>
       <div className="mt-4">{children}</div>
     </section>
   )
@@ -96,7 +88,7 @@ function ToggleRow({
     <li className="flex items-center justify-between gap-3 rounded-xl bg-base-100/80 px-4 py-3">
       <div className="min-w-0">
         <p className="text-sm font-bold">{label}</p>
-        <p className="text-xs text-base-content/60">{hint}</p>
+        <p className="text-xs text-base-content/75">{hint}</p>
       </div>
       <input
         type="checkbox"
@@ -210,154 +202,27 @@ function UploadsSection() {
         <Link to="/wardrobe?tab=uploads" className={rowClass}>
           <div className="min-w-0">
             <p className="text-sm font-bold">Your pieces</p>
-            <p className="text-xs text-base-content/60">
+            <p className="text-xs text-base-content/75">
               Rename, describe, or switch pieces between public and private
             </p>
           </div>
-          <span className="text-sm font-bold text-base-content/50">→</span>
+          <span className="text-sm font-bold text-base-content/60">→</span>
         </Link>
         <Link to="/wardrobe?tab=looks" className={rowClass}>
           <div className="min-w-0">
             <p className="text-sm font-bold">Your looks</p>
-            <p className="text-xs text-base-content/60">
+            <p className="text-xs text-base-content/75">
               Edit, export, or change who can see each look
             </p>
           </div>
-          <span className="text-sm font-bold text-base-content/50">→</span>
+          <span className="text-sm font-bold text-base-content/60">→</span>
         </Link>
       </div>
     </Section>
   )
 }
 
-function AccountSection() {
-  const { user, profile, signOut } = useAuth()
-  const [busy, setBusy] = useState(false)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [dangerOpen, setDangerOpen] = useState(false)
 
-  const avatarUrl = resolveAvatarUrl(profile)
-  // isEmailVerified (shared with AuthProvider) is the single source of truth:
-  // accounts with no email (e.g. OTP-linked) count as verified, and only the
-  // email_confirmed_at timestamp decides confirmation.
-  const emailVerified = isEmailVerified(user as never)
-  const email = user?.email ?? null
-  const usernameLockedMsg = usernameLockMessage(profile?.username_changed_at)
-  const usernameLocked = !canChangeUsername(profile?.username_changed_at)
-
-  async function handleSignOut() {
-    setBusy(true)
-    setErrorMsg(null)
-    const { error } = await signOut()
-    setBusy(false)
-    if (error) setErrorMsg(formatErrorMessage(error))
-  }
-
-  return (
-    <Section title="Account" description="Profile details, email, and account deletion.">
-      <div className="space-y-3">
-        {/* Identity summary */}
-        <div className="flex items-center gap-3 rounded-xl bg-base-100/80 px-4 py-3">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt=""
-              className="size-10 rounded-xl object-cover"
-              style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
-          ) : (
-            <span className="grid size-10 place-items-center rounded-xl bg-primary/25 text-primary text-sm font-extrabold">
-              {(profile?.username ?? "?").slice(0, 2).toUpperCase()}
-            </span>
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold">{profile?.username ?? "You"}</p>
-            <p className="truncate text-xs text-base-content/60">
-              {email ?? "Signed in"}
-              {emailVerified ? "" : " · unconfirmed"}
-            </p>
-          </div>
-        </div>
-
-        {/* Email */}
-        <div className="rounded-xl bg-base-100/80 px-4 py-3">
-          <p className="text-sm font-bold">Email</p>
-          <p className="mt-0.5 truncate text-xs text-base-content/60">
-            {email ?? "—"}
-            {emailVerified ? " · confirmed" : " · awaiting confirmation"}
-          </p>
-        </div>
-
-        {/* Username state */}
-        <div className="rounded-xl bg-base-100/80 px-4 py-3">
-          <p className="text-sm font-bold">Username</p>
-          <p className="mt-0.5 text-xs text-base-content/60">
-            {usernameLocked
-              ? (usernameLockedMsg ?? "Locked for now.")
-              : "You can change your username on your profile."}
-          </p>
-        </div>
-
-        {/* Only render when presence data actually exists — mapProfileRow
-            nulls last_seen_at when the RLS policy filters the presence embed
-            out, and "Unknown" would leak that internal state to the UI. */}
-        {profile?.show_last_seen && profile.last_seen_at ? (
-          <div className="rounded-xl bg-base-100/80 px-4 py-3">
-            <p className="text-sm font-bold">Last seen</p>
-            <p className="mt-0.5 text-xs text-base-content/60">
-              {formatLastSeen(profile.last_seen_at) ?? "Just now"}
-            </p>
-          </div>
-        ) : null}
-
-        {errorMsg ? (
-          <p className="text-sm text-error" role="alert">
-            {errorMsg}
-          </p>
-        ) : null}
-
-        <div className="flex flex-wrap gap-2 pt-1">
-          <button
-            type="button"
-            className="btn btn-ghost btn-sm rounded-full font-bold"
-            disabled={busy}
-            onClick={() => void handleSignOut()}
-          >
-            <Icon icon={SignIn} size="sm" />
-            Log out
-          </button>
-        </div>
-      </div>
-
-      {/* Danger zone */}
-      <div className="mt-6 border-t border-base-content/10 pt-4">
-        <p className="text-xs font-extrabold uppercase tracking-[0.06em] text-base-content/50">
-          Danger zone
-        </p>
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm mt-2 h-auto min-h-0 justify-between rounded-xl px-3 py-2 text-error hover:bg-error/10"
-          disabled={busy}
-          onClick={() => setDangerOpen(true)}
-        >
-          <span className="flex items-center gap-2 text-sm font-bold">Delete account</span>
-          <span className="text-xs font-normal text-base-content/50">→</span>
-        </button>
-        <p className="mt-1 text-xs text-base-content/50">
-          Permanently removes your profile, uploads, looks, and comments. This cannot be undone.
-        </p>
-      </div>
-
-      <DangerZoneModal
-        open={dangerOpen}
-        busy={busy}
-        onClose={() => setDangerOpen(false)}
-        onDone={async () => {
-          setDangerOpen(false)
-          await signOut()
-        }} />
-    </Section>
-  )
-}
 
 function SettingsTabs({
   active,
@@ -381,7 +246,7 @@ function SettingsTabs({
             className={`btn btn-sm rounded-full font-extrabold gap-2 transition-colors transition-transform active:scale-[0.96] ${
               selected
                 ? "btn-primary shadow-sm"
-                : "btn-ghost text-base-content/70 hover:text-base-content"
+                : "btn-ghost text-base-content/80 hover:text-base-content"
             }`}
           >
             <Icon icon={tab.icon} size="sm" />
@@ -427,13 +292,13 @@ export function SettingsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight text-balance sm:text-3xl">Settings</h1>
-          <p className="text-xs font-semibold text-base-content/60 text-pretty">
+          <p className="text-xs font-semibold text-base-content/75 text-pretty">
             Privacy, uploads, and account controls in one place
           </p>
         </div>
         <button
           type="button"
-          className="btn btn-ghost btn-sm ml-auto rounded-full font-bold gap-2 text-base-content/70 hover:text-base-content"
+          className="btn btn-ghost btn-sm ml-auto rounded-full font-bold gap-2 text-base-content/80 hover:text-base-content"
           title="Go back"
           aria-label="Go back"
           onClick={goBack}

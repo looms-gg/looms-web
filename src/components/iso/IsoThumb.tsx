@@ -185,8 +185,8 @@ export function IsoThumb({
     void import("../../skin/iso")
       .then(({ isoOutfitThumb, isoPieceThumb }) =>
         piece
-          ? isoPieceThumb(piece, model, priority, !chip)
-          : isoOutfitThumb(outfitRef.current ?? [], bodyId, bodyHue, model, priority, !chip),
+          ? isoPieceThumb(piece, model, { priority, bakeFx: !chip })
+          : isoOutfitThumb(outfitRef.current ?? [], bodyId, bodyHue, model, { priority, bakeFx: !chip }),
       )
       .then(apply)
       .catch(() => apply(null))

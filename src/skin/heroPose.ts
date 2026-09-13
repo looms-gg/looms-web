@@ -1,14 +1,28 @@
-import { Box3, Vector3, type Object3D, type Mesh } from "three"
+import { Box3, Vector3 } from "three"
 import { SkinViewer, type PlayerObject } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../data/bodies"
 import { piecesFromEquipped, equippedFromStack } from "../data/outfit"
-import type { PublicLook } from "../state/publicLooks"
+import type { SkinModel } from "./convert"
 import { composeSkin } from "./compose"
-import { crispSkinTexture, lightSkinViewer, pauseViewerLoop, skinviewModel } from "./focus"
+import { crispSkinTexture, expandVisible, lightSkinViewer, pauseViewerLoop, viewerModelName } from "./focus"
+import { getStoredThumb, setStoredThumb } from "./thumbCache"
 import { compositeIsoThumbFx } from "./thumbFx"
 import { washFromCanvas } from "./wash"
 
 export type HeroPose = "center" | "left" | "right"
+
+/**
+ * The narrow slice of a look the hero renderer needs. Structural, so a full
+ * state-layer PublicLook satisfies it without the skin engine importing
+ * upward across layers.
+ */
+export type HeroLook = {
+  id: string
+  stack: string[]
+  bodyId?: string
+  bodyHue?: number
+  model?: SkinModel
+}
 
 export type HeroPoseThumbResult = {
   url: string
@@ -23,77 +37,9 @@ const memCache = new Map<string, HeroPoseThumbResult>()
 const inflight = new Map<string, Promise<HeroPoseThumbResult>>()
 let viewer: SkinViewer | null = null
 
-const DB_NAME = "looms_iso_cache_v1"
-const STORE_NAME = "thumbnails"
-let dbPromise: Promise<IDBDatabase | null> | null = null
-
-function getDb(): Promise<IDBDatabase | null> {
-  if (typeof indexedDB === "undefined") return Promise.resolve(null)
-  if (!dbPromise) {
-    dbPromise = new Promise((resolve) => {
-      try {
-        const req = indexedDB.open(DB_NAME, 1)
-        req.onupgradeneeded = () => {
-          const db = req.result
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME)
-          }
-        }
-        req.onsuccess = () => resolve(req.result)
-        req.onerror = () => resolve(null)
-      } catch {
-        resolve(null)
-      }
-    })
-  }
-  return dbPromise
-}
-
-async function getStoredThumb(key: string): Promise<HeroPoseThumbResult | null> {
-  const db = await getDb()
-  if (!db) return null
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(STORE_NAME, "readonly")
-      const req = tx.objectStore(STORE_NAME).get(key)
-      req.onsuccess = () => resolve((req.result as HeroPoseThumbResult) || null)
-      req.onerror = () => resolve(null)
-    } catch {
-      resolve(null)
-    }
-  })
-}
-
-function setStoredThumb(key: string, data: HeroPoseThumbResult) {
-  void getDb().then((db) => {
-    if (!db) return
-    try {
-      const tx = db.transaction(STORE_NAME, "readwrite")
-      tx.objectStore(STORE_NAME).put(data, key)
-    } catch {
-      // ignore
-    }
-  })
-}
-
 const fitBox = new Box3()
-const meshBox = new Box3()
 const fitSize = new Vector3()
 const fitCenter = new Vector3()
-
-function expandVisible(obj: Object3D, box: Box3) {
-  if (!obj.visible) return
-  const mesh = obj as Mesh
-  if (mesh.isMesh && mesh.geometry) {
-    const geom = mesh.geometry
-    if (!geom.boundingBox) geom.computeBoundingBox()
-    if (geom.boundingBox && !geom.boundingBox.isEmpty()) {
-      meshBox.copy(geom.boundingBox).applyMatrix4(mesh.matrixWorld)
-      box.union(meshBox)
-    }
-  }
-  for (const child of obj.children) expandVisible(child, box)
-}
 
 export function applyHeroCameraPose(player: PlayerObject, pose: HeroPose) {
   const skin = player.skin
@@ -181,8 +127,74 @@ function getHeroViewer(): SkinViewer {
   }
 }
 
+function hasUnloadedPieces(stack: string[], pieces: { id: string }[]): boolean {
+  return stack.some((id) => id && !pieces.some((p) => p.id === id))
+}
+
+function renderHeroFrame(
+  v: SkinViewer,
+  skin: HTMLCanvasElement,
+  model: SkinModel,
+  pose: HeroPose,
+): void {
+  // Hidden viewer: draw on demand only (RAF loop paused).
+  pauseViewerLoop(v)
+  v.loadSkin(skin, { model: viewerModelName(model) })
+  applyHeroCameraPose(v.playerObject, pose)
+  frameHeroCamera(v, pose)
+  crispSkinTexture(v)
+  v.render()
+}
+
+function captureViewerThumb(v: SkinViewer): string {
+  // Bake the camera's framed bust as-is (no tile normalization): the hero
+  // container displays it with `contain`, so normalizing to the tile fill
+  // only shrank the characters.
+  try {
+    return compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height, {
+      normalize: false,
+      rim: 4,
+      rimAlpha: 0.45,
+    })
+  } catch {
+    return v.canvas.toDataURL("image/png")
+  }
+}
+
+async function generateHeroThumb(
+  look: HeroLook,
+  pose: HeroPose,
+): Promise<HeroPoseThumbResult> {
+  const pieces = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
+  // Refuse to compose (and cache) while any stacked piece is still missing
+  // from the registry: those slots would silently drop out of the skin.
+  if (hasUnloadedPieces(look.stack, pieces)) {
+    return { url: "", wash: "", pending: true }
+  }
+
+  const model = look.model ?? "classic"
+  const skin = await composeSkin(
+    pieces,
+    look.bodyId ?? DEFAULT_BODY_ID,
+    look.bodyHue ?? 0,
+    model,
+  )
+  const wash = washFromCanvas(skin)
+
+  let v: SkinViewer
+  try {
+    v = getHeroViewer()
+  } catch {
+    return { url: "", wash }
+  }
+
+  renderHeroFrame(v, skin, model, pose)
+  const url = captureViewerThumb(v)
+  return { url, wash }
+}
+
 export async function heroPosedLookThumb(
-  look: PublicLook,
+  look: HeroLook,
   pose: HeroPose,
 ): Promise<HeroPoseThumbResult> {
   const stackKey = look.stack.join("|") || "empty"
@@ -193,7 +205,8 @@ export async function heroPosedLookThumb(
   // so the bust stays large. v13→v16: thicker rim outline and matching shadow.
   // v17: the rim became an inner overlay tinting the render's lit edge.
   // v18: hero busts use the lighter piece rim preset to match the app.
-  const key = `hero-bust:v18:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
+  // v19: thinner rim highlight (4px, 0.45 alpha) so large characters stay crisp.
+  const key = `hero-bust:v19:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
 
   const hit = memCache.get(key)
   if (hit) return hit
@@ -202,56 +215,16 @@ export async function heroPosedLookThumb(
   if (pending) return pending
 
   const work = (async () => {
-    const stored = await getStoredThumb(key)
+    const stored = await getStoredThumb<HeroPoseThumbResult>(key)
     if (stored) {
       memCache.set(key, stored)
       return stored
     }
 
-    const pieces = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
-    // Refuse to compose (and cache) while any stacked piece is still missing
-    // from the registry: those slots would silently drop out of the skin.
-    if (look.stack.some((id) => id && !pieces.some((p) => p.id === id))) {
-      return { url: "", wash: "", pending: true }
-    }
-    const skin = await composeSkin(
-      pieces,
-      look.bodyId ?? DEFAULT_BODY_ID,
-      look.bodyHue ?? 0,
-      look.model ?? "classic",
-    )
-    const wash = washFromCanvas(skin)
-
-    let v: SkinViewer
-    try {
-      v = getHeroViewer()
-    } catch {
-      return { url: "", wash }
-    }
-
-    // Hidden viewer: draw on demand only (RAF loop paused).
-    pauseViewerLoop(v)
-    v.loadSkin(skin, { model: skinviewModel(look.model ?? "classic") })
-    applyHeroCameraPose(v.playerObject, pose)
-    frameHeroCamera(v, pose)
-    crispSkinTexture(v)
-    v.render()
-
-    // Bake the camera's framed bust as-is (no tile normalization): the hero
-    // container displays it with `contain`, so normalizing to the tile fill
-    // only shrank the characters.
-    let url: string
-    try {
-      url = compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height, {
-        normalize: false,
-      })
-    } catch {
-      url = v.canvas.toDataURL("image/png")
-    }
-    const res: HeroPoseThumbResult = { url, wash }
+    const res = await generateHeroThumb(look, pose)
     // Never cache a failed capture (empty url): the hero would show its
     // skeleton forever on every future visit.
-    if (url) {
+    if (res.url) {
       memCache.set(key, res)
       setStoredThumb(key, res)
     }
@@ -259,8 +232,10 @@ export async function heroPosedLookThumb(
   })()
 
   inflight.set(key, work)
-  void work.finally(() => {
-    if (inflight.get(key) === work) inflight.delete(key)
-  })
+  void work
+    .finally(() => {
+      if (inflight.get(key) === work) inflight.delete(key)
+    })
+    .catch(() => {})
   return work
 }

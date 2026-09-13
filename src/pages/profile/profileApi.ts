@@ -62,7 +62,7 @@ export async function fetchPublicUploads(userId: string): Promise<GarmentRow[]> 
     .order("added", { ascending: false })
 
   if (error) throw error
-  return (data as GarmentRow[]) ?? []
+  return data ?? []
 }
 
 export async function fetchPublicLooks(userId: string): Promise<LookRow[]> {
@@ -74,7 +74,57 @@ export async function fetchPublicLooks(userId: string): Promise<LookRow[]> {
     .order("updated_at", { ascending: false })
 
   if (error) throw error
-  return (data as LookRow[]) ?? []
+  return data ?? []
+}
+
+function partitionLikes(
+  likeRows: Array<{ target_type: string; target_id: string }>,
+): {
+  likes: LikedTargetRef[]
+  garmentIds: string[]
+  lookIds: string[]
+} {
+  const likes: LikedTargetRef[] = []
+  const garmentIds: string[] = []
+  const lookIds: string[] = []
+
+  for (const row of likeRows) {
+    if (row.target_type !== "garment" && row.target_type !== "look") continue
+    const ref: LikedTargetRef = {
+      target_type: row.target_type,
+      target_id: row.target_id,
+    }
+    likes.push(ref)
+    if (ref.target_type === "garment") {
+      garmentIds.push(ref.target_id)
+    } else {
+      lookIds.push(ref.target_id)
+    }
+  }
+
+  return { likes, garmentIds, lookIds }
+}
+
+async function fetchPublicGarmentsByIds(ids: string[]): Promise<GarmentRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from("garments")
+    .select("*")
+    .in("id", ids)
+    .eq("is_public", true)
+  if (error) throw error
+  return data ?? []
+}
+
+async function fetchPublicLooksByIds(ids: string[]): Promise<LookRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from("looks")
+    .select("*")
+    .in("id", ids)
+    .eq("visibility", "public")
+  if (error) throw error
+  return data ?? []
 }
 
 export async function fetchLikedContent(userId: string): Promise<LikedContent> {
@@ -86,36 +136,12 @@ export async function fetchLikedContent(userId: string): Promise<LikedContent> {
 
   if (likeError) throw likeError
 
-  const likes: LikedTargetRef[] = []
-  const garmentIds: string[] = []
-  const lookIds: string[] = []
+  const { likes, garmentIds, lookIds } = partitionLikes(likeRows ?? [])
 
-  for (const row of likeRows ?? []) {
-    if (row.target_type !== "garment" && row.target_type !== "look") continue
-    const ref = {
-      target_type: row.target_type as LikeTargetType,
-      target_id: row.target_id,
-    }
-    likes.push(ref)
-    if (ref.target_type === "garment") garmentIds.push(ref.target_id)
-    else lookIds.push(ref.target_id)
-  }
-
-  const [garmentRes, lookRes] = await Promise.all([
-    garmentIds.length
-      ? supabase.from("garments").select("*").in("id", garmentIds).eq("is_public", true)
-      : Promise.resolve({ data: [] as GarmentRow[], error: null }),
-    lookIds.length
-      ? supabase.from("looks").select("*").in("id", lookIds).eq("visibility", "public")
-      : Promise.resolve({ data: [] as LookRow[], error: null }),
+  const [garments, looks] = await Promise.all([
+    fetchPublicGarmentsByIds(garmentIds),
+    fetchPublicLooksByIds(lookIds),
   ])
 
-  if (garmentRes.error) throw garmentRes.error
-  if (lookRes.error) throw lookRes.error
-
-  return orderLikedTargets(
-    likes,
-    (garmentRes.data as GarmentRow[]) ?? [],
-    (lookRes.data as LookRow[]) ?? [],
-  )
+  return orderLikedTargets(likes, garments, looks)
 }

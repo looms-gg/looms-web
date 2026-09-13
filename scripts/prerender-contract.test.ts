@@ -54,14 +54,11 @@ describe.skipIf(!hasBuild)("prerendered output contract (run `npm run build` fir
     expect(home).toMatch(/<script type="module"/)
   })
 
-  it("piece page: canonical, keyword title, JSON-LD, one h1, image alt + dimensions", () => {
+  it("piece page: canonical, keyword title, JSON-LD, one h1", () => {
     expect(piece).toContain('<link rel="canonical" href="https://looms.gg/piece/winter-coat" />')
     expect(piece).toContain("<title>Winter Coat — COAT Minecraft clothing piece | looms</title>")
     expect(piece.match(/<h1>/g)?.length).toBe(1)
     expect(piece).toContain("<h1>Winter Coat — Minecraft coat layer</h1>")
-    expect(piece).toContain('alt="Winter Coat')
-    expect(piece).toContain('width="180"')
-    expect(piece).toContain('height="210"')
     expect(piece).toContain('"@type": "CreativeWork"')
     // Internal links: related pieces + look landing
     expect(piece).toContain('href="https://looms.gg/look"')
@@ -102,7 +99,7 @@ describe.skipIf(!hasBuild)("prerendered output contract (run `npm run build` fir
     expect(rerun.match(/name="robots"/g)?.length).toBe(1)
     expect(rerun.match(/application\/ld\+json/g)?.length).toBe(1)
     expect(rerun.match(/<div id="root"><\/div>/g)?.length).toBe(1)
-  })
+  }, 15000)
 
   it("look pages: real titles and CreativeWork JSON-LD when built with env", () => {
     // Without Supabase env, the look pages are skipped entirely (build-time

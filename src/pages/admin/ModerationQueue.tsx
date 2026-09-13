@@ -5,6 +5,7 @@ import {
   CheckCircle,
   ChatCircle,
   Eye,
+  EyeClosed,
   TShirt,
   Trash,
   User,
@@ -15,6 +16,7 @@ import { Icon } from "../../components/ui/Icon"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import {
   adminDeleteContent,
+  adminSetModerationState,
   fetchReports,
   updateReportStatus,
   type ContentReportRow,
@@ -22,7 +24,7 @@ import {
   type ReportTargetType,
 } from "../../lib/reports"
 
-export function ModerationQueue({ adminId }: { adminId: string }) {
+export function ModerationQueue() {
   const [reports, setReports] = useState<ContentReportRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -61,7 +63,6 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
       await updateReportStatus({
         reportId,
         status,
-        adminId,
         actionTaken,
       })
       await load()
@@ -81,6 +82,9 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
     setProcessingId(report.id)
     setError(null)
     try {
+      // The delete button is only rendered for non-profile reports, but the
+      // guard here keeps the narrowed type honest at the call site.
+      if (report.target_type === "profile") return
       await adminDeleteContent({
         targetType: report.target_type,
         targetId: report.target_id,
@@ -89,8 +93,30 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
       await updateReportStatus({
         reportId: report.id,
         status: "resolved",
-        adminId,
         actionTaken: "content_deleted",
+      })
+      await load()
+    } catch (err) {
+      setError(formatErrorMessage(err))
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleHideContent = async (report: ContentReportRow) => {
+    if (report.target_type !== "look" && report.target_type !== "piece") return
+    setProcessingId(report.id)
+    setError(null)
+    try {
+      await adminSetModerationState({
+        targetType: report.target_type,
+        targetId: report.target_id,
+        state: "hidden",
+      })
+      await updateReportStatus({
+        reportId: report.id,
+        status: "resolved",
+        actionTaken: "content_hidden",
       })
       await load()
     } catch (err) {
@@ -315,6 +341,18 @@ export function ModerationQueue({ adminId }: { adminId: string }) {
                           <Icon icon={X} size="xs" />
                           Dismiss
                         </button>
+                        {report.target_type === "look" || report.target_type === "piece" ? (
+                          <button
+                            type="button"
+                            disabled={isProcessing}
+                            onClick={() => void handleHideContent(report)}
+                            className="btn btn-warning btn-outline btn-xs min-h-[30px] px-3 rounded-full font-bold gap-1 active:scale-[0.96] transition-transform"
+                            title="Hide offending content from explore and search"
+                          >
+                            <Icon icon={EyeClosed} size="xs" />
+                            Hide Content
+                          </button>
+                        ) : null}
                         {report.target_type !== "profile" ? (
                           <button
                             type="button"

@@ -129,4 +129,24 @@ describe("formatErrorMessage", () => {
     }
     expect(formatErrorMessage(err)).toMatch(/comment limit/i)
   })
+
+  it("passes short crafted messages through verbatim", () => {
+    expect(formatErrorMessage(new Error("Comment cannot be empty."))).toBe(
+      "Comment cannot be empty.",
+    )
+  })
+
+  it("gates long internal messages behind the generic fallback", () => {
+    const err = {
+      message:
+        "Could not fetch data: duplicate key value violates unique constraint \"likes_user_id_target_id_key\" on table \"likes\"; violating row cannot be inserted",
+    }
+    expect(formatErrorMessage(err)).toBe("An unexpected error occurred. Please try again.")
+  })
+
+  it("gates schema-detail messages even when short", () => {
+    expect(
+      formatErrorMessage({ message: "relation \"secrets\" does not exist" }),
+    ).toBe("An unexpected error occurred. Please try again.")
+  })
 })

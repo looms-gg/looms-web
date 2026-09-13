@@ -20,35 +20,22 @@ import { Resvg, initWasm as initResvg } from "@resvg/resvg-wasm"
 import resvgWasmModule from "@resvg/resvg-wasm/index_bg.wasm"
 import nunitoExtraBold from "../assets/Nunito-ExtraBold.ttf"
 import nunitoSemiBold from "../assets/Nunito-SemiBold.ttf"
+import {
+  parseOgPath,
+  sanitizeText,
+  slotLabel,
+  truncate,
+  cardElement,
+  fallbackResponse,
+  OG_WIDTH as W,
+  OG_HEIGHT as H,
+} from "./pure"
 
 export interface Env {
   ASSETS: { fetch: (request: Request) => Promise<Response> }
   SUPABASE_URL: string
   TEXTURE_BASE: string
   SUPABASE_ANON_KEY: string
-}
-
-const W = 1200
-const H = 630
-
-// DESIGN.md tokens
-const VOID = "#121214"
-const HOME = "#1a1a1e"
-const LINE = "#3e3e44"
-const INK = "#ececec"
-const MUTED = "#9a9aa3"
-const CYAN = "#0ab9f0"
-
-const SLOT_LABELS: Record<string, string> = {
-  eyes: "EYES",
-  hair: "HAIR",
-  hat: "HEADWEAR",
-  face: "FACE ACCESSORY",
-  shirt: "SHIRT & TOP",
-  coat: "OUTERWEAR",
-  pants: "BOTTOMS",
-  shoes: "FOOTWEAR",
-  set: "OUTFIT SET",
 }
 
 type SatoriFont = { name: string; data: ArrayBuffer; weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900; style: "normal" | "italic" }
@@ -93,15 +80,6 @@ type LookData = {
   description: string | null
   stack: string[]
   maker: string
-}
-
-function sanitizeText(input: string | null | undefined, maxLength: number): string {
-  let text = String(input ?? "")
-    .replace(/<[^>]*>?/gm, "")
-    .replace(/[\u0000-\u001F\u007F\u200B-\u200D\uFEFF]/g, "")
-    .trim()
-  if (text.length > maxLength) text = text.slice(0, maxLength).trimEnd()
-  return text
 }
 
 async function fetchPiece(env: Env, id: string): Promise<PieceData | null> {
@@ -179,201 +157,6 @@ async function washColorFromTexture(env: Env, textureUrl: string): Promise<strin
   }
 }
 
-function truncate(text: string, maxChars: number): string {
-  if (text.length <= maxChars) return text
-  return `${text.slice(0, maxChars).trimEnd()}…`
-}
-
-function cardElement(opts: {
-  title: string
-  subtitle: string
-  creatorIsCyan: boolean
-  badge: string
-  badge2?: string
-  description: string
-  footer: string
-  wash: string
-  imageUrl?: string
-}) {
-  const { title, subtitle, creatorIsCyan, badge, badge2, description, footer, wash, imageUrl } = opts
-  return {
-    type: "div",
-    props: {
-      style: {
-        width: `${W}px`,
-        height: `${H}px`,
-        display: "flex",
-        position: "relative",
-        background: VOID,
-        fontFamily: "Nunito",
-        color: INK,
-      },
-      children: [
-        // wash discs
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              right: "-180px",
-              top: "-180px",
-              width: "760px",
-              height: "760px",
-              borderRadius: "380px",
-              background: `radial-gradient(circle, ${wash}22 0%, transparent 70%)`,
-            },
-          },
-        },
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              left: "-240px",
-              bottom: "-240px",
-              width: "560px",
-              height: "560px",
-              borderRadius: "280px",
-              background: `radial-gradient(circle, ${wash}14 0%, transparent 70%)`,
-            },
-          },
-        },
-        // left column
-        {
-          type: "div",
-          props: {
-            style: {
-              display: "flex",
-              flexDirection: "column",
-              width: "640px",
-              padding: "64px 0 0 72px",
-            },
-            children: [
-              {
-                type: "div",
-                props: {
-                  style: { display: "flex", gap: "12px", alignItems: "center" },
-                  children: [
-                    {
-                      type: "div",
-                      props: {
-                        style: {
-                          display: "flex",
-                          padding: "9px 18px",
-                          borderRadius: "999px",
-                          background: `${CYAN}1a`,
-                          color: CYAN,
-                          border: `1px solid ${CYAN}55`,
-                          fontSize: "16px",
-                          fontWeight: 700,
-                          letterSpacing: "0.06em",
-                        },
-                        children: badge,
-                      },
-                    },
-                    ...(badge2
-                      ? [
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                display: "flex",
-                                padding: "9px 18px",
-                                borderRadius: "999px",
-                                background: HOME,
-                                color: MUTED,
-                                border: `1px solid ${LINE}`,
-                                fontSize: "16px",
-                                fontWeight: 700,
-                                letterSpacing: "0.06em",
-                              },
-                              children: badge2,
-                            },
-                          },
-                        ]
-                      : []),
-                  ],
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: { marginTop: "22px", fontSize: "56px", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em", color: INK },
-                  children: truncate(title, 22),
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: { marginTop: "14px", fontSize: "26px", fontWeight: 700, color: creatorIsCyan ? CYAN : MUTED },
-                  children: subtitle,
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: { marginTop: "22px", fontSize: "23px", fontWeight: 400, lineHeight: 1.55, color: MUTED, maxWidth: "540px" },
-                  children: truncate(description, 140),
-                },
-              },
-              {
-                type: "div",
-                props: {
-                  style: { marginTop: "auto", paddingBottom: "56px", display: "flex", flexDirection: "column", gap: "14px", width: "488px" },
-                  children: [
-                    { type: "div", props: { style: { width: "100%", height: "1px", background: LINE } } },
-                    {
-                      type: "div",
-                      props: {
-                        style: { display: "flex", alignItems: "center", gap: "12px", fontSize: "18px", fontWeight: 700, color: MUTED },
-                        children: [
-                          { type: "div", props: { style: { width: "12px", height: "12px", borderRadius: "6px", background: CYAN } } },
-                          footer,
-                        ],
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-        },
-        // right stage tile
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              right: "64px",
-              top: "64px",
-              width: "480px",
-              height: "502px",
-              borderRadius: "18px",
-              background: HOME,
-              border: `1px solid ${LINE}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            },
-            children: imageUrl
-              ? [
-                  {
-                    type: "img",
-                    props: {
-                      src: imageUrl,
-                      width: "340",
-                      height: "340",
-                      style: { objectFit: "contain" },
-                    },
-                  },
-                ]
-              : [],
-          },
-        },
-      ],
-    },
-  }
-}
 
 async function renderPng(element: unknown): Promise<Uint8Array> {
   const svg = await satori(element as Parameters<typeof satori>[0], {
@@ -416,7 +199,7 @@ async function handlePiece(env: Env, id: string): Promise<Response | null> {
     title: piece.name,
     subtitle: `by ${piece.maker}`,
     creatorIsCyan: true,
-    badge: SLOT_LABELS[piece.slot] ?? piece.slot.toUpperCase(),
+    badge: slotLabel(piece.slot),
     badge2: `${piece.saved_count} SAVES`,
     description: piece.blurb || `${piece.name} is a community-made Minecraft clothing layer on looms.`,
     footer: "looms.gg",
@@ -456,23 +239,23 @@ async function handleLook(env: Env, id: string): Promise<Response | null> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
-    const match = url.pathname.match(/^\/og\/(piece|look)\/([a-zA-Z0-9_-]+)\.png$/)
+    const route = parseOgPath(url.pathname)
 
-    if (match) {
-      const [, kind, id] = match
+    if (route.kind === "piece" || route.kind === "look") {
+      const { kind, id } = route
       await ensureWasm()
       try {
         const response = kind === "piece" ? await handlePiece(env, id) : await handleLook(env, id)
         if (response) return response
         console.error("OG fetch returned null for", kind, id)
+        return fallbackResponse(route, url.origin)
       } catch (err) {
         console.error("OG render failed:", err instanceof Error ? err.stack : err)
+        return fallbackResponse(route, url.origin)
       }
-      // Fall through to a redirect to the static default on any failure.
-      return Response.redirect(`${url.origin}/og/default.png`, 302)
     }
 
-    if (url.pathname === "/og/default.png") {
+    if (route.kind === "default") {
       await ensureWasm()
       const element = cardElement({
         title: "Winter Explorer",
@@ -492,6 +275,6 @@ export default {
       })
     }
 
-    return new Response("Not found", { status: 404 })
+    return fallbackResponse(route, url.origin)
   },
 }

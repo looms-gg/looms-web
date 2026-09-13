@@ -12,6 +12,7 @@ import { CLOTHING_SLOTS, GROUPS, SLOT_GROUP, type Group, type Slot } from "../..
 import { garmentToPiece } from "../../data/garment"
 import { groupsFromAtlas } from "../../skin/compose"
 import { MAX_LIMITS, sanitizeText, sanitizeUsername, validateFileSize } from "../../lib/sanitize"
+import { validatePngTexture } from "../../lib/textureValidation"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { Icon } from "../ui/Icon"
 import { CloseButton } from "../ui/CloseButton"
@@ -20,19 +21,6 @@ import { ModalOverlay } from "../ui/ModalOverlay"
 export interface UploadPieceModalProps {
   isOpen: boolean
   onClose: () => void
-}
-
-export function validateDimensions(
-  width: number,
-  height: number,
-): { valid: boolean; error?: string } {
-  if (width !== 64 || height !== 64) {
-    return {
-      valid: false,
-      error: "Texture must be 64x64 pixels (standard Minecraft skin format).",
-    }
-  }
-  return { valid: true }
 }
 
 /** A set is a multi-region garment (bikini, tracksuit): one texture paints torso and legs. */
@@ -64,57 +52,37 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     setErrorMsg(null)
     const selectedFile = event.target.files?.[0]
     if (!selectedFile) return
 
-    if (selectedFile.type !== "image/png") {
-      setErrorMsg("Only PNG files are supported for Minecraft garment textures.")
+    const result = await validatePngTexture(selectedFile)
+    if (!result.ok) {
+      setErrorMsg(result.error)
       return
     }
+    const { objectUrl, img } = result
 
-    const sizeCheck = validateFileSize(selectedFile, MAX_LIMITS.FILE_SIZE_BYTES)
-    if (!sizeCheck.valid) {
-      setErrorMsg(sizeCheck.error ?? "File size too large.")
-      return
+    setFile(selectedFile)
+    setPreviewUrl(objectUrl)
+    setPainted([])
+    const stamp = document.createElement("canvas")
+    stamp.width = 64
+    stamp.height = 64
+    const stampCtx = stamp.getContext("2d", { willReadFrequently: true })
+    if (stampCtx) {
+      stampCtx.drawImage(img, 0, 0, 64, 64)
+      setPainted(groupsFromAtlas(stamp))
     }
-
-    const objectUrl = URL.createObjectURL(selectedFile)
-    const img = new Image()
-    img.onload = () => {
-      const { valid, error } = validateDimensions(img.width, img.height)
-      if (!valid) {
-        setErrorMsg(error ?? "Invalid dimensions.")
-        URL.revokeObjectURL(objectUrl)
-        return
-      }
-
-      setFile(selectedFile)
-      setPreviewUrl(objectUrl)
-      setPainted([])
-      const stamp = document.createElement("canvas")
-      stamp.width = 64
-      stamp.height = 64
-      const stampCtx = stamp.getContext("2d", { willReadFrequently: true })
-      if (stampCtx) {
-        stampCtx.drawImage(img, 0, 0, 64, 64)
-        setPainted(groupsFromAtlas(stamp))
-      }
-      if (!name) {
-        const baseName = selectedFile.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
-        const cleanDefaultName = sanitizeText(
-          baseName.charAt(0).toUpperCase() + baseName.slice(1),
-          MAX_LIMITS.PIECE_NAME,
-        )
-        setName(cleanDefaultName)
-      }
+    if (!name) {
+      const baseName = selectedFile.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
+      const cleanDefaultName = sanitizeText(
+        baseName.charAt(0).toUpperCase() + baseName.slice(1),
+        MAX_LIMITS.PIECE_NAME,
+      )
+      setName(cleanDefaultName)
     }
-    img.onerror = () => {
-      setErrorMsg("Could not load texture file.")
-      URL.revokeObjectURL(objectUrl)
-    }
-    img.src = objectUrl
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -181,21 +149,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
         created_at: new Date().toISOString(),
       }
 
-      const { error: dbError } = await supabase.from("garments").insert({
-        id: row.id,
-        user_id: row.user_id,
-        name: row.name,
-        description: row.description,
-        slot: row.slot,
-        body_group: row.body_group,
-        saved_count: row.saved_count,
-        like_count: row.like_count,
-        added: row.added,
-        covers: row.covers,
-        texture_url: row.texture_url,
-        is_public: row.is_public,
-        tags: row.tags,
-      })
+      const { error: dbError } = await supabase.from("garments").insert(row)
 
       if (dbError) {
         throw new Error(`Failed to save garment record: ${dbError.message}`)

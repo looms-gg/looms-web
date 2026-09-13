@@ -8,6 +8,22 @@ import { LoomsLogo } from "../../components/ui/LoomsLogo"
 
 const SESSION_WAIT_ATTEMPTS = 10
 const SESSION_WAIT_MS = 250
+const AUTH_CALLBACK_ERROR_MESSAGE = "We didn't finish connecting that account. You can try again."
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function pollForSession(): Promise<boolean> {
+  for (let attempt = 0; attempt < SESSION_WAIT_ATTEMPTS; attempt++) {
+    const { data } = await supabase.auth.getSession()
+    if (data.session) {
+      return true
+    }
+    await delay(SESSION_WAIT_MS)
+  }
+  return false
+}
 
 export function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -19,22 +35,19 @@ export function AuthCallbackPage() {
   useEffect(() => {
     let cancelled = false
     if (searchParams.get("error") || searchParams.get("error_code")) {
-      setError("We didn't finish connecting that account. You can try again.")
+      setError(AUTH_CALLBACK_ERROR_MESSAGE)
       return
     }
 
-    async function waitForSession() {
-      for (let attempt = 0; attempt < SESSION_WAIT_ATTEMPTS; attempt++) {
-        const { data } = await supabase.auth.getSession()
-        if (data.session) {
-          if (!cancelled) navigateRef.current(takeOAuthReturn())
-          return
-        }
-        await new Promise((resolve) => setTimeout(resolve, SESSION_WAIT_MS))
+    void pollForSession().then((hasSession) => {
+      if (cancelled) return
+      if (hasSession) {
+        navigateRef.current(takeOAuthReturn())
+      } else {
+        setError(AUTH_CALLBACK_ERROR_MESSAGE)
       }
-      if (!cancelled) setError("We didn't finish connecting that account. You can try again.")
-    }
-    void waitForSession()
+    })
+
     return () => {
       cancelled = true
     }

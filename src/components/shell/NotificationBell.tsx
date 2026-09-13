@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Bell } from "@phosphor-icons/react"
 import { Icon } from "../ui/Icon"
+import { useDismissable } from "./useDismissable"
 import {
   notificationTargetPath,
   useNotificationsOptional,
@@ -86,29 +87,107 @@ function NotificationRow({
   )
 }
 
+function NotificationPanel({
+  open,
+  unreadCount,
+  loadError,
+  items,
+  loading,
+  dismissLoadError,
+  onOpenNotification,
+  onMarkAllRead,
+  onClearAll,
+}: {
+  open: boolean
+  unreadCount: number
+  loadError: string | null
+  items: NotificationWithType[]
+  loading: boolean
+  dismissLoadError: () => void
+  onOpenNotification: (n: NotificationWithType) => void
+  onMarkAllRead: () => void
+  onClearAll: () => void
+}) {
+  return (
+    <div data-open={open} className="notification-panel" aria-label="Notifications">
+      <div className="notification-head">
+        <span className="notification-title">Notifications</span>
+        {unreadCount > 0 ? (
+          <span className="notification-head-count tabular-nums">
+            {badgeLabel(unreadCount)} unread
+          </span>
+        ) : null}
+      </div>
+      <div className="notification-divider" />
+
+      {loadError ? (
+        <div className="notification-empty">
+          <p className="text-xs text-error" role="alert">
+            {loadError}
+          </p>
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs rounded-full font-bold"
+            onClick={dismissLoadError}
+          >
+            OK
+          </button>
+        </div>
+      ) : null}
+
+      {items.length === 0 && !loadError ? (
+        <div data-empty className="notification-empty">
+          <p className="notification-empty-title">
+            {loading ? "Waking the bell..." : "Nothing here yet."}
+          </p>
+          <p className="notification-empty-hint">
+            Likes, comments, and replies to your pieces and looks show up here.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="notification-list">
+        {items.map((n, i) => (
+          <NotificationRow key={n.id} notification={n} index={i} onOpen={onOpenNotification} />
+        ))}
+      </div>
+
+      {items.length > 0 ? (
+        <>
+          <div className="notification-divider" />
+          <div className="notification-footer">
+            <button
+              type="button"
+              data-mark-all
+              className="notification-action"
+              onClick={onMarkAllRead}
+            >
+              Mark all read
+            </button>
+            <button
+              type="button"
+              data-clear-all
+              className="notification-action notification-action-danger"
+              onClick={onClearAll}
+            >
+              Clear all
+            </button>
+          </div>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
 export function NotificationBell() {
   const notifications = useNotificationsOptional()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (!open) return
-    function handlePointer(e: PointerEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false)
-    }
-    document.addEventListener("pointerdown", handlePointer)
-    document.addEventListener("keydown", handleKey)
-    return () => {
-      document.removeEventListener("pointerdown", handlePointer)
-      document.removeEventListener("keydown", handleKey)
-    }
-  }, [open])
+  const close = useCallback(() => setOpen(false), [])
+  const toggleOpen = useCallback(() => setOpen((v) => !v), [])
+  useDismissable(open, rootRef, close)
 
   if (!notifications) return null
 
@@ -116,10 +195,18 @@ export function NotificationBell() {
   const { unreadCount, loading, loadError, dismissLoadError, markAllRead, markOneRead, clearAll } =
     notifications
 
-  function openNotification(n: NotificationWithType) {
+  const handleOpenNotification = (n: NotificationWithType) => {
     setOpen(false)
     void markOneRead(n.id)
     navigate(notificationTargetPath(n.target_type, n.target_id))
+  }
+
+  const handleMarkAllRead = () => {
+    void markAllRead()
+  }
+
+  const handleClearAll = () => {
+    void clearAll()
   }
 
   return (
@@ -133,7 +220,7 @@ export function NotificationBell() {
         className={`btn btn-ghost relative size-11 min-h-11 rounded-full p-0 active:scale-[0.96] transition-transform ${
           unreadCount > 0 ? "notification-bell-unread" : ""
         }`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
       >
         <Icon icon={Bell} size="md" />
         {unreadCount > 0 ? (
@@ -146,76 +233,17 @@ export function NotificationBell() {
         ) : null}
       </button>
 
-      <div data-open={open} className="notification-panel" aria-label="Notifications">
-        <div className="notification-head">
-          <span className="notification-title">Notifications</span>
-          {unreadCount > 0 ? (
-            <span className="notification-head-count tabular-nums">
-              {badgeLabel(unreadCount)} unread
-            </span>
-          ) : null}
-        </div>
-        <div className="notification-divider" />
-
-        {loadError ? (
-          <div className="notification-empty">
-            <p className="text-xs text-error" role="alert">
-              {loadError}
-            </p>
-            <button
-              type="button"
-              className="btn btn-ghost btn-xs rounded-full font-bold"
-              onClick={dismissLoadError}
-            >
-              OK
-            </button>
-          </div>
-        ) : null}
-
-        {items.length === 0 && !loadError ? (
-          <div data-empty className="notification-empty">
-            <span className="notification-empty-icon" aria-hidden>
-              <Icon icon={Bell} size="md" />
-            </span>
-            <p className="notification-empty-title">
-              {loading ? "Waking the bell..." : "Nothing here yet."}
-            </p>
-            <p className="notification-empty-hint">
-              Likes, comments, and replies to your pieces and looks show up here.
-            </p>
-          </div>
-        ) : null}
-
-        <div className="notification-list">
-          {items.map((n, i) => (
-            <NotificationRow key={n.id} notification={n} index={i} onOpen={openNotification} />
-          ))}
-        </div>
-
-        {items.length > 0 ? (
-          <>
-            <div className="notification-divider" />
-            <div className="notification-footer">
-              <button
-                type="button"
-                data-mark-all
-                className="notification-action"
-                onClick={() => void markAllRead()}
-              >
-                Mark all read
-              </button>
-              <button
-                type="button"
-                data-clear-all
-                className="notification-action notification-action-danger"
-                onClick={() => void clearAll()}
-              >
-                Clear all
-              </button>
-            </div>
-          </>
-        ) : null}
-      </div>
+      <NotificationPanel
+        open={open}
+        unreadCount={unreadCount}
+        loadError={loadError}
+        items={items}
+        loading={loading}
+        dismissLoadError={dismissLoadError}
+        onOpenNotification={handleOpenNotification}
+        onMarkAllRead={handleMarkAllRead}
+        onClearAll={handleClearAll}
+      />
     </div>
   )
 }

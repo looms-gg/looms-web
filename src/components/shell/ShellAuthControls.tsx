@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { NavLink } from "react-router-dom"
+import { useDismissable } from "./useDismissable"
 import {
   Package,
   SignOut,
@@ -10,17 +11,16 @@ import {
 } from "@phosphor-icons/react"
 import { AuthButtons } from "../auth/AuthModal"
 import { Icon } from "../ui/Icon"
-import { isAdmin } from "../../lib/admin"
 
 export function ShellAccountMenu({
-  userId,
+  isAdmin,
   displayName,
   username,
   minecraftUsername,
   avatarUrl,
   onSignOut,
 }: {
-  userId?: string | null
+  isAdmin?: boolean
   displayName: string
   username?: string | null
   minecraftUsername?: string | null
@@ -31,25 +31,7 @@ export function ShellAccountMenu({
   const rootRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (!open) return
-    function handlePointer(e: PointerEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false)
-    }
-    document.addEventListener("pointerdown", handlePointer)
-    document.addEventListener("keydown", handleKey)
-    return () => {
-      document.removeEventListener("pointerdown", handlePointer)
-      document.removeEventListener("keydown", handleKey)
-    }
-  }, [open])
-
-  function closeMenu() {
+  const closeMenu = useCallback(() => {
     if (typeof document !== "undefined") {
       const focused = menuRef.current?.querySelectorAll<HTMLElement>(":focus")
       focused?.forEach((el) => el.blur())
@@ -58,7 +40,9 @@ export function ShellAccountMenu({
       }
     }
     setOpen(false)
-  }
+  }, [])
+
+  useDismissable(open, rootRef, closeMenu)
 
   const initials = displayName[0].toUpperCase()
 
@@ -159,7 +143,7 @@ export function ShellAccountMenu({
             <Icon icon={Gear} className="account-menu-item-icon" />
             Settings
           </NavLink>
-          {isAdmin(userId) ? (
+          {isAdmin ? (
             <NavLink
               to="/admin"
               className="account-menu-item account-menu-item-admin"
@@ -196,6 +180,7 @@ export function ShellAccountMenu({
 
 export function ShellAuthControls({
   user,
+  isAdmin,
   displayName,
   username,
   minecraftUsername,
@@ -205,6 +190,7 @@ export function ShellAuthControls({
   onSignOut,
 }: {
   user: unknown
+  isAdmin?: boolean
   displayName: string
   username?: string | null
   minecraftUsername?: string | null
@@ -226,7 +212,7 @@ export function ShellAuthControls({
       ) : null}
       {user ? (
         <ShellAccountMenu
-          userId={(user as { id?: string })?.id}
+          isAdmin={isAdmin}
           displayName={displayName}
           username={username}
           minecraftUsername={minecraftUsername}

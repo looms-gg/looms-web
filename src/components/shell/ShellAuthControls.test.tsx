@@ -78,6 +78,50 @@ describe("ShellAuthControls", () => {
     expect(settingsLink.getAttribute("href")).toContain("/settings")
   })
 
+  it("shows the admin panel link only for admins", () => {
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <MemoryRouter>
+          <ShellAuthControls
+            user={{ id: "u1" }}
+            isAdmin={true}
+            displayName="PixelWeaver"
+            username="PixelWeaver"
+            emailVerified={true}
+            onOpenEmailVerify={() => {}}
+            onSignOut={() => {}}
+          />
+        </MemoryRouter>,
+      )
+    })
+    const adminLink = Array.from(host.querySelectorAll("a")).find((a) =>
+      /Admin Panel/.test(a.textContent ?? ""),
+    ) as HTMLAnchorElement
+    expect(adminLink).toBeTruthy()
+    expect(adminLink.getAttribute("href")).toContain("/admin")
+  })
+
+  it("hides the admin panel link for non-admins", () => {
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <MemoryRouter>
+          <ShellAuthControls
+            user={{ id: "u1" }}
+            isAdmin={false}
+            displayName="PixelWeaver"
+            username="PixelWeaver"
+            emailVerified={true}
+            onOpenEmailVerify={() => {}}
+            onSignOut={() => {}}
+          />
+        </MemoryRouter>,
+      )
+    })
+    expect(host.textContent).not.toMatch(/Admin Panel/)
+  })
+
   it("blurs active element to close dropdown when an option is clicked", () => {
     const host = document.createElement("div")
     document.body.appendChild(host)

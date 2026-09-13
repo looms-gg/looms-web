@@ -1,27 +1,8 @@
 import { describe, expect, it, vi } from "vitest"
 import { supabase } from "./supabase"
-import { fetchAdminAuditLog, logAdminAction } from "./adminAudit"
+import { fetchAdminAuditLog } from "./adminAudit"
 
 describe("adminAudit", () => {
-  it("logs an action through the RPC and swallows RPC failures", async () => {
-    const rpc = vi
-      .spyOn(supabase, "rpc")
-      .mockRejectedValueOnce(new Error("down"))
-      .mockResolvedValueOnce({ data: null, error: null } as never)
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {})
-
-    await logAdminAction({ action: "delete_garment", targetTable: "garments", targetId: "g1" })
-
-    expect(rpc).toHaveBeenNthCalledWith(1, "log_admin_action", {
-      p_action: "delete_garment",
-      p_target_table: "garments",
-      p_target_id: "g1",
-      p_details: null,
-    })
-    expect(errSpy).toHaveBeenCalled()
-
-    errSpy.mockRestore()
-  })
 
   it("fetches the audit log newest-first with a limit", async () => {
     const rows = [{ id: "a1" }]

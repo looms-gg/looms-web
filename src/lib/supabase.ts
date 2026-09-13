@@ -1,9 +1,12 @@
 /** App-owned Supabase schema types. Do not parallel this with a generated Database file. */
 import { createClient } from "@supabase/supabase-js"
-import type { SkinModel } from "../skin/convert"
-import type { LikeTargetType } from "./likeTarget"
+import type { SkinModel } from "../data/model"
+import type { LikeTargetType } from "../data/likeTarget"
+import type { LookVisibility } from "../data/look"
+import type { OAuthProvider } from "./oauth"
 
-export type { LikeTargetType } from "./likeTarget"
+export type { LikeTargetType } from "../data/likeTarget"
+export type { LookVisibility } from "../data/look"
 
 export type ProfileRow = {
   id: string
@@ -24,7 +27,7 @@ export type ProfileRow = {
   updated_at: string
 }
 
-export type ConnectionProvider = "discord" | "google" | "github"
+export type ConnectionProvider = OAuthProvider
 
 export type ConnectionRow = {
   user_id: string
@@ -60,7 +63,7 @@ export type LookRow = {
   user_id: string
   name: string
   description: string
-  visibility: "private" | "public"
+  visibility: LookVisibility
   stack: string[]
   body_id: string
   body_hue: number
@@ -113,21 +116,26 @@ export type LookCommentRow = {
   updated_at: string
 }
 
+export type ReportTargetType = "look" | "piece" | "comment" | "profile"
+export type ReportStatus = "pending" | "resolved" | "dismissed"
+
 export type ContentReportRow = {
   id: string
   reporter_id: string
-  target_type: "look" | "piece" | "comment" | "profile"
+  target_type: ReportTargetType
   target_id: string
   target_sub_type: string | null
   target_label: string | null
   reason: string
   details: string | null
-  status: "pending" | "resolved" | "dismissed"
+  status: ReportStatus
   action_taken: string | null
   resolved_by: string | null
   resolved_at: string | null
   created_at: string
 }
+
+export type BannerStyle = "info" | "accent" | "warning" | "neutral"
 
 export type SiteBannerRow = {
   id: string
@@ -135,7 +143,7 @@ export type SiteBannerRow = {
   text: string
   link_url: string | null
   link_label: string | null
-  style: "info" | "accent" | "warning" | "neutral"
+  style: BannerStyle
   dismissible: boolean
   created_at: string
   updated_at: string
@@ -442,6 +450,35 @@ export type Database = {
           }
         >
       }
+      admin_set_moderation_state: {
+        Args: {
+          p_target_type: string
+          p_target_id: string
+          p_state: string
+          p_details?: Record<string, unknown> | null
+        }
+        Returns: undefined
+      }
+      admin_delete_content: {
+        Args: { p_target_type: string; p_target_id: string; p_sub_type?: string | null }
+        Returns: undefined
+      }
+      admin_resolve_report: {
+        Args: { p_report_id: string; p_status: string; p_action_taken?: string | null }
+        Returns: ContentReportRow
+      }
+      admin_save_banner: {
+        Args: {
+          p_id?: string | null
+          p_is_active: boolean
+          p_text: string
+          p_link_url?: string | null
+          p_link_label?: string | null
+          p_style?: string
+          p_dismissible?: boolean
+        }
+        Returns: SiteBannerRow
+      }
     }
   }
 }
@@ -467,35 +504,43 @@ export function getSupabase() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
+        // PKCE: OAuth/email callbacks carry an opaque ?code= the browser
+        // exchanges locally, so access tokens never appear in the URL.
+        flowType: "pkce",
       },
     })
   }
   return supabaseClient
 }
 
-type Client = ReturnType<typeof createClient<Database>>
+export type Client = ReturnType<typeof createClient<Database>>
+
+export type SupabaseFacade = {
+  readonly auth: Client["auth"]
+  readonly storage: Client["storage"]
+  from: Client["from"]
+  rpc: Client["rpc"]
+  channel: Client["channel"]
+  removeChannel: Client["removeChannel"]
+}
 
 /**
  * Lazy facade: importing this module does not construct the client.
  * Own `from`/`auth`/`storage`/`rpc` so vitest can spyOn them.
  */
-export const supabase = {
-  get auth() {
+export const supabase: SupabaseFacade = {
+  get auth(): Client["auth"] {
     return getSupabase().auth
   },
-  get storage() {
+  get storage(): Client["storage"] {
     return getSupabase().storage
   },
-  from(...args: unknown[]) {
-    return (getSupabase().from as (...a: unknown[]) => unknown)(...args)
-  },
-  rpc(...args: unknown[]) {
-    return (getSupabase().rpc as (...a: unknown[]) => unknown)(...args)
-  },
-  channel(...args: unknown[]) {
-    return (getSupabase().channel as (...a: unknown[]) => unknown)(...args)
-  },
-  removeChannel(...args: unknown[]) {
-    return (getSupabase().removeChannel as (...a: unknown[]) => unknown)(...args)
-  },
-} as unknown as Client
+  from: ((...args: Parameters<Client["from"]>) =>
+    (getSupabase().from as (...a: unknown[]) => ReturnType<Client["from"]>)(...args)) as Client["from"],
+  rpc: ((...args: Parameters<Client["rpc"]>) =>
+    (getSupabase().rpc as (...a: unknown[]) => ReturnType<Client["rpc"]>)(...args)) as Client["rpc"],
+  channel: ((...args: Parameters<Client["channel"]>) =>
+    getSupabase().channel(...args)) as Client["channel"],
+  removeChannel: ((...args: Parameters<Client["removeChannel"]>) =>
+    getSupabase().removeChannel(...args)) as Client["removeChannel"],
+}

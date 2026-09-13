@@ -8,7 +8,6 @@ import {
 import { useAuthOptional } from "../../state/auth"
 
 import { formatErrorMessage } from "../../lib/errorFormat"
-import { isTurnstileEnabled } from "../../lib/turnstile"
 import {
   OAUTH_PROVIDERS,
   providerLabel,
@@ -19,7 +18,7 @@ import { Icon } from "../ui/Icon"
 import { CloseButton } from "../ui/CloseButton"
 import { LoomsLogo } from "../ui/LoomsLogo"
 import { ModalOverlay } from "../ui/ModalOverlay"
-import { TurnstileWidget } from "./TurnstileWidget"
+import { AuthCaptchaField, useCaptcha } from "./AuthCaptchaField"
 import { UsernameStep } from "./UsernameStep"
 
 export type AuthMode = "login" | "signup" | "magic_link" | "forgot"
@@ -48,6 +47,71 @@ function switchMode(
   resetCaptcha()
 }
 
+function hasRequiredAuthMethods(auth: {
+  signInWithPassword?: unknown
+  signUpWithPassword?: unknown
+  signInWithOtp?: unknown
+  resetPasswordForEmail?: unknown
+}): boolean {
+  return Boolean(
+    auth.signInWithPassword &&
+      auth.signUpWithPassword &&
+      auth.signInWithOtp &&
+      auth.resetPasswordForEmail,
+  )
+}
+
+type AuthDispatchHandlers = {
+  onSuccess: (msg?: string) => void
+  onError: (err: unknown) => void
+  onSignupCredentials: (creds: { email: string; password: string }) => void
+}
+
+async function dispatchAuthMode({
+  mode,
+  email,
+  password,
+  captchaToken,
+  auth,
+  handlers,
+}: {
+  mode: AuthMode
+  email: string
+  password: string
+  captchaToken?: string
+  auth: {
+    signInWithPassword: NonNullable<ReturnType<typeof useAuthOptional>>["signInWithPassword"]
+    signInWithOtp: NonNullable<ReturnType<typeof useAuthOptional>>["signInWithOtp"]
+    resetPasswordForEmail: NonNullable<ReturnType<typeof useAuthOptional>>["resetPasswordForEmail"]
+  }
+  handlers: AuthDispatchHandlers
+}) {
+  switch (mode) {
+    case "login": {
+      const { error } = await auth.signInWithPassword({ email, password, captchaToken })
+      if (error) handlers.onError(error)
+      else handlers.onSuccess()
+      break
+    }
+    case "signup":
+      handlers.onSignupCredentials({ email, password })
+      break
+    case "magic_link": {
+      const { error } = await auth.signInWithOtp({ email: email.trim(), captchaToken })
+      if (error) handlers.onError(error)
+      else handlers.onSuccess("Link sent. Check your inbox.")
+      break
+    }
+    case "forgot": {
+      const { error } = await auth.resetPasswordForEmail({ email: email.trim(), captchaToken })
+      if (error) handlers.onError(error)
+      else handlers.onSuccess("Reset link sent. Check your inbox.")
+      break
+    }
+  }
+}
+
+
 export function AuthModal({
   isOpen,
   initialMode = "login",
@@ -67,12 +131,7 @@ export function AuthModal({
   const [signupStep, setSignupStep] = useState<"credentials" | "username">("credentials")
   const [pendingSignup, setPendingSignup] = useState<{ email: string; password: string } | null>(null)
   const [oauthBusy, setOauthBusy] = useState(false)
-  const captchaEnabled = isTurnstileEnabled()
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-  const [captchaError, setCaptchaError] = useState<string | null>(null)
-  // Bumped to force TurnstileWidget to mint a fresh token. A consumed token
-  // replayed on retry is rejected as "timeout-or-duplicate".
-  const [captchaResetCount, setCaptchaResetCount] = useState(0)
+  const captcha = useCaptcha()
 
   useEffect(() => {
     if (!isOpen) return
@@ -81,8 +140,7 @@ export function AuthModal({
     setPendingSignup(null)
     setErrorMsg(null)
     setSuccessMsg(null)
-    setCaptchaToken(null)
-    setCaptchaError(null)
+    captcha.clear()
   }, [initialMode, isOpen])
 
   const emailId = useId()
@@ -91,12 +149,6 @@ export function AuthModal({
   function clearFeedback() {
     setErrorMsg(null)
     setSuccessMsg(null)
-  }
-
-  function resetCaptcha() {
-    setCaptchaToken(null)
-    setCaptchaError(null)
-    setCaptchaResetCount((count) => count + 1)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -109,57 +161,54 @@ export function AuthModal({
     const password = String(formData.get("password") ?? "").trim()
     // Captured before the await: this token (if any) is consumed server-side
     // during this attempt and must not be replayed afterwards.
-    const spentCaptchaToken = captchaEnabled && Boolean(captchaToken)
+    const spentCaptchaToken = captcha.enabled && Boolean(captcha.token)
 
     try {
-      if (!signInWithPassword || !signUpWithPassword || !signInWithOtp || !resetPasswordForEmail) {
+      if (
+        !hasRequiredAuthMethods({
+          signInWithPassword,
+          signUpWithPassword,
+          signInWithOtp,
+          resetPasswordForEmail,
+        })
+      ) {
         setErrorMsg("Auth is unavailable.")
         return
       }
-      if (captchaEnabled && !captchaToken) {
+      if (captcha.enabled && !captcha.token) {
         setErrorMsg("Please complete the captcha before continuing.")
         return
       }
-      if (mode === "login") {
-        const { error } = await signInWithPassword({ email, password, captchaToken: captchaToken ?? undefined })
-        if (error) {
-          setErrorMsg(formatErrorMessage(error))
-        } else {
-          onClose?.()
-        }
-      } else if (mode === "signup") {
-        // Step one only: stash credentials and move to the username step. The
-        // account is created once a username is chosen (step two).
-        setPendingSignup({ email, password })
-        setSignupStep("username")
-      } else if (mode === "magic_link") {
-        const { error } = await signInWithOtp({
-          email: email.trim(),
-          captchaToken: captchaToken ?? undefined,
-        })
-        if (error) {
-          setErrorMsg(formatErrorMessage(error))
-        } else {
-          setSuccessMsg("Link sent. Check your inbox.")
-        }
-      } else if (mode === "forgot") {
-        const { error } = await resetPasswordForEmail({
-          email: email.trim(),
-          captchaToken: captchaToken ?? undefined,
-        })
-        if (error) {
-          setErrorMsg(formatErrorMessage(error))
-        } else {
-          setSuccessMsg("Reset link sent. Check your inbox.")
-        }
-      }
+
+      await dispatchAuthMode({
+        mode,
+        email,
+        password,
+        captchaToken: captcha.token ?? undefined,
+        auth: {
+          signInWithPassword: signInWithPassword!,
+          signInWithOtp: signInWithOtp!,
+          resetPasswordForEmail: resetPasswordForEmail!,
+        },
+        handlers: {
+          onSuccess: (msg) => {
+            if (msg) setSuccessMsg(msg)
+            else onClose?.()
+          },
+          onError: (err) => setErrorMsg(formatErrorMessage(err)),
+          onSignupCredentials: (creds) => {
+            setPendingSignup(creds)
+            setSignupStep("username")
+          },
+        },
+      })
     } catch (err: unknown) {
       setErrorMsg(formatErrorMessage(err))
     } finally {
       setLoading(false)
       // Every auth attempt consumes the captcha token server-side (success or
       // failure), so force a fresh one for whatever the user does next.
-      if (spentCaptchaToken) resetCaptcha()
+      if (spentCaptchaToken) captcha.reset()
     }
   }
 
@@ -176,7 +225,7 @@ export function AuthModal({
     if (error) {
       setErrorMsg(formatErrorMessage(error))
       setSignupStep("credentials")
-      resetCaptcha()
+      captcha.reset()
     } else {
       onClose?.()
     }
@@ -253,7 +302,7 @@ export function AuthModal({
               setSignupStep("credentials")
               setPendingSignup(null)
               clearFeedback()
-              resetCaptcha()
+              captcha.reset()
             }}
           >
             Back
@@ -335,14 +384,14 @@ export function AuthModal({
                   <button
                     type="button"
                     className="text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
-                    onClick={() => switchMode("magic_link", setMode, clearFeedback, resetCaptcha)}
+                    onClick={() => switchMode("magic_link", setMode, clearFeedback, captcha.reset)}
                   >
                     Email me a magic link instead
                   </button>
                   <button
                     type="button"
                     className="text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
-                    onClick={() => switchMode("forgot", setMode, clearFeedback, resetCaptcha)}
+                    onClick={() => switchMode("forgot", setMode, clearFeedback, captcha.reset)}
                   >
                     Forgot password?
                   </button>
@@ -352,28 +401,13 @@ export function AuthModal({
               <button
                 type="button"
                 className="text-xs font-bold text-base-content/55 transition-colors duration-150 hover:text-primary"
-                onClick={() => switchMode("login", setMode, clearFeedback, resetCaptcha)}
+                onClick={() => switchMode("login", setMode, clearFeedback, captcha.reset)}
               >
                 {mode === "forgot" ? "Back to log in" : "Use a password instead"}
               </button>
             )}
 
-            {captchaEnabled ? (
-              <div>
-                <TurnstileWidget
-                  resetKey={captchaResetCount}
-                  onToken={(token) => {
-                    setCaptchaToken(token)
-                    if (token) setCaptchaError(null)
-                  }}
-                  onError={setCaptchaError} />
-                {captchaError ? (
-                  <p role="alert" className="mt-1.5 text-xs font-bold text-error">
-                    {captchaError}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
+            {captcha.enabled ? <AuthCaptchaField captcha={captcha} /> : null}
 
             <button
               type="submit"
@@ -425,7 +459,7 @@ export function AuthModal({
             <button
               type="button"
               className="font-semibold transition-colors duration-150 hover:text-base-content"
-              onClick={() => switchMode("login", setMode, clearFeedback, resetCaptcha)}
+              onClick={() => switchMode("login", setMode, clearFeedback, captcha.reset)}
             >
               Already have an account?{" "}
               <span className="font-extrabold text-primary">Log in</span>
@@ -434,7 +468,7 @@ export function AuthModal({
             <button
               type="button"
               className="font-semibold transition-colors duration-150 hover:text-base-content"
-              onClick={() => switchMode("signup", setMode, clearFeedback, resetCaptcha)}
+              onClick={() => switchMode("signup", setMode, clearFeedback, captcha.reset)}
             >
               New here? <span className="font-extrabold text-primary">Sign up</span>
             </button>

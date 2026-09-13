@@ -8,8 +8,9 @@ import {
   type ReactNode,
 } from "react"
 import type { Session, User } from "@supabase/supabase-js"
-import { supabase, type ConnectionProvider, type ConnectionRow, type Database, type ProfileRow } from "../lib/supabase"
-import { isEmailVerified, isUnconfirmedAuthError } from "./emailStatus"
+import { supabase, type Database, type ProfileRow } from "../lib/supabase"
+import { isEmailVerified, isUnconfirmedAuthError } from "../lib/emailStatus"
+import { useEmailVerificationPoll } from "./emailVerificationPoll"
 import type { OAuthProvider } from "../lib/oauth"
 import {
   MAX_LIMITS,
@@ -18,44 +19,28 @@ import {
   sanitizeUrl,
   sanitizeUsername,
 } from "../lib/sanitize"
-import { resolveAvatarUrl } from "./profileDisplay"
+import { resolveAvatarUrl } from "../lib/profileDisplay"
 import { formatErrorMessage } from "../lib/errorFormat"
 import { fetchProfileRow, mapProfileRow } from "../lib/mapProfileRow"
 import { absoluteAppUrl } from "../lib/basePath"
 
 const LAST_SEEN_CLIENT_THROTTLE_MS = 5 * 60 * 1000
 
-/** Minimum spacing between background sign-in attempts while waiting for email confirmation. */
-const UNLOCK_RETRY_INTERVAL_MS = 30 * 1000
-
-/** Verification poll cadence: starts here and doubles up to the max. */
-const UNLOCK_POLL_INITIAL_INTERVAL_MS = 5 * 1000
-
-/** Poll cap keeps the background /auth/v1/user traffic well under Supabase's
- * shared per-IP auth rate limits (30 requests per 5 minutes). */
-const UNLOCK_POLL_MAX_INTERVAL_MS = 30 * 1000
-
 /**
- * True when a freshly fetched user adds nothing over the current one.
- * The verification poll uses this to avoid setting state (and thereby tearing
- * down and immediately re-running its own effect) when the server returns an
- * unchanged user — that used to create a request loop that could trip
- * Supabase's auth rate limits during signup.
+ * Normalize an auth/RPC error into the context's `{ error }` shape. The
+ * message stays raw on purpose: `error.message` is always the server text,
+ * and the display boundary applies formatErrorMessage exactly once.
  */
-function isSameAuthUser(prev: User | null, next: User): boolean {
-  if (!prev) return false
-  return (
-    prev.id === next.id &&
-    prev.email_confirmed_at === next.email_confirmed_at &&
-    prev.email === next.email
-  )
+function toAuthError(error: { message: string } | null): Error | null {
+  return error ? new Error(error.message) : null
 }
 
-export interface AuthContextValue {
+export type AuthContextValue = {
   user: User | null
   session: Session | null
   profile: ProfileRow | null
   avatarUrl: string | null
+  isAdmin: boolean
   loading: boolean
   profileError: string | null
   dismissProfileError: () => void
@@ -78,12 +63,6 @@ export interface AuthContextValue {
   }) => Promise<{ error: Error | null }>
   signInWithOAuth: (provider: OAuthProvider) => Promise<{ error: Error | null }>
   completeOnboarding: (username: string) => Promise<{ error: Error | null }>
-  connections: ConnectionRow[]
-  unlinkConnection: (provider: ConnectionProvider) => Promise<{ error: Error | null }>
-  setConnectionFeatured: (
-    provider: ConnectionProvider,
-    featured: boolean,
-  ) => Promise<{ error: Error | null }>
   signInWithOtp: (params: {
     email: string
     captchaToken?: string
@@ -115,11 +94,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<ProfileRow | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
   const [emailVerifyOpen, setEmailVerifyOpen] = useState(false)
-  const [connections, setConnections] = useState<ConnectionRow[]>([])
   const pendingUnlockRef = useRef<{ email: string; password: string } | null>(null)
   const unlockAttemptAtRef = useRef(0)
   const verifiedFlashTimer = useRef<number | null>(null)
@@ -159,19 +138,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const fetchConnections = useCallback(async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profile_connections")
-        .select("user_id, provider, featured, created_at")
-        .eq("user_id", userId)
-      if (error) return
-      if (data) setConnections(data as ConnectionRow[])
-    } catch {
-      // Connections are an enhancement; a failed fetch should never break auth.
-    }
-  }, [])
-
   useEffect(() => {
     let mounted = true
 
@@ -182,7 +148,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(initialSession)
         setUser(initialSession?.user ?? null)
         if (initialSession?.user) {
-          fetchConnections(initialSession.user.id)
           void fetchProfile(initialSession.user.id).finally(() => {
             if (mounted) setLoading(false)
           })
@@ -192,8 +157,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch((err) => {
-        console.error("Error retrieving auth session:", err)
-        if (mounted) setLoading(false)
+        if (!mounted) return
+        setProfileError(formatErrorMessage(err))
+        setLoading(false)
       })
 
     const {
@@ -204,11 +170,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(newSession?.user ?? null)
       if (newSession?.user) {
         await fetchProfile(newSession.user.id)
-        void fetchConnections(newSession.user.id)
         touchLastSeen()
       } else {
         setProfile(null)
-        setConnections([])
       }
       setLoading(false)
     })
@@ -217,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchProfile, fetchConnections, touchLastSeen])
+  }, [fetchProfile, touchLastSeen])
 
   useEffect(() => {
     if (!session?.user) return
@@ -228,6 +192,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     document.addEventListener("visibilitychange", onVisibility)
     return () => document.removeEventListener("visibilitychange", onVisibility)
   }, [session?.user, touchLastSeen])
+
+  // Server-derived admin flag: RLS lets admins see admin_users, so a probe
+  // for the caller's own id resolves to a row only for admins. The client
+  // copy is a convenience for UI (menu entries, guards); every privileged
+  // action is still gated server-side.
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false)
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from("admin_users")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle()
+        if (!cancelled) setIsAdmin(Boolean(data))
+      } catch {
+        if (!cancelled) setIsAdmin(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user) {
@@ -254,65 +245,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 1600)
   }, [emailVerifyOpen, user])
 
-  useEffect(() => {
-    const pending = Boolean((user && !isEmailVerified(user)) || pendingUnlockRef.current)
-    if (!pending) return
-
-    let cancelled = false
-    let running = false
-    let delayMs = UNLOCK_POLL_INITIAL_INTERVAL_MS
-    let timer: number | null = null
-
-    async function tick() {
-      if (cancelled || running || document.visibilityState === "hidden") return
-      running = true
-      try {
-        const unlock = pendingUnlockRef.current
-        if (
-          unlock &&
-          !session &&
-          Date.now() - unlockAttemptAtRef.current >= UNLOCK_RETRY_INTERVAL_MS
-        ) {
-          unlockAttemptAtRef.current = Date.now()
-          const { error } = await supabase.auth.signInWithPassword(unlock)
-          if (!error) pendingUnlockRef.current = null
-          if (error && !isUnconfirmedAuthError(error.message)) return
-        }
-        const { data } = await supabase.auth.getUser()
-        if (cancelled || !data.user) return
-        // Skip identical users so this effect is not torn down and immediately
-        // re-run, which used to fire auth requests in a tight loop.
-        if (isSameAuthUser(user, data.user)) return
-        setUser(data.user)
-      } catch {
-        // Transient network failure — the next scheduled attempt retries.
-      } finally {
-        running = false
-      }
-    }
-
-    function scheduleNext() {
-      if (cancelled) return
-      timer = window.setTimeout(() => {
-        void tick().finally(scheduleNext)
-      }, delayMs)
-      delayMs = Math.min(delayMs * 2, UNLOCK_POLL_MAX_INTERVAL_MS)
-    }
-
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void tick()
-    }
-    document.addEventListener("visibilitychange", onVisible)
-    scheduleNext()
-
-    return () => {
-      cancelled = true
-      if (timer) window.clearTimeout(timer)
-      document.removeEventListener("visibilitychange", onVisible)
-    }
-    // pendingEmail flips when an unconfirmed signup/login starts watching, so
-    // the effect re-runs even though pendingUnlockRef is a ref.
-  }, [session, user, emailVerified, pendingEmail])
+  useEmailVerificationPoll({
+    user,
+    session,
+    pendingEmail,
+    pendingUnlockRef,
+    unlockAttemptAtRef,
+    onUser: setUser,
+  })
 
   const signInWithPassword = useCallback(
     async ({
@@ -333,7 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         watchUnconfirmed(email, password)
         return { error: null }
       }
-      return { error: error ? new Error(formatErrorMessage(error)) : null }
+      return { error: toAuthError(error) }
     },
     [watchUnconfirmed],
   )
@@ -350,7 +290,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       username: string
       captchaToken?: string
     }) => {
-      const cleanUsername = sanitizeUsername(username) || "user"
+      const cleanUsername = sanitizeUsername(username)
+      if (!cleanUsername) {
+        return { error: new Error("Please choose a display username.") }
+      }
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -365,7 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       })
 
-      if (error) return { error: new Error(formatErrorMessage(error)) }
+      if (error) return { error: toAuthError(error) }
 
       if (data.user && !isEmailVerified(data.user)) {
         watchUnconfirmed(email, password)
@@ -376,7 +319,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: data.user.id,
           username: cleanUsername,
         }
-        await supabase.from("profiles").upsert(profilePayload)
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .upsert(profilePayload)
+        // A missing profile row would break onboarding, so surface it instead
+        // of silently continuing with an account that has no profile.
+        if (profileError) {
+          return { error: new Error(profileError.message) }
+        }
         await fetchProfile(data.user.id)
       }
 
@@ -390,7 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       provider,
       options: { redirectTo: `${absoluteAppUrl()}/auth/callback` },
     })
-    return { error: error ? new Error(formatErrorMessage(error)) : null }
+    return { error: toAuthError(error) }
   }, [])
 
   const completeOnboarding = useCallback(
@@ -398,34 +348,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const clean = sanitizeUsername(username)
       if (!clean) return { error: new Error("Please choose a display username.") }
       const { error } = await supabase.rpc("complete_onboarding", { p_username: clean })
-      if (error) return { error: new Error(formatErrorMessage(error)) }
+      if (error) return { error: toAuthError(error) }
       if (user) await fetchProfile(user.id)
       return { error: null }
     },
     [user, fetchProfile],
-  )
-
-  const unlinkConnection = useCallback(
-    async (provider: ConnectionProvider) => {
-      const { error } = await supabase.rpc("unlink_connection", { p_provider: provider })
-      if (error) return { error: new Error(formatErrorMessage(error)) }
-      if (user) await fetchConnections(user.id)
-      return { error: null }
-    },
-    [user, fetchConnections],
-  )
-
-  const setConnectionFeatured = useCallback(
-    async (provider: ConnectionProvider, featured: boolean) => {
-      const { error } = await supabase.rpc("set_connection_featured", {
-        p_provider: provider,
-        p_featured: featured,
-      })
-      if (error) return { error: new Error(formatErrorMessage(error)) }
-      if (user) await fetchConnections(user.id)
-      return { error: null }
-    },
-    [user, fetchConnections],
   )
 
   const signInWithOtp = useCallback(
@@ -437,7 +364,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           emailRedirectTo: absoluteAppUrl(),
         },
       })
-      return { error: error ? new Error(error.message) : null }
+        return { error: toAuthError(error) }
     },
     [],
   )
@@ -448,7 +375,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         captchaToken,
         redirectTo: `${absoluteAppUrl()}/reset-password`,
       })
-      return { error: error ? new Error(formatErrorMessage(error)) : null }
+      return { error: toAuthError(error) }
     },
     [],
   )
@@ -458,7 +385,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setSession(null)
     setProfile(null)
-    setConnections([])
     setPendingEmail(null)
     setEmailVerifyOpen(false)
     pendingUnlockRef.current = null
@@ -475,12 +401,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setSession(null)
     setProfile(null)
-    setConnections([])
     setPendingEmail(null)
     setEmailVerifyOpen(false)
     pendingUnlockRef.current = null
     openedForUserId.current = null
-    if (rpcError) return { error: new Error(formatErrorMessage(rpcError)) }
+    if (rpcError) return { error: toAuthError(rpcError) }
     return { error: signOutError ? new Error(signOutError.message) : null }
   }, [])
 
@@ -512,7 +437,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = {}
 
       if (updates.username !== undefined) {
-        cleanUpdates.username = sanitizeUsername(updates.username) || "user"
+        const cleanUsername = sanitizeUsername(updates.username)
+        if (!cleanUsername) {
+          return { error: new Error("Please choose a display username.") }
+        }
+        cleanUpdates.username = cleanUsername
       }
       if (updates.minecraft_username !== undefined) {
         cleanUpdates.minecraft_username = updates.minecraft_username
@@ -598,6 +527,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     avatarUrl,
+    isAdmin,
     loading,
     profileError,
     dismissProfileError,
@@ -611,9 +541,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUpWithPassword,
     signInWithOAuth,
     completeOnboarding,
-    connections,
-    unlinkConnection,
-    setConnectionFeatured,
     signInWithOtp,
     resetPasswordForEmail,
     signOut,
@@ -625,14 +552,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext value={value}>{children}</AuthContext>
 }
 
-export function useAuthOptional(): AuthContextValue | null {
-  return useContext(AuthContext)
-}
-
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
+}
+
+export function useAuthOptional(): AuthContextValue | null {
+  return useContext(AuthContext)
 }

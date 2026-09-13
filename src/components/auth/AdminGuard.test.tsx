@@ -6,7 +6,7 @@ import * as authModule from "../../state/auth"
 import type { AuthContextValue } from "../../state/auth"
 import { AdminGuard } from "./AdminGuard"
 
-function stubAuth(userId: string | null, loading = false): AuthContextValue {
+function stubAuth(userId: string | null, loading = false, isAdmin = false): AuthContextValue {
   return {
     user: userId ? ({ id: userId, email: "admin@looms.dev" } as AuthContextValue["user"]) : null,
     session: userId ? ({} as AuthContextValue["session"]) : null,
@@ -14,6 +14,7 @@ function stubAuth(userId: string | null, loading = false): AuthContextValue {
       ? ({ id: userId, username: "Admin" } as AuthContextValue["profile"])
       : null,
     avatarUrl: null,
+    isAdmin,
     loading,
     emailVerified: Boolean(userId),
     pendingEmail: null,
@@ -33,9 +34,6 @@ function stubAuth(userId: string | null, loading = false): AuthContextValue {
     deleteAccount: vi.fn(),
     signInWithOAuth: vi.fn(),
     completeOnboarding: vi.fn(),
-    connections: [],
-    unlinkConnection: vi.fn(),
-    setConnectionFeatured: vi.fn(),
   }
 }
 
@@ -61,7 +59,7 @@ describe("AdminGuard", () => {
       <AdminGuard>
         <div data-testid="admin-content">Admin Dashboard Content</div>
       </AdminGuard>,
-      stubAuth("45e6be54-c9a5-4627-af39-9c14b27ec92e"),
+      stubAuth("45e6be54-c9a5-4627-af39-9c14b27ec92e", false, true),
     )
 
     expect(host.querySelector("[data-testid='admin-content']")).not.toBeNull()

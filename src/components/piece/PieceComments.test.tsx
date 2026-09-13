@@ -16,12 +16,11 @@ afterEach(() => {
 describe("PieceComments", () => {
   it("shows sign-in CTA when logged out and lists loaded comments", async () => {
     vi.spyOn(authModule, "useAuthOptional").mockReturnValue(null)
-    vi.spyOn(comments, "fetchGarmentComments").mockResolvedValue([
+    vi.spyOn(comments, "fetchComments").mockResolvedValue([
       {
         id: "c1",
         targetType: "garment",
         targetId: "g1",
-        garmentId: "g1",
         userId: "u2",
         parentId: null,
         body: "Nice weave",
@@ -54,7 +53,7 @@ describe("PieceComments", () => {
     vi.spyOn(authModule, "useAuthOptional").mockReturnValue({
       user: { id: "stranger" },
     } as ReturnType<typeof authModule.useAuthOptional>)
-    const fetchSpy = vi.spyOn(comments, "fetchGarmentComments")
+    const fetchSpy = vi.spyOn(comments, "fetchComments")
 
     const host = document.createElement("div")
     await act(async () => {
@@ -77,7 +76,7 @@ describe("PieceComments", () => {
     vi.spyOn(authModule, "useAuthOptional").mockReturnValue({
       user: { id: "u1" },
     } as ReturnType<typeof authModule.useAuthOptional>)
-    vi.spyOn(comments, "fetchGarmentComments").mockResolvedValue([])
+    vi.spyOn(comments, "fetchComments").mockResolvedValue([])
 
     const host = document.createElement("div")
     await act(async () => {
