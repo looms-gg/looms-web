@@ -1,0 +1,1 @@
+import{n as e}from"./Icon-oMnE4jAN.js";var t=e();function n({className:e=``,rounded:n=``,delay:r=0,pulse:i=!0,style:a}){return(0,t.jsx)(`div`,{"aria-hidden":!0,className:`profile-bone ${i?``:`profile-bone--static`} ${n} ${e}`,style:{"--i":r,...a}})}export{n as t};
