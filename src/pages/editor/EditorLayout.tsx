@@ -11,7 +11,7 @@ import {
 } from "react";
 import { MiSkiEditingRenderer } from "../../editor/core/MiSkiRenderer";
 import { resetModelTranslation, resetModelRotation } from "../../editor/core/modelTransform";
-import { selectRedoCount, selectUndoCount, useRendererStore } from "../../editor/store";
+import { selectRedoCount, selectUndoCount, useInitRendererState, useRendererStore } from "../../editor/store";
 import useEditorRenderer from "./useEditorRenderer";
 import Toolbar from "./Toolbar";
 import DetailPanel from "./DetailPanel";
@@ -22,6 +22,9 @@ import SaveModal from "./SaveModal";
 const CANVAS_CENTER_VAR = "--canvas-center-offset";
 
 export default function EditorLayout() {
+  // Restore persisted editor settings (camera, lights, brush, guide body)
+  // before the renderer reads them during setup.
+  useInitRendererState();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { renderer, backendNotSupported } = useEditorRenderer(
     MiSkiEditingRenderer,
