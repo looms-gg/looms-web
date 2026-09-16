@@ -235,7 +235,7 @@ export default function ColorPicker({ id, getUniqueColors }: ColorPickerProps) {
           : undefined
       }
       className={cn(
-        "z-50 select-none rounded-xl border border-base-content/10 bg-base-200 p-4 shadow-2xl backdrop-blur",
+        "z-50 select-none rounded-[18px] border border-base-content/10 bg-base-200 p-4 shadow-xl",
         "w-80 max-w-[calc(100vw-16px)]",
       )}
     >

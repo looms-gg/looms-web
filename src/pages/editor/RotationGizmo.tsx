@@ -698,7 +698,7 @@ const GlobalRotationGizmo: React.FC<GlobalRotationGizmoProps> = ({
     >
       <div
         className={
-          "size-24 rounded-full bg-base-content/40 hover:bg-base-content/50 pointer-events-auto select-none"
+          "size-24 rounded-full border border-base-content/10 bg-base-300 hover:bg-base-content/10 pointer-events-auto select-none"
         }
         style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none" }}
       >

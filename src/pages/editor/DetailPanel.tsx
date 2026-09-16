@@ -41,13 +41,13 @@ export default function DetailPanel({
         "pointer-events-auto fixed z-40",
         isTouch
           ? "inset-x-2 bottom-2 max-h-[60dvh]"
-          : "right-1.5 top-1.5 bottom-1.5 w-[330px]",
+          : "right-3 top-3 bottom-3 w-[320px]",
         className,
       )}
       role="dialog"
       aria-label="Editor settings"
     >
-      <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-base-content/10 bg-base-200/95 shadow-2xl backdrop-blur">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[18px] border border-base-content/10 bg-base-200 shadow-xl">
         <div className="flex shrink-0 items-center justify-between px-4 pt-3">
           <h3 className="text-base font-extrabold tracking-tight text-base-content">
             Settings

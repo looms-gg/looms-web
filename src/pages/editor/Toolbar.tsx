@@ -14,6 +14,7 @@ import {
   ArrowsLeftRight,
   Eyedropper,
   Gear,
+  GridFour,
   Hand,
   HandGrabbing,
 } from "@phosphor-icons/react";
@@ -70,7 +71,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div
       onContextMenu={(e) => e.preventDefault()}
-      className="pointer-events-auto absolute left-0 top-0 ml-1.5 mt-1.5 select-none rounded-2xl border border-base-content/10 bg-base-200/90 shadow-lg backdrop-blur"
+      className="pointer-events-auto absolute left-0 top-0 ml-3 mt-3 select-none rounded-[18px] border border-base-content/10 bg-base-200 shadow-sm"
     >
       <div className="max-h-[calc(100dvh-120px)] w-full overflow-y-auto">
         <div className="flex flex-col items-center gap-1 p-2">
@@ -93,15 +94,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
           <BrushFlyout />
 
-          {mirrorPaint ? (
-            <ToolButton
-              label="Turn symmetry off"
-              onClick={() => setValue("mirrorPaint", false)}
-              active
-            >
-              <Icon icon={ArrowsLeftRight} size="md" />
-            </ToolButton>
-          ) : null}
+          <ToolButton
+            label={mirrorPaint ? "Symmetry on" : "Symmetry off"}
+            onClick={() => setValue("mirrorPaint", !mirrorPaint)}
+            active={mirrorPaint}
+          >
+            <Icon icon={ArrowsLeftRight} size="md" />
+          </ToolButton>
 
           <RailDivider />
 
@@ -126,7 +125,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
           <div className="flex flex-col items-center gap-1">
             <ToolButton label="Toggle grid" onClick={toggleGrid} active={gridVisible}>
-              <span className="text-xs font-extrabold">#</span>
+              <Icon icon={GridFour} size="md" />
             </ToolButton>
 
             <ToolButton

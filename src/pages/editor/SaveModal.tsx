@@ -3,7 +3,7 @@ import { Download, Warning, CloudArrowUp } from "@phosphor-icons/react"
 import { useAuthOptional } from "../../state/auth"
 import { useWardrobe } from "../../state/wardrobe"
 import { useCatalog } from "../../state/catalog"
-import { CLOTHING_SLOTS, type Group, type Slot } from "../../data/catalog"
+import { CLOTHING_SLOTS, SLOT_LABEL, type Group, type Slot } from "../../data/catalog"
 import { garmentToPiece } from "../../data/garment"
 import { groupsFromAtlas } from "../../skin/compose"
 import { MAX_LIMITS, sanitizeText } from "../../lib/sanitize"
@@ -15,6 +15,7 @@ import {
   suggestSlot,
 } from "./saveExport"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
+import { CloseButton } from "../../components/ui/CloseButton"
 import { Icon } from "../../components/ui/Icon"
 
 export interface SaveModalProps {
@@ -163,16 +164,9 @@ export default function SaveModal({
       open={open}
       onClose={handleClose}
       labelledBy="save-layer-title"
-      panelClassName="modal-panel relative w-full max-w-xl rounded-[18px] border border-base-content/10 bg-base-300 p-6 shadow-2xl sm:p-7 max-h-[90vh] overflow-y-auto"
+      panelClassName="modal-panel relative w-full max-w-xl rounded-[18px] border border-base-content/10 bg-base-200 p-6 shadow-2xl sm:p-7 max-h-[90vh] overflow-y-auto"
     >
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={handleClose}
-        className="absolute right-3 top-3 grid size-8 cursor-pointer place-items-center rounded-lg text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content"
-      >
-        <span aria-hidden>×</span>
-      </button>
+      <CloseButton onClick={handleClose} className="absolute right-3 top-3" />
 
       <div className="mb-5 flex items-center gap-3">
         <span className="grid size-10 place-items-center rounded-xl bg-primary/20 text-primary">
@@ -234,7 +228,7 @@ export default function SaveModal({
         <form className="space-y-4" onSubmit={handleUpload}>
           <div>
             <label className="mb-1 block text-xs font-bold text-base-content/80">
-              Piece Name
+              Piece name
             </label>
             <input
               name="name"
@@ -244,7 +238,7 @@ export default function SaveModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Cyberpunk Bomber"
-              className="input input-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary"
+              className="input input-bordered w-full rounded-[10px] bg-base-100 text-sm focus:border-primary"
             />
           </div>
 
@@ -260,11 +254,11 @@ export default function SaveModal({
                   setSlot(e.target.value as Slot)
                   setSlotTouched(true)
                 }}
-                className="select select-bordered w-full rounded-xl bg-base-100 text-sm capitalize focus:border-primary"
+                className="select select-bordered w-full rounded-[10px] bg-base-100 text-sm focus:border-primary"
               >
                 {CLOTHING_SLOTS.map((s) => (
                   <option key={s} value={s}>
-                    {s}
+                    {SLOT_LABEL[s]}
                   </option>
                 ))}
               </select>
@@ -277,7 +271,7 @@ export default function SaveModal({
               <select
                 value={isPublic ? "public" : "private"}
                 onChange={(e) => setIsPublic(e.target.value === "public")}
-                className="select select-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary"
+                className="select select-bordered w-full rounded-[10px] bg-base-100 text-sm focus:border-primary"
               >
                 <option value="public">Public (Community)</option>
                 <option value="private">Private (Only You)</option>
@@ -295,7 +289,7 @@ export default function SaveModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Short notes about style, palette, or inspiration..."
               rows={2}
-              className="textarea textarea-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary"
+              className="textarea textarea-bordered w-full rounded-[10px] bg-base-100 text-sm focus:border-primary"
             />
           </div>
 

@@ -9,9 +9,11 @@ import {
   useState,
   type RefObject,
 } from "react";
+import { Icon } from "../../components/ui/Icon";
+import { PersonSimple, PersonSimpleThrow } from "@phosphor-icons/react";
 import { MiSkiEditingRenderer } from "../../editor/core/MiSkiRenderer";
 import { resetModelTranslation, resetModelRotation } from "../../editor/core/modelTransform";
-import { selectRedoCount, selectUndoCount, useInitRendererState, useRendererStore } from "../../editor/store";
+import { getRendererState, selectRedoCount, selectUndoCount, useInitRendererState, useRendererStore } from "../../editor/store";
 import useEditorRenderer from "./useEditorRenderer";
 import Toolbar from "./Toolbar";
 import RotationGizmo from "./RotationGizmo";
@@ -36,6 +38,30 @@ export default function EditorLayout() {
   const redoCount = useRendererStore(selectRedoCount);
   const [controlPanelOpen, setControlPanelOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+
+  // The layer starts blank; any undo stack entry means real strokes exist.
+  // Drives the Save gate, the unsaved dot, and the leave guard.
+  const hasWork = undoCount > 0;
+
+  useEffect(() => {
+    if (!hasWork) return;
+    const guard = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
+  }, [hasWork]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        setSaveOpen(true);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
 
   // The 3D canvas is a full-screen fixed layer painted behind the workspace
   // chrome. Rather than shrinking the canvas, we tell the renderer how far the
@@ -144,21 +170,61 @@ export default function EditorLayout() {
             getUniqueColors={getUniqueColors}
           />
 
-          <div className="pointer-events-none absolute right-1.5 top-1.5 flex items-center gap-2">
+          <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-2">
             <button
               type="button"
               onClick={() => setSaveOpen(true)}
-              className="btn btn-primary btn-sm rounded-full font-extrabold shadow-lg"
+              disabled={!hasWork}
+              title={hasWork ? "Save (Cmd+S)" : "Paint something first"}
+              className="btn btn-primary btn-sm rounded-full font-extrabold shadow-sm disabled:border-transparent disabled:bg-base-200 disabled:text-base-content/40 disabled:shadow-none"
             >
-              Save
+              {hasWork ? (
+                <span className="relative inline-flex items-center gap-1.5">
+                  Save
+                  <span
+                    aria-hidden
+                    className="absolute -right-2.5 -top-2 size-2 rounded-full bg-primary ring-2 ring-base-100"
+                  />
+                </span>
+              ) : (
+                "Save"
+              )}
             </button>
+          </div>
+
+          {/* Camera framing presets: the Studio's pill row, pointed at the
+              part being painted. */}
+          <div className="pointer-events-auto absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-base-content/10 bg-base-200 p-1 shadow-sm">
+            {(
+              [
+                ["Head", 0.5, 18, PersonSimple],
+                ["Body", 0, 35, PersonSimpleThrow],
+                ["Legs", 0.75, 18, PersonSimple],
+              ] as const
+            ).map(([label, phi, radius, icon]) => (
+              <button
+                key={label}
+                type="button"
+                title={`Frame the ${label.toLowerCase()}`}
+                onClick={() => {
+                  const state = getRendererState();
+                  state.setValue("cameraPhi", phi);
+                  state.setValue("cameraTheta", 0);
+                  state.setValue("cameraRadius", radius);
+                }}
+                className="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold text-base-content/70 transition-colors hover:bg-base-content/10 hover:text-base-content"
+              >
+                <Icon icon={icon} size="xs" />
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Top-right HUD: rotation gizmo above the part silhouettes,
               matching the MineSkin dashboard layout. */}
-          <div className="pointer-events-none absolute right-1.5 top-14 flex flex-col items-center gap-2.5">
+          <div className="pointer-events-none absolute right-3 top-14 flex flex-col items-center gap-2.5">
             <RotationGizmo />
-            <div className="pointer-events-auto rounded-2xl border border-base-content/10 bg-base-200/90 p-3 shadow-lg backdrop-blur">
+            <div className="pointer-events-auto rounded-[18px] border border-base-content/10 bg-base-200 p-3 shadow-sm">
               <DesktopPartFilter />
             </div>
           </div>

@@ -88,7 +88,7 @@ function ShortcutBadge({ children, active }: { children: ReactNode; active?: boo
         "rounded px-1 text-[9px] font-bold leading-tight",
         active
           ? "bg-primary-content/20 text-primary-content/90"
-          : "bg-base-content/10 text-base-content/45",
+          : "bg-base-content/10 text-base-content/60",
       )}
     >
       {children}
@@ -194,7 +194,7 @@ export default function BrushFlyout({}: BrushFlyoutProps) {
             <div
               ref={panelRef}
               style={{ position: "fixed", top: placement.top, left: placement.left }}
-              className="z-50 w-[340px] max-w-[calc(100vw-16px)] rounded-2xl border border-base-content/10 bg-base-200 p-3 shadow-2xl backdrop-blur"
+              className="z-50 w-[340px] max-w-[calc(100vw-16px)] rounded-[18px] border border-base-content/10 bg-base-200 p-3 shadow-xl"
             >
               <div className="mb-3 flex items-center justify-between px-1">
                 <h3 className="text-lg font-extrabold tracking-tight text-base-content">
@@ -328,6 +328,11 @@ export default function BrushFlyout({}: BrushFlyoutProps) {
                   <ShortcutBadge active={mirrorPaint}>M</ShortcutBadge>
                 </button>
               </div>
+
+              <p className="mt-3 border-t border-base-content/10 px-1 pt-2 text-[11px] font-bold text-base-content/55">
+                P pen · U bulk · V shade · D dither · E eraser · M mirror ·
+                Cmd+Z undo
+              </p>
             </div>,
             document.body,
           )

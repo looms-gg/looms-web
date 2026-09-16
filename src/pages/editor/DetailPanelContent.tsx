@@ -27,9 +27,9 @@ const FORMATS = {
   units: (v: number) => v.toFixed(1),
 };
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+function Section({ label, children, open = false }: { label: string; children: React.ReactNode; open?: boolean }) {
   return (
-    <details className="collapse collapse-arrow rounded-xl bg-base-content/5 my-2">
+    <details className="collapse collapse-arrow rounded-[10px] bg-base-content/5 my-2" open={open}>
       <summary className="collapse-title min-h-0 cursor-pointer py-2.5 text-sm font-extrabold text-base-content/85">
         {label}
       </summary>
@@ -86,38 +86,29 @@ export default function DetailPanelContent({
 
   return (
     <div className={cn("flex min-h-0 min-w-0 flex-col", className)}>
-      <div className="flex flex-col gap-3 px-1 py-1">
+      <Section label="Model" open>
         <ToggleSwitch
           label="Slim arms"
           id="slim-arms"
           checked={state.skinIsSlim}
           onCheckedChange={(checked) => handleSlimSwitch?.(checked)}
         />
-        <p className="text-xs text-base-content/55">
-          Classic has 4-pixel-wide arms, slim has 3. Matches the arm model of
-          the skin this layer will be worn on.
+        <p className="mt-1 text-xs text-base-content/55">
+          Classic has 4-pixel-wide arms, slim has 3.
         </p>
 
         {handleFlipFrontToBack ? (
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              className="btn btn-outline btn-primary btn-sm rounded-full font-bold"
-              onClick={() => handleFlipFrontToBack()}
-            >
-              Flip front to back
-            </button>
-            <p className="text-xs text-base-content/55">
-              Swaps the front and back of the texture. Handy after painting
-              with the model facing away.
-            </p>
-          </div>
+          <button
+            type="button"
+            className="btn btn-outline btn-primary btn-sm mt-3 rounded-full font-bold"
+            onClick={() => handleFlipFrontToBack()}
+          >
+            Flip front to back
+          </button>
         ) : null}
-      </div>
 
-      <Divider />
+        <Divider />
 
-      <Section label="Reference body">
         <ToggleSwitch
           label="Show body guide"
           id="guide-body-visible"
@@ -133,7 +124,7 @@ export default function DetailPanelContent({
           </label>
           <select
             id="guide-body-id"
-            className="select select-bordered select-sm w-full rounded-xl bg-base-100 text-sm capitalize"
+            className="select select-bordered select-sm w-full rounded-[10px] bg-base-100 text-sm capitalize"
             value={state.guideBodyId}
             onChange={(e) => setValue("guideBodyId", e.target.value)}
           >
@@ -268,7 +259,7 @@ export default function DetailPanelContent({
         ) : null}
       </Section>
 
-      <Section label="Camera">
+      <Section label="Camera & light">
         <Slider
           label="Field of view"
           value={state.cameraFieldOfView}
@@ -352,7 +343,7 @@ export default function DetailPanelContent({
         />
       </Section>
 
-      <Section label="Environment">
+      <Section label="Scene">
         <p className="-mt-1 mb-3 text-xs text-base-content/55">
           Sets the backdrop around the model.
         </p>

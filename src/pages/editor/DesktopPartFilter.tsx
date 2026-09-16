@@ -23,7 +23,7 @@ const GRID_PARTS: { part: Part; col: string; row: string }[] = [
 
 const DesktopPartFilter: React.FC<{ className?: string; scale?: number }> = ({
   className,
-  scale = 1.2,
+  scale = 2.4,
 }) => {
   const setValue = useRendererStore((s) => s.setValue) as (
   key: keyof FormValues,

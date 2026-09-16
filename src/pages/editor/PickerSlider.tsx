@@ -19,6 +19,33 @@ function PickerSliderComponent({
   type: "h" | "s" | "v" | "a";
   className?: string;
 }) {
+  // Keyboard support for the role="slider" track: arrows nudge the value.
+  const nudge = useMemo(() => {
+    if (type === "h") return { value: visualPosition.hue, min: 0, max: 360, step: 3 };
+    if (type === "s") return { value: visualPosition.s, min: 0, max: 100, step: 1 };
+    if (type === "v") return { value: visualPosition.v, min: 0, max: 100, step: 1 };
+    return { value: visualPosition.a, min: 0, max: 100, step: 1 };
+  }, [type, visualPosition]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    let delta = 0;
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") delta = -nudge.step;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") delta = nudge.step;
+    if (delta === 0) return;
+    e.preventDefault();
+    const next = Math.min(
+      nudge.max,
+      Math.max(nudge.min, nudge.value + delta),
+    );
+    // Synthesize a pointer-like update at the new position.
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + (next / (nudge.max - nudge.min)) * rect.width;
+    update({
+      clientX: x,
+      buttons: 1,
+      currentTarget: e.currentTarget,
+    } as unknown as React.PointerEvent<HTMLDivElement>);
+  };
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     setDragging(true);
@@ -84,9 +111,13 @@ function PickerSliderComponent({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
+      onKeyDown={handleKeyDown}
       role="slider"
       tabIndex={0}
       aria-label={ariaLabel}
+      aria-valuemin={nudge.min}
+      aria-valuemax={nudge.max}
+      aria-valuenow={Math.round(nudge.value)}
     >
       <div
         className="absolute size-4 rounded-lg border-2 border-white outline-none ring-1 ring-black/70"
