@@ -5,8 +5,6 @@ import { createStore } from "zustand/vanilla";
 import {
   CURRENT_LOCALSTORAGE_KEY,
   DEFAULT_GUIDE_BODY_ID,
-  FLOOR_COLOR_DARK,
-  FLOOR_COLOR_LIGHT,
   NUMERIC_RANGES,
   OLD_LOCALSTORAGE_KEY,
   getPaintOverlay,
@@ -33,37 +31,22 @@ function degToRad(d: number): number {
 
 // Default values for all form fields
 export const defaultFormValues: FormValues = {
-  objectTranslationX: 0,
-  objectTranslationY: 0,
-  objectTranslationZ: 0,
-  objectRotationX: 0,
-  objectRotationY: 0,
-  objectRotationZ: 0,
   cameraFieldOfView: degToRad(60),
+  directionalLightIntensity: 0.3,
   cameraPhi: 0,
   cameraTheta: 0,
   cameraRadius: 35,
-  cameraSpeed: 0.08,
-  cameraDampingFactor: 0.1,
   ambientLight: 1,
-  diffuseLightPositionX: -10,
-  diffuseLightPositionY: 10,
-  diffuseLightPositionZ: 10,
-  specularStrength: 0.05,
-  diffuseStrength: 0.6,
   paintColor: "#000000",
   paintAlpha: 255,
-  floorColor: isLoomsDark() ? FLOOR_COLOR_DARK : FLOOR_COLOR_LIGHT,
   skinIsSlim: false,
   colorPickerActive: false,
-  touchDrawMode: false,
   paintMode: "pixel",
   variationIntensity: 3,
   bulkPaintRadius: 0,
   bulkPaintShape: "circle",
   eraserRadius: 0,
   mirrorPaint: false,
-  directionalLightIntensity: 0.3,
   baseheadVisible: true,
   basebodyVisible: true,
   baseleftArmVisible: true,
@@ -76,18 +59,9 @@ export const defaultFormValues: FormValues = {
   overlayrightArmVisible: true,
   overlayleftLegVisible: true,
   overlayrightLegVisible: true,
-  mode: "Editing",
-  gridVisible: false,
-  environmentPreset: "grid",
   guideBodyVisible: true,
   guideBodyId: DEFAULT_GUIDE_BODY_ID,
 };
-
-// looms ships its own two daisyUI themes instead of MineSkin's `.dark` toggle.
-function isLoomsDark(): boolean {
-  if (!definedWindow) return true;
-  return document.documentElement.getAttribute("data-theme") !== "looms-light";
-}
 
 function clampNumericValue(
   key: keyof FormValues,
@@ -117,12 +91,6 @@ function parseStringState(config: string): Partial<FormValues> {
 function migrateConfig(config: Partial<FormValues>): Partial<FormValues> {
   let migrated = config;
 
-  // The "plain" environment preset was renamed to "grid"; map it so existing
-  // users keep their grid floor.
-  if ((migrated.environmentPreset as string) === "plain") {
-    migrated = { ...migrated, environmentPreset: "grid" };
-  }
-
   // variationIntensity used to be a 0..1 fraction; it's now a discrete rung
   // count (1..MAX_VARIATION_STEPS). Legacy configs stored fractional values, so
   // rescale those onto the rung ladder. There is no "off" rung anymore, so
@@ -138,6 +106,14 @@ function migrateConfig(config: Partial<FormValues>): Partial<FormValues> {
   return migrated;
 }
 
+function cloneImageData(imageData: ImageData): ImageData {
+  return new ImageData(
+    new Uint8ClampedArray(imageData.data),
+    imageData.width,
+    imageData.height,
+  );
+}
+
 // Check if two ImageData objects are equal
 function areImageDataEqual(a: ImageData, b: ImageData): boolean {
   if (a.width !== b.width || a.height !== b.height) return false;
@@ -147,33 +123,18 @@ function areImageDataEqual(a: ImageData, b: ImageData): boolean {
   return true;
 }
 
-// Keys persisted to localStorage, verbatim from MineSkin minus pose,
-// double-resolution, and tutorial keys, plus the guide-body pair.
+// Keys persisted to localStorage: the skinview3d editor's own settings plus
+// the guide-body pair.
 const PERSISTED_KEYS: (keyof FormValues)[] = [
-  "objectTranslationX",
-  "objectTranslationY",
-  "objectTranslationZ",
-  "objectRotationX",
-  "objectRotationY",
-  "objectRotationZ",
   "cameraFieldOfView",
   "cameraPhi",
   "cameraTheta",
   "cameraRadius",
-  "cameraSpeed",
-  "cameraDampingFactor",
   "ambientLight",
-  "diffuseLightPositionX",
-  "diffuseLightPositionY",
-  "diffuseLightPositionZ",
-  "specularStrength",
-  "diffuseStrength",
   "paintColor",
   "paintAlpha",
-  "floorColor",
   "skinIsSlim",
   "colorPickerActive",
-  "touchDrawMode",
   "paintMode",
   "variationIntensity",
   "bulkPaintRadius",
@@ -193,9 +154,6 @@ const PERSISTED_KEYS: (keyof FormValues)[] = [
   "overlayrightArmVisible",
   "overlayleftLegVisible",
   "overlayrightLegVisible",
-  "mode",
-  "gridVisible",
-  "environmentPreset",
   "guideBodyVisible",
   "guideBodyId",
 ];
@@ -238,9 +196,6 @@ const createRendererStore = () =>
       redoStack: [],
       batchInProgress: false,
       batchBaseline: null,
-
-      // Touch drawing state (runtime flag, not persisted)
-      touchDrawActive: false,
 
       // Actions
 
@@ -304,25 +259,25 @@ const createRendererStore = () =>
       },
 
       // History actions
-      beginBatch: (material, skinIsSlim) => {
+      beginBatch: (imageData, skinIsSlim) => {
         const state = get();
         if (!state.batchInProgress) {
           set({
             batchInProgress: true,
             batchBaseline: {
-              material: material.clone(),
+              imageData: cloneImageData(imageData),
               skinIsSlim,
             },
           });
         }
       },
 
-      endBatch: (material, skinIsSlim) => {
+      endBatch: (imageData, skinIsSlim) => {
         const state = get();
         if (!state.batchInProgress) return;
 
         const snapshot: HistorySnapshot = {
-          material: material.clone(),
+          imageData: cloneImageData(imageData),
           skinIsSlim,
         };
 
@@ -330,8 +285,8 @@ const createRendererStore = () =>
         if (
           baseline &&
           (!areImageDataEqual(
-            baseline.material.imageData,
-            material.imageData,
+            baseline.imageData,
+            imageData,
           ) ||
             baseline.skinIsSlim !== skinIsSlim)
         ) {
@@ -432,10 +387,6 @@ const createRendererStore = () =>
         throttledSave();
       },
 
-      // Touch drawing
-      setTouchDrawActive: (active) => {
-        set({ touchDrawActive: active });
-      },
     };
   });
 
@@ -514,11 +465,7 @@ export type {
   PersistableState,
   RendererStore,
 } from "./types";
-export type {
-  PaintMode,
-  EditorMode,
-  EnvironmentPreset,
-} from "./types";
+export type { PaintMode } from "./types";
 export {
   FLOOR_COLOR_LIGHT,
   FLOOR_COLOR_DARK,

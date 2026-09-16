@@ -9,13 +9,7 @@ import {
 } from "./store";
 
 function snapshot(): HistorySnapshot {
-  const imageData = new ImageData(64, 64);
-  const material = {
-    imageData,
-    width: 64,
-    clone: () => material,
-  };
-  return { material: material as never, skinIsSlim: false };
+  return { imageData: new ImageData(64, 64), skinIsSlim: false };
 }
 
 describe("renderer store", () => {

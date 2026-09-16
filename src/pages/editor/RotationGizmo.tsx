@@ -1,6 +1,5 @@
 // Ported from MineSkin (github.com/hamza512b/mineskin), commit 98023b6ca269a26fe31fa5f3b03db00380a8eae6. AGPL-3.0.
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { getEnvironmentCameraFloorY } from "../../editor/core/environment";
 import { multiplyM3V3, rotateM33 } from "../../editor/core/maths";
 import useIsTouch from "./controls/useIsTouch";
 import { useRendererStore } from "../../editor/store";
@@ -117,10 +116,6 @@ const GlobalRotationGizmo: React.FC<GlobalRotationGizmoProps> = ({
   // Use Zustand store with selective subscriptions for optimal performance
   const cameraPhi = useRendererStore((state) => state.cameraPhi);
   const cameraTheta = useRendererStore((state) => state.cameraTheta);
-  const cameraRadius = useRendererStore((state) => state.cameraRadius);
-  const environmentPreset = useRendererStore(
-    (state) => state.environmentPreset,
-  );
   const setValue = useRendererStore(
     (state) => state.setValue,
   );
@@ -128,20 +123,12 @@ const GlobalRotationGizmo: React.FC<GlobalRotationGizmoProps> = ({
   const rotation: [number, number, number] = [cameraPhi, cameraTheta, 0];
   const onRotationChange = useCallback(
     (rotation: [number, number, number]) => {
-      let phi = rotation[0];
-
-      // Clamp phi so the camera stays above the environment ground plane.
-      const floorY = getEnvironmentCameraFloorY(environmentPreset);
-      if (floorY !== null) {
-        const ratio = Math.min(1, -floorY / cameraRadius);
-        const maxPhi = Math.asin(ratio);
-        phi = Math.max(-Math.PI / 2, Math.min(phi, maxPhi));
-      }
-
+      // Keep the camera from flipping over the poles.
+      const phi = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotation[0]));
       setValue("cameraPhi", phi);
       setValue("cameraTheta", rotation[1]);
     },
-    [setValue, environmentPreset, cameraRadius],
+    [setValue],
   );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragging = useRef(false);

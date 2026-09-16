@@ -1,5 +1,5 @@
 // Ported from MineSkin (github.com/hamza512b/mineskin), commit 98023b6ca269a26fe31fa5f3b03db00380a8eae6. AGPL-3.0.
-import type { MinecraftSkinMaterial } from "./core/MeshMaterial";
+
 import { DEFAULT_BODY_ID } from "../data/bodies";
 
 // Constants
@@ -23,12 +23,9 @@ export type Layers = "base" | "overlay";
 
 export type PaintMode = "pixel" | "bulk" | "eraser" | "variation" | "dither";
 
-export type EditorMode = "Preview" | "Editing";
-export type EnvironmentPreset = "grid" | "empty" | "grassland" | "scifi";
-
 // History snapshot for undo/redo
 export interface HistorySnapshot {
-  material: MinecraftSkinMaterial;
+  imageData: ImageData;
   skinIsSlim: boolean;
 }
 
@@ -36,26 +33,13 @@ export type FormValues = {
   paintColor: string;
   paintAlpha: number;
   skinIsSlim: boolean;
-  objectTranslationX: number;
-  objectTranslationY: number;
-  objectTranslationZ: number;
-  objectRotationX: number;
-  objectRotationY: number;
-  objectRotationZ: number;
   cameraPhi: number;
   cameraTheta: number;
   cameraRadius: number;
-  diffuseLightPositionX: number;
-  diffuseLightPositionY: number;
-  diffuseLightPositionZ: number;
   cameraFieldOfView: number;
-  cameraSpeed: number;
-  cameraDampingFactor: number;
   ambientLight: number;
-  specularStrength: number;
-  diffuseStrength: number;
+  directionalLightIntensity: number;
   colorPickerActive: boolean;
-  touchDrawMode: boolean;
   paintMode: PaintMode;
   variationIntensity: number;
   bulkPaintRadius: number;
@@ -74,11 +58,6 @@ export type FormValues = {
   overlayrightArmVisible: boolean;
   overlayleftLegVisible: boolean;
   overlayrightLegVisible: boolean;
-  directionalLightIntensity: number;
-  mode: EditorMode;
-  gridVisible: boolean;
-  floorColor: string;
-  environmentPreset: EnvironmentPreset;
   guideBodyVisible: boolean;
   guideBodyId: string;
 };
@@ -93,26 +72,13 @@ export const NUMERIC_RANGES: {
     int?: boolean;
   };
 } = {
-  objectRotationX: {},
-  objectRotationY: {},
-  objectRotationZ: {},
-  cameraPhi: {},
+  cameraPhi: { min: -Math.PI / 2, max: Math.PI / 2 },
   cameraTheta: {},
   directionalLightIntensity: {},
   paintAlpha: { min: 0, max: 255 },
-  objectTranslationX: { min: -100, max: 100 },
-  objectTranslationY: { min: -100, max: 100 },
-  objectTranslationZ: { min: -100, max: 100 },
   cameraRadius: { min: 0 },
-  diffuseLightPositionX: { min: -10, max: 10 },
-  diffuseLightPositionY: { min: -10, max: 10 },
-  diffuseLightPositionZ: { min: -10, max: 10 },
   cameraFieldOfView: { min: 0, max: Math.PI },
-  cameraSpeed: { min: 0, max: 2 },
-  cameraDampingFactor: { min: 0, max: 1 },
   ambientLight: { min: 0, max: 1 },
-  specularStrength: { min: 0, max: 1 },
-  diffuseStrength: { min: 0, max: 1 },
   variationIntensity: { min: 1, max: 6, int: true },
   bulkPaintRadius: { min: 0, max: 8 },
   eraserRadius: { min: 0, max: 8 },
@@ -138,8 +104,6 @@ export interface RendererStoreState extends FormValues {
   batchInProgress: boolean;
   batchBaseline: HistorySnapshot | null;
 
-  // Touch drawing state (runtime flag, not persisted)
-  touchDrawActive: boolean;
 }
 
 // Store actions
@@ -153,8 +117,8 @@ export interface RendererStoreActions {
   setAll: (values: Partial<FormValues>, origin?: string) => void;
 
   // History actions
-  beginBatch: (material: MinecraftSkinMaterial, skinIsSlim: boolean) => void;
-  endBatch: (material: MinecraftSkinMaterial, skinIsSlim: boolean) => void;
+  beginBatch: (imageData: ImageData, skinIsSlim: boolean) => void;
+  endBatch: (imageData: ImageData, skinIsSlim: boolean) => void;
   undo: () => HistorySnapshot | null;
   redo: () => HistorySnapshot | null;
   pushToUndoStack: (snapshot: HistorySnapshot) => void;
@@ -166,7 +130,6 @@ export interface RendererStoreActions {
   reset: () => void;
 
   // Touch drawing
-  setTouchDrawActive: (active: boolean) => void;
 }
 
 // Combined store type

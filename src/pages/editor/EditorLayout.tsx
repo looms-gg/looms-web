@@ -1,7 +1,6 @@
-// Ported from MineSkin (github.com/hamza512b/mineskin), commit 98023b6ca269a26fe31fa5f3b03db00380a8eae6. AGPL-3.0.
-// The MineSkin dashboard trimmed to the looms editor: full-bleed canvas,
-// floating toolbar, detail panel, and a save action. Animation, pose, recorder,
-// screenshot, watermark, reference panel, and library are out of scope.
+// The editor workspace: full-bleed skinview3d canvas, floating tool rail,
+// detail panel, top-right HUD, and save actions. The ported MineSkin renderer
+// was retired in favor of the same skinview3d stage the Studio page uses.
 import {
   useCallback,
   useEffect,
@@ -9,38 +8,70 @@ import {
   useState,
   type RefObject,
 } from "react";
-import { Icon } from "../../components/ui/Icon";
-import { PersonSimple, PersonSimpleThrow } from "@phosphor-icons/react";
+import { SkinEditorStage } from "../../editor/stage/SkinEditorStage";
+import { selectRedoCount, selectUndoCount, useInitRendererState, useRendererStore } from "../../editor/store";
 import type { Parts } from "../../editor/types";
-import { MiSkiEditingRenderer } from "../../editor/core/MiSkiRenderer";
-import { resetModelTranslation, resetModelRotation } from "../../editor/core/modelTransform";
-import { getRendererState, selectRedoCount, selectUndoCount, useInitRendererState, useRendererStore } from "../../editor/store";
-import useEditorRenderer from "./useEditorRenderer";
 import Toolbar from "./Toolbar";
 import RotationGizmo from "./RotationGizmo";
 import DesktopPartFilter from "./DesktopPartFilter";
+import SaveModal from "./SaveModal";
+import { Icon } from "../../components/ui/Icon";
+import { PersonSimple, PersonSimpleThrow } from "@phosphor-icons/react";
 import DetailPanel from "./DetailPanel";
 import DetailPanelContent from "./DetailPanelContent";
-import SaveModal from "./SaveModal";
+import { rgbToHex } from "../../editor/color/colorUtils";
 
-/** How far the visible canvas region's center sits from the window's, in px. */
-const CANVAS_CENTER_VAR = "--canvas-center-offset";
+function uniqueColorsFrom(canvas: HTMLCanvasElement): string[] {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return [];
+  const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  // Count usage per exact color so near-duplicate merging keeps each
+  // cluster's dominant shade (same behavior as the previous engine).
+  const counts = new Map<number, number>();
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue;
+    const key =
+      data[i] * 0x1000000 + data[i + 1] * 0x10000 + data[i + 2] * 0x100 + data[i + 3];
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const MERGE_DISTANCE_SQ = 8 * 8;
+  const byUsage = Array.from(counts.keys()).sort(
+    (a, b) => counts.get(b)! - counts.get(a)!,
+  );
+  const kept: [number, number, number, number][] = [];
+  for (const key of byUsage) {
+    const r = key >>> 24;
+    const g = (key >>> 16) & 0xff;
+    const b = (key >>> 8) & 0xff;
+    const a = key & 0xff;
+    const absorbed = kept.some(([kr, kg, kb, ka]) => {
+      const dr = kr - r;
+      const dg = kg - g;
+      const db = kb - b;
+      const da = ka - a;
+      return dr * dr + dg * dg + db * db + da * da <= MERGE_DISTANCE_SQ;
+    });
+    if (!absorbed) kept.push([r, g, b, a]);
+  }
+  return kept.map(([r, g, b, a]) => rgbToHex(r, g, b, a));
+}
 
 export default function EditorLayout() {
   // Restore persisted editor settings (camera, lights, brush, guide body)
-  // before the renderer reads them during setup.
+  // before the stage reads them during setup.
   useInitRendererState();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { renderer, backendNotSupported } = useEditorRenderer(
-    MiSkiEditingRenderer,
-    canvasRef,
-  );
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [stage, setStage] = useState<SkinEditorStage | null>(null);
+  const [backendNotSupported, setBackendNotSupported] = useState(false);
   const undoCount = useRendererStore(selectUndoCount);
   const redoCount = useRendererStore(selectRedoCount);
   const [controlPanelOpen, setControlPanelOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
 
-  // The layer starts blank; any undo stack entry means real strokes exist.
+  // The layer starts blank; any undo stack entry means real strokes.
   // Drives the Save gate, the unsaved dot, and the leave guard.
   const hasWork = undoCount > 0;
 
@@ -64,59 +95,42 @@ export default function EditorLayout() {
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  // The 3D canvas is a full-screen fixed layer painted behind the workspace
-  // chrome. Rather than shrinking the canvas, we tell the renderer how far the
-  // visible main region's center has drifted from the canvas center, and it
-  // shifts the projection so the model recenters into the visible area.
-  const mainRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const main = mainRef.current;
     const canvas = canvasRef.current;
-    const backend = renderer?.backend;
-    if (!main || !canvas || !backend) return;
-    const sync = () => {
-      const mainRect = main.getBoundingClientRect();
-      const canvasRect = canvas.getBoundingClientRect();
-      const mainCenter = mainRect.left + mainRect.width / 2;
-      const canvasCenter = canvasRect.left + canvasRect.width / 2;
-      const offset = mainCenter - canvasCenter;
-      backend.setViewportCenterOffset(offset);
-      document.documentElement.style.setProperty(
-        CANVAS_CENTER_VAR,
-        `${Math.round(offset)}px`,
-      );
-    };
-    sync();
-    const ro = new ResizeObserver(sync);
-    ro.observe(main);
-    window.addEventListener("resize", sync);
+    const wrapper = wrapperRef.current;
+    if (!canvas || !wrapper) return;
+    let stageInstance: SkinEditorStage | null = null;
+    try {
+      stageInstance = new SkinEditorStage(canvas, wrapper);
+      setStage(stageInstance);
+    } catch (error) {
+      console.error("Editor stage failed to start", error);
+      setBackendNotSupported(true);
+    }
     return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", sync);
-      backend.setViewportCenterOffset(0);
-      document.documentElement.style.removeProperty(CANVAS_CENTER_VAR);
+      stageInstance?.dispose();
+      setStage(null);
     };
-  }, [backendNotSupported, renderer]);
+  }, []);
 
+  // The 3D canvas is a fixed layer painted behind the workspace chrome; tell
+  // the stage nothing here — skinview3d owns its own canvas sizing.
   const undo = useCallback(() => {
-    renderer?.undo();
-  }, [renderer]);
+    stage?.undo();
+  }, [stage]);
 
   const redo = useCallback(() => {
-    renderer?.redo();
-  }, [renderer]);
+    stage?.redo();
+  }, [stage]);
 
   const getTextureCanvas = useCallback((): HTMLCanvasElement | null => {
-    const material = renderer?.getMainSkin()?.material;
-    if (!material?.imageData) return null;
-    const canvas = document.createElement("canvas");
-    canvas.width = material.imageData.width;
-    canvas.height = material.imageData.height;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return null;
-    ctx.putImageData(material.imageData, 0, 0);
-    return canvas;
-  }, [renderer]);
+    return stage?.getTextureCanvas() ?? null;
+  }, [stage]);
+
+  const getUniqueColors = useCallback((): string[] => {
+    const canvas = stage?.getTextureCanvas();
+    return canvas ? uniqueColorsFrom(canvas) : [];
+  }, [stage]);
 
   const [guideParts, setGuideParts] = useState<Record<Parts, boolean>>({
     head: true,
@@ -130,41 +144,21 @@ export default function EditorLayout() {
     (part: Parts) => {
       setGuideParts((prev) => {
         const next = { ...prev, [part]: !prev[part] };
-        renderer?.setGuidePartVisible(part, next[part]);
+        stage?.setGuidePartVisible(part, next[part]);
         return next;
       });
     },
-    [renderer],
+    [stage],
   );
-
-  const getUniqueColors = useCallback((): string[] => {
-    return renderer instanceof MiSkiEditingRenderer
-      ? renderer.getUniqueColors()
-      : [];
-  }, [renderer]);
-
-  const handleSlimSwitch = useCallback(
-    (newIsSlim: boolean) => {
-      renderer?.handleSlimSwitch(newIsSlim);
-    },
-    [renderer],
-  );
-
-  const handleFlipFrontToBack = useCallback(() => {
-    renderer?.flipFrontToBack();
-  }, [renderer]);
-
-  const handleResetTransform = useCallback(() => {
-    resetModelTranslation();
-    resetModelRotation();
-  }, []);
 
   return (
     <div className="relative h-full min-h-0 w-full overflow-hidden">
-      <canvas
-        ref={canvasRef as RefObject<HTMLCanvasElement>}
-        className="fixed inset-0 size-full touch-none"
-      />
+      <div ref={wrapperRef} className="absolute inset-0">
+        <canvas
+          ref={canvasRef as RefObject<HTMLCanvasElement>}
+          className="absolute inset-0 size-full touch-none"
+        />
+      </div>
 
       {backendNotSupported ? (
         <div className="pointer-events-auto absolute inset-0 grid place-items-center p-6">
@@ -217,21 +211,16 @@ export default function EditorLayout() {
           <div className="pointer-events-auto absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-base-content/10 bg-base-200 p-1 shadow-sm">
             {(
               [
-                ["Head", 0.5, 18, PersonSimple],
-                ["Body", 0, 35, PersonSimpleThrow],
-                ["Legs", 0.75, 18, PersonSimple],
+                ["Head", "head", PersonSimple],
+                ["Body", "body", PersonSimpleThrow],
+                ["Legs", "legs", PersonSimple],
               ] as const
-            ).map(([label, phi, radius, icon]) => (
+            ).map(([label, preset, icon]) => (
               <button
                 key={label}
                 type="button"
                 title={`Frame the ${label.toLowerCase()}`}
-                onClick={() => {
-                  const state = getRendererState();
-                  state.setValue("cameraPhi", phi);
-                  state.setValue("cameraTheta", 0);
-                  state.setValue("cameraRadius", radius);
-                }}
+                onClick={() => stage?.framePreset(preset)}
                 className="flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold text-base-content/70 transition-colors hover:bg-base-content/10 hover:text-base-content"
               >
                 <Icon icon={icon} size="xs" />
@@ -257,11 +246,7 @@ export default function EditorLayout() {
             setOpen={setControlPanelOpen}
             className="pointer-events-auto"
           >
-            <DetailPanelContent
-              handleSlimSwitch={handleSlimSwitch}
-              handleFlipFrontToBack={handleFlipFrontToBack}
-              onResetModelTransform={handleResetTransform}
-            />
+            <DetailPanelContent />
           </DetailPanel>
 
           <SaveModal

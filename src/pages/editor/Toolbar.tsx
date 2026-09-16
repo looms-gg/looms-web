@@ -14,9 +14,6 @@ import {
   ArrowsLeftRight,
   Eyedropper,
   Gear,
-  GridFour,
-  Hand,
-  HandGrabbing,
 } from "@phosphor-icons/react";
 
 const isMac =
@@ -48,9 +45,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   getUniqueColors,
 }) => {
   const colorPickerActive = useRendererStore((state) => state.colorPickerActive);
-  const gridVisible = useRendererStore((state) => state.gridVisible);
   const mirrorPaint = useRendererStore((state) => state.mirrorPaint);
-  const touchDrawMode = useRendererStore((state) => state.touchDrawMode);
   const setValue = useRendererStore((state) => state.setValue);
 
   const setColorPickerActive = useCallback(
@@ -59,14 +54,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
     },
     [setValue],
   );
-
-  const toggleGrid = useCallback(() => {
-    setValue("gridVisible", !gridVisible);
-  }, [setValue, gridVisible]);
-
-  const toggleTouchDrawMode = useCallback(() => {
-    setValue("touchDrawMode", !touchDrawMode);
-  }, [setValue, touchDrawMode]);
 
   return (
     <div
@@ -122,20 +109,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </div>
 
           <RailDivider />
-
-          <div className="flex flex-col items-center gap-1">
-            <ToolButton label="Toggle grid" onClick={toggleGrid} active={gridVisible}>
-              <Icon icon={GridFour} size="md" />
-            </ToolButton>
-
-            <ToolButton
-              label="Toggle touch drawing"
-              onClick={toggleTouchDrawMode}
-              active={touchDrawMode}
-            >
-              <Icon icon={touchDrawMode ? Hand : HandGrabbing} size="md" />
-            </ToolButton>
-          </div>
 
           <RailDivider />
 
