@@ -118,7 +118,9 @@ export class OrbitControl {
     this.renderer.backend.canvas?.addEventListener(
       "wheel",
       this.boundOnMouseWheel,
-      { passive: true },
+      // passive: false — preventDefault must be allowed so the page never
+      // scrolls while the cursor is over the canvas.
+      { passive: false },
     );
     window.addEventListener("blur", this.boundOnWindowBlur, { passive: true });
 
@@ -247,6 +249,9 @@ export class OrbitControl {
   }
 
   private onMouseWheel(event: WheelEvent) {
+    // The workspace owns the wheel: zoom the camera instead of scrolling the
+    // document behind the fixed canvas.
+    event.preventDefault();
     this.zoomVelocity += event.deltaY;
     this.controlling = true;
   }

@@ -112,7 +112,7 @@ export default function EditorLayout() {
   }, []);
 
   return (
-    <div className="relative h-[calc(100dvh-4rem)] min-h-[480px] w-full overflow-hidden">
+    <div className="relative h-full min-h-0 w-full overflow-hidden">
       <canvas
         ref={canvasRef as RefObject<HTMLCanvasElement>}
         className="fixed inset-0 size-full touch-none"

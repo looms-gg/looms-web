@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom"
-import { MagicWand, Package, PaintBrush, TShirt } from "@phosphor-icons/react"
+import { MagicWand, Newspaper, Package, PaintBrush, TShirt } from "@phosphor-icons/react"
 import { useWardrobe } from "../../state/wardrobe"
 import { useAuth } from "../../state/auth"
 import { useLikes } from "../../state/likes"
@@ -23,6 +23,7 @@ const links: { to: string; label: string; icon: IconType }[] = [
   { to: "/wardrobe", label: "Wardrobe", icon: Package },
   { to: "/studio", label: "Studio", icon: PaintBrush },
   { to: "/editor", label: "Editor", icon: MagicWand },
+  { to: "/blog", label: "Updates", icon: Newspaper },
 ]
 
 function pathOn(to: string, pathname: string, from?: string) {
@@ -31,6 +32,7 @@ function pathOn(to: string, pathname: string, from?: string) {
     return to === "/"
   }
   if (to === "/") return pathname === "/"
+  if (to === "/blog") return pathname === "/blog" || pathname.startsWith("/blog/")
   return pathname === to
 }
 
@@ -150,9 +152,12 @@ function ShellFrame() {
   const { loadError: likesLoadError, dismissLoadError } = useLikes()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from
-  const studio = location.pathname === "/studio"
+  // Immersive routes: full-height shell, no footer, body scroll locked
+  // (html.studio-lock) so the workspace owns the viewport.
+  const immersive =
+    location.pathname === "/studio" || location.pathname === "/editor"
   const { navRef, dockRef, thumb, dockThumb } = useNavThumbs(location.pathname + (from ?? ""))
-  useStudioLock(studio)
+  useStudioLock(immersive)
   usePendingActionReplay()
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "Player"
@@ -168,7 +173,7 @@ function ShellFrame() {
   return (
     <div
       className={`bg-base-100 text-base-content ${
-        studio ? "flex h-svh flex-col overflow-hidden" : "min-h-svh"
+        immersive ? "flex h-svh flex-col overflow-hidden" : "min-h-svh"
       }`}
     >
       <header className="sticky top-0 z-40 shrink-0 border-b border-base-content/10 bg-base-100/95 backdrop-blur-md">
@@ -211,7 +216,7 @@ function ShellFrame() {
 
       <main
         className={
-          studio
+          immersive
             ? "studio-main mx-auto flex w-full min-h-0 max-w-[1440px] flex-1 flex-col overflow-hidden px-5 py-3 lg:px-12"
             : "mx-auto max-w-[1440px] px-5 py-6 pb-28 lg:px-12"
         }
@@ -219,7 +224,7 @@ function ShellFrame() {
         <Outlet />
       </main>
 
-      {!studio ? <SiteFooter /> : null}
+      {!immersive ? <SiteFooter /> : null}
 
       <ShellDock dockRef={dockRef} dockThumb={dockThumb} pathname={location.pathname} from={from} />
 
