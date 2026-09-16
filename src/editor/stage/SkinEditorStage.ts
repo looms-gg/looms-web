@@ -7,6 +7,7 @@ import {
   CanvasTexture,
   Mesh,
   MeshBasicMaterial,
+  NearestFilter,
   Raycaster,
   RingGeometry,
   Vector2,
@@ -156,7 +157,12 @@ export class SkinEditorStage {
     guide.name = "guideBody";
     guide.cape.visible = false;
     guide.ears.visible = false;
-    guide.skin.map = new CanvasTexture(guideCanvas);
+    const guideTexture = new CanvasTexture(guideCanvas);
+    // Pixel-perfect sampling, matching how skinview3d treats its own
+    // skin texture; the default linear filter renders the guide blurry.
+    guideTexture.magFilter = NearestFilter;
+    guideTexture.minFilter = NearestFilter;
+    guide.skin.map = guideTexture;
     guide.skin.modelType = "default";
     guide.skin.visible = true;
     // Depth-bias the whole guide behind the garment so coplanar faces
