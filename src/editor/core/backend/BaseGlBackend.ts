@@ -71,6 +71,9 @@ export abstract class BaseGlBackend<
   private cachedOpaqueGroup: MinecraftPart | null = null;
   private cachedTransparentGroup: MinecraftPart | null = null;
   private cachedEnvironmentGroup: MeshGroup | null = null;
+  private cachedGuideSkin: MinecraftSkin | null = null;
+  private cachedGuideOpaqueGroup: MinecraftPart | null = null;
+  private cachedGuideTransparentGroup: MinecraftPart | null = null;
 
   canvas: HTMLCanvasElement | null;
 
@@ -354,6 +357,20 @@ export abstract class BaseGlBackend<
     }
 
     this.renderMeshGroup(renderer, opaqueGroup, skin);
+
+    // Reference body guide: drawn after the garment's base pass so painted
+    // texels win the depth test, and before the garment's overlay pass so
+    // hat/jacket layers composite above it. The guide's own transparent
+    // parts go with it so its silhouette self-occludes correctly.
+    if (this.cachedGuideSkin && this.cachedGuideSkin.visible) {
+      if (this.cachedGuideOpaqueGroup) {
+        this.renderMeshGroup(renderer, this.cachedGuideOpaqueGroup, this.cachedGuideSkin);
+      }
+      if (this.cachedGuideTransparentGroup) {
+        this.renderMeshGroup(renderer, this.cachedGuideTransparentGroup, this.cachedGuideSkin);
+      }
+    }
+
     this.renderMeshGroup(renderer, transparentGroup, skin);
 
     if (renderer instanceof MiSkiEditingRenderer && renderer.hoverHighlight) {
@@ -527,6 +544,9 @@ export abstract class BaseGlBackend<
     this.cachedOpaqueGroup = null;
     this.cachedTransparentGroup = null;
     this.cachedEnvironmentGroup = null;
+    this.cachedGuideSkin = null;
+    this.cachedGuideOpaqueGroup = null;
+    this.cachedGuideTransparentGroup = null;
   }
 
   private resolveMeshCache(): boolean {
@@ -550,6 +570,29 @@ export abstract class BaseGlBackend<
           .getChildren()
           .find((g) => g instanceof MeshGroup && g.name === "transparent") as
           MinecraftPart | undefined) ?? null;
+    }
+    if (!this.cachedGuideSkin) {
+      const guideSkin = this.meshes
+        .getChildren()
+        .find(
+          (group) =>
+            group instanceof MinecraftSkin && group.name === "GuideBody",
+        ) as MinecraftSkin | undefined;
+      if (guideSkin) {
+        this.cachedGuideSkin = guideSkin;
+        this.cachedGuideOpaqueGroup =
+          (guideSkin
+            .getChildren()
+            .find(
+              (g) => g instanceof MeshGroup && g.name === "opaque",
+            ) as MinecraftPart | undefined) ?? null;
+        this.cachedGuideTransparentGroup =
+          (guideSkin
+            .getChildren()
+            .find(
+              (g) => g instanceof MeshGroup && g.name === "transparent",
+            ) as MinecraftPart | undefined) ?? null;
+      }
     }
     if (!this.cachedEnvironmentGroup) {
       this.cachedEnvironmentGroup =
