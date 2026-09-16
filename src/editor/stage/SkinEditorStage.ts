@@ -3,15 +3,17 @@
 // control; the store, brush tools, and save flows stay as they are.
 import {
   type Intersection,
-  type MeshStandardMaterial,
   CanvasTexture,
+  DoubleSide,
   Mesh,
   MeshBasicMaterial,
   NearestFilter,
   Raycaster,
   RingGeometry,
+  SRGBColorSpace,
   Vector2,
   Vector3,
+  type MeshStandardMaterial,
 } from "three";
 import { SkinViewer, PlayerObject } from "skinview3d";
 import {
@@ -29,8 +31,48 @@ import {
 } from "../color/colorUtils";
 import { MAX_VARIATION_STEPS, randomInRange } from "../core/utils";
 import { bodies, DEFAULT_BODY_ID } from "../../data/bodies";
+import {
+  crispSkinTexture,
+  lightSkinViewer,
+} from "../../skin/focus";
+
 
 const ATLAS = 64;
+
+// Mirror of the Studio's flat skin material recipe (src/skin/materials.ts)
+// applied to a standalone player object, with extra polygon-offset depth
+// bias so the guide never z-fights the coplanar garment.
+const GUIDE_DEPTH_BIAS = 2;
+
+function flattenGuideMaterials(player: PlayerObject) {
+  const map = player.skin.map;
+  const skin = player.skin as unknown as Record<
+    string,
+    MeshStandardMaterial | undefined
+  >;
+  for (const name of [
+    "layer1Material",
+    "layer1MaterialBiased",
+    "layer2Material",
+    "layer2MaterialBiased",
+  ]) {
+    const material = skin[name];
+    if (!material) continue;
+    material.roughness = 0.82;
+    material.metalness = 0;
+    material.flatShading = true;
+    material.transparent = true;
+    material.alphaTest = 1 / 255;
+    material.depthWrite = true;
+    material.toneMapped = false;
+    material.side = DoubleSide;
+    material.polygonOffset = true;
+    material.polygonOffsetFactor = GUIDE_DEPTH_BIAS;
+    material.polygonOffsetUnits = GUIDE_DEPTH_BIAS;
+    material.map = map;
+    material.needsUpdate = true;
+  }
+}
 
 // Shading snaps to the same HSV lattice MineSkin used: whole 5% brightness
 // rungs with coarse hue/saturation rounding, so repeated strokes reuse a
@@ -79,6 +121,9 @@ export class SkinEditorStage {
     this.viewer = new SkinViewer({ canvas });
     this.viewer.controls.enablePan = false;
     this.viewer.autoRotate = false;
+    // The Studio's exact look: no FXAA soft pass, no tone mapping, the
+    // key/fill/rim light rig, and flat unshaded skin materials.
+    lightSkinViewer(this.viewer);
 
     // skinview3d does not auto-resize: track the canvas box ourselves.
     this.resizeObserver = new ResizeObserver(() => {
@@ -88,31 +133,13 @@ export class SkinEditorStage {
     });
     this.resizeObserver.observe(canvas);
 
-    // Garment base texels must discard where transparent so the guide body
-    // shows through; skinview3d only treats the overlay layer that way.
-    this.makeLayerDiscard(this.garmentSkinMaterial("layer1Material"));
-    this.makeLayerDiscard(this.garmentSkinMaterial("layer1MaterialBiased"));
-
     void this.attachGuideBody();
     this.viewer.loadSkin(this.blankSkinCanvas(), { model: "default" });
+    crispSkinTexture(this.viewer);
 
     this.pushInitialSnapshot();
     this.mountGestures();
     this.mountStoreSubscription();
-  }
-
-  private garmentSkinMaterial(
-    name: "layer1Material" | "layer1MaterialBiased",
-  ): MeshStandardMaterial {
-    const skin = this.viewer.playerObject
-      .skin as unknown as Record<string, MeshStandardMaterial>;
-    return skin[name];
-  }
-
-  private makeLayerDiscard(material: MeshStandardMaterial) {
-    material.transparent = true;
-    material.alphaTest = 1e-5;
-    material.needsUpdate = true;
   }
 
   private blankSkinCanvas(): HTMLCanvasElement {
@@ -158,28 +185,16 @@ export class SkinEditorStage {
     guide.cape.visible = false;
     guide.ears.visible = false;
     const guideTexture = new CanvasTexture(guideCanvas);
-    // Pixel-perfect sampling, matching how skinview3d treats its own
-    // skin texture; the default linear filter renders the guide blurry.
     guideTexture.magFilter = NearestFilter;
     guideTexture.minFilter = NearestFilter;
+    guideTexture.colorSpace = SRGBColorSpace;
+    guideTexture.generateMipmaps = false;
     guide.skin.map = guideTexture;
     guide.skin.modelType = "default";
     guide.skin.visible = true;
-    // Depth-bias the whole guide behind the garment so coplanar faces
-    // resolve to the garment everywhere it paints.
-    const skin = guide.skin as unknown as Record<string, MeshStandardMaterial>;
-    for (const name of [
-      "layer1Material",
-      "layer1MaterialBiased",
-      "layer2Material",
-      "layer2MaterialBiased",
-    ]) {
-      const material = skin[name];
-      material.polygonOffset = true;
-      material.polygonOffsetFactor = 2;
-      material.polygonOffsetUnits = 2;
-      material.needsUpdate = true;
-    }
+    // The Studio's flat material recipe, with extra depth bias so the
+    // guide never z-fights the coplanar garment.
+    flattenGuideMaterials(guide);
     this.guidePlayer = guide;
     this.viewer.playerWrapper.add(guide);
     this.applyGuideVisibility();
@@ -662,14 +677,14 @@ export class SkinEditorStage {
         this.applyGarmentVisibility(state);
       }
       if (state.ambientLight !== prevState.ambientLight) {
-        this.viewer.globalLight.intensity = 3 * state.ambientLight;
+        this.viewer.globalLight.intensity = 1.15 * state.ambientLight;
       }
       if (
         state.directionalLightIntensity !==
         prevState.directionalLightIntensity
       ) {
         this.viewer.cameraLight.intensity =
-          0.6 * (state.directionalLightIntensity / 0.3);
+          0.35 * (state.directionalLightIntensity / 0.3);
       }
       if (state.cameraFieldOfView !== prevState.cameraFieldOfView) {
         this.viewer.fov = (state.cameraFieldOfView * 180) / Math.PI;
@@ -683,7 +698,10 @@ export class SkinEditorStage {
       }
     });
     this.applyGarmentVisibility(getRendererState());
-    this.viewer.globalLight.intensity = 3 * getRendererState().ambientLight;
+    this.viewer.globalLight.intensity =
+      1.15 * getRendererState().ambientLight;
+    this.viewer.cameraLight.intensity =
+      0.35 * (getRendererState().directionalLightIntensity / 0.3);
     this.viewer.fov = (getRendererState().cameraFieldOfView * 180) / Math.PI;
   }
 
