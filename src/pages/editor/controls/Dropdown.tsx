@@ -19,7 +19,7 @@ export interface DropdownProps {
   children: ReactNode;
   size?: "sm" | "md" | "lg";
   contentClassName?: string;
-  align?: "start" | "center" | "end";
+  align?: "start" | "center" | "end" | "after";
   side?: "top" | "bottom";
 }
 
@@ -149,9 +149,13 @@ export default function Dropdown({
     }
     if (align === "start") {
       p.left = Math.max(EDGE_MARGIN, rect.left);
+    } else if (align === "after") {
+      // Opens to the right of the trigger (plus a gap), so flyouts anchored
+      // inside a tool rail never cover the rail itself.
+      p.left = rect.right + PANEL_GAP + 4;
     } else if (align === "end") {
       p.right = Math.max(EDGE_MARGIN, window.innerWidth - rect.right);
-    } else {
+    } else if (align === "center") {
       p.left = rect.left + rect.width / 2;
       p.transform = "translateX(-50%)";
     }

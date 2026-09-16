@@ -63,7 +63,7 @@ export default function BrushFlyout({}: BrushFlyoutProps) {
   return (
     <Dropdown
       trigger={trigger}
-      align="start"
+      align="after"
       side="bottom"
       contentClassName="p-2 w-64"
     >

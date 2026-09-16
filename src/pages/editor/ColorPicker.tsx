@@ -147,7 +147,11 @@ export default function ColorPicker({ id, getUniqueColors }: ColorPickerProps) {
     if (!open) return;
     const rect = triggerRef.current?.getBoundingClientRect();
     if (rect) {
-      const left = Math.max(EDGE_MARGIN, Math.min(rect.left, window.innerWidth - 336));
+      // Anchor beside the tool rail, never on top of it.
+      const left = Math.max(
+        EDGE_MARGIN,
+        Math.min(rect.right + PANEL_GAP + 4, window.innerWidth - 336),
+      );
       const top = Math.min(rect.bottom + PANEL_GAP, window.innerHeight - 16);
       setPlacement({ top, left });
     }
