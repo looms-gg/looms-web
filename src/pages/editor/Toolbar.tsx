@@ -9,11 +9,12 @@ import BrushFlyout from "./BrushFlyout";
 import ColorPicker from "./ColorPicker";
 import { Icon } from "../../components/ui/Icon";
 import {
-  ArrowsCounterClockwise,
-  ArrowsClockwise,
+  ArrowUUpLeft,
+  ArrowUUpRight,
   ArrowsLeftRight,
   Eyedropper,
   Gear,
+  GridFour,
   Hand,
   HandGrabbing,
 } from "@phosphor-icons/react";
