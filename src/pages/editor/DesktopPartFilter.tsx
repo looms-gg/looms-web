@@ -134,7 +134,7 @@ const DesktopPartFilter: React.FC<{ className?: string; scale?: number }> = ({
               <PartButton
                 tooltip="Toggle whole layer"
                 onClick={() => toggleWholeLayer(layer)}
-                className="pointer-events-auto flex h-5 w-6 items-center justify-center rounded-md border border-base-content/15 bg-base-100 text-base-content/70 opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100"
+                className="pointer-events-auto flex h-5 w-6 cursor-pointer items-center justify-center rounded-md border border-base-content/15 bg-base-100 text-base-content/70 transition-colors hover:bg-base-content/10"
               >
                 {anyVisible ? <Icon icon={Eye} size="xs" /> : <Icon icon={EyeSlash} size="xs" />}
                 <span className="sr-only">Toggle whole layer</span>
