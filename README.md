@@ -57,3 +57,8 @@ Copy `[.env.example](.env.example)` to `.env` (and/or `.env.local` for `VITE_*` 
 If the allowlist misses `https://looms.gg/**`, Supabase drops the app's `redirect_to` and the email link falls back to the Site URL — so a Site URL left at localhost from dev testing sends every confirmation to `localhost`. Symptom: clicking the email link opens a browser error page instead of the app. Fix both fields in the dashboard, and re-paste the email templates from `supabase/email-templates/` if a host was ever hardcoded into the dashboard copy (templates must only ever use `{{ .ConfirmationURL }}`).
 
 PRs welcome. Talk through bigger ideas on Discord first so we are not building past each other!
+## License
+
+looms-web is licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE).
+
+The admin skin editor at `src/editor/` is a port of [MineSkin PRO](https://github.com/hamza512b/mineskin) by hamza512b (AGPL-3.0), pinned at commit `98023b6ca269a26fe31fa5f3b03db00380a8eae6`.
