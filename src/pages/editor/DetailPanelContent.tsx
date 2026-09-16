@@ -9,7 +9,6 @@ import {
 } from "../../editor/core/environment";
 import Slider from "./controls/Slider";
 import ToggleSwitch from "./controls/ToggleSwitch";
-import DesktopPartFilter from "./DesktopPartFilter";
 import { bodies } from "../../data/bodies";
 import { cn } from "../../editor/core/utils";
 
@@ -114,12 +113,6 @@ export default function DetailPanelContent({
             </p>
           </div>
         ) : null}
-      </div>
-
-      <Divider />
-
-      <div className="px-1">
-        <DesktopPartFilter />
       </div>
 
       <Divider />

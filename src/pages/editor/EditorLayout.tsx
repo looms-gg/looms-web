@@ -14,6 +14,8 @@ import { resetModelTranslation, resetModelRotation } from "../../editor/core/mod
 import { selectRedoCount, selectUndoCount, useInitRendererState, useRendererStore } from "../../editor/store";
 import useEditorRenderer from "./useEditorRenderer";
 import Toolbar from "./Toolbar";
+import RotationGizmo from "./RotationGizmo";
+import DesktopPartFilter from "./DesktopPartFilter";
 import DetailPanel from "./DetailPanel";
 import DetailPanelContent from "./DetailPanelContent";
 import SaveModal from "./SaveModal";
@@ -150,6 +152,15 @@ export default function EditorLayout() {
             >
               Save
             </button>
+          </div>
+
+          {/* Top-right HUD: rotation gizmo above the part silhouettes,
+              matching the MineSkin dashboard layout. */}
+          <div className="pointer-events-none absolute right-3 top-16 flex flex-col items-center gap-3">
+            <RotationGizmo />
+            <div className="pointer-events-auto rounded-2xl border border-base-content/10 bg-base-200/90 p-3 shadow-lg backdrop-blur">
+              <DesktopPartFilter />
+            </div>
           </div>
 
           <DetailPanel

@@ -88,7 +88,7 @@ const DesktopPartFilter: React.FC<{ className?: string; scale?: number }> = ({
 
   const layers: { layer: Layer; label: string }[] = [
     { layer: "base", label: "Body" },
-    { layer: "overlay", label: "Garment" },
+    { layer: "overlay", label: "Armor" },
   ];
 
   return (

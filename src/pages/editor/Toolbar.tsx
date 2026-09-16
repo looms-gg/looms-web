@@ -2,12 +2,11 @@
 // Rebuilt on looms primitives: the animation, pose, reference-image,
 // screenshot, and record tools are out of scope for this port. Tooltips are
 // daisyUI tooltips; icons are phosphor via the Icon wrapper.
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { useRendererStore } from "../../editor/store";
 import ToolButton from "./ToolButton";
 import BrushFlyout from "./BrushFlyout";
 import ColorPicker from "./ColorPicker";
-import DesktopPartFilter from "./DesktopPartFilter";
 import { Icon } from "../../components/ui/Icon";
 import {
   ArrowsCounterClockwise,
@@ -15,7 +14,6 @@ import {
   ArrowsLeftRight,
   Eyedropper,
   Gear,
-  GridFour,
   Hand,
   HandGrabbing,
 } from "@phosphor-icons/react";
@@ -68,8 +66,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const toggleTouchDrawMode = useCallback(() => {
     setValue("touchDrawMode", !touchDrawMode);
   }, [setValue, touchDrawMode]);
-
-  const [partFilterOpen, setPartFilterOpen] = useState(false);
 
   return (
     <div
@@ -129,13 +125,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <RailDivider />
 
           <div className="flex flex-col items-center gap-1">
-            <ToolButton
-              label="Show and hide parts"
-              onClick={() => setPartFilterOpen((v) => !v)}
-              active={partFilterOpen}
-            >
-              <Icon icon={GridFour} size="md" />
-            </ToolButton>
             <ToolButton label="Toggle grid" onClick={toggleGrid} active={gridVisible}>
               <span className="text-xs font-extrabold">#</span>
             </ToolButton>
@@ -161,11 +150,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
         </div>
       </div>
 
-      {partFilterOpen ? (
-        <div className="absolute left-full top-0 ml-2 rounded-2xl border border-base-content/10 bg-base-200/95 p-3 shadow-xl backdrop-blur">
-          <DesktopPartFilter />
-        </div>
-      ) : null}
     </div>
   );
 };
