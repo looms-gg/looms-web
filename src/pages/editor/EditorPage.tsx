@@ -1,5 +1,4 @@
 import { useEffect } from "react"
-import { AdminGuard } from "../../components/auth/AdminGuard"
 import { useAuthOptional } from "../../state/auth"
 import EditorLayout from "./EditorLayout"
 import { EditorTeaser } from "./editorTeaser"
@@ -19,13 +18,11 @@ export function EditorPage() {
     if (document.body) document.body.scrollTop = 0
   }, [])
 
+  // Admin-only for now: signed-out users and non-admins see the teaser.
+  // Server actions stay gated by RLS and quotas regardless.
   if (!auth?.user || !auth.isAdmin) return <EditorTeaser />
 
-  return (
-    <AdminGuard>
-      <EditorLayout />
-    </AdminGuard>
-  )
+  return <EditorLayout />
 }
 
 export default EditorPage
