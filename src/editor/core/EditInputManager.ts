@@ -14,6 +14,11 @@ type TouchPointer = {
 
 export class EditInputManager {
   private isDrawing = false;
+  // Set after a stroke hands the gesture to the camera mid-drag; remaining
+  // pointer moves then feed orbit deltas directly (compat mouse events are
+  // suppressed for the whole drag once the paint pointerdown was canceled).
+  private handedOffToOrbit = false;
+  private lastOrbitPos: { x: number; y: number } | null = null;
   private touchHitActive = false;
   private touchStart: { x: number; y: number } | null = null;
   private touchPointers = new Map<number, TouchPointer>();
@@ -194,7 +199,38 @@ export class EditInputManager {
         e.stopPropagation();
       }
     } else {
+      if (this.handedOffToOrbit && this.lastOrbitPos) {
+        // Orbit the camera with the remainder of this drag.
+        this.renderer.orbitControl.applyExternalDragDelta(
+          e.clientX - this.lastOrbitPos.x,
+          e.clientY - this.lastOrbitPos.y,
+        );
+        this.lastOrbitPos = { x: e.clientX, y: e.clientY };
+        return;
+      }
       if (this.isDrawing) {
+        // A stroke only lives while the pointer is over the skin. Crossing
+        // off the model ends the batch and hands the rest of the drag to the
+        // camera, so leaving the model never leaves a dead "drawing" gesture.
+        if (
+          !this.renderer.backend.canvas ||
+          !this.renderer.getMeshHitAt(x, y)
+        ) {
+          this.isDrawing = false;
+          this.handedOffToOrbit = true;
+          this.lastOrbitPos = { x: e.clientX, y: e.clientY };
+          this.setFrontIndicatorVisible(true);
+          this.renderer.undoRedoManager?.endBatch();
+          const canvas = this.renderer.backend.canvas;
+          if (canvas) {
+            canvas.style.cursor = "grab";
+            if (canvas.hasPointerCapture(e.pointerId)) {
+              canvas.releasePointerCapture(e.pointerId);
+            }
+          }
+          this.renderer.orbitControl.resumeExternalDrag();
+          return;
+        }
         const state = getRendererState();
         if (state.paintMode === "bulk") {
           this.renderer.fillFace(x, y);
@@ -250,6 +286,15 @@ export class EditInputManager {
       this.touchHitActive = false;
       this.touchStart = null;
     } else {
+      if (this.handedOffToOrbit && this.lastOrbitPos) {
+        // Orbit the camera with the remainder of this drag.
+        this.renderer.orbitControl.applyExternalDragDelta(
+          e.clientX - this.lastOrbitPos.x,
+          e.clientY - this.lastOrbitPos.y,
+        );
+        this.lastOrbitPos = { x: e.clientX, y: e.clientY };
+        return;
+      }
       if (this.isDrawing) {
         this.isDrawing = false;
         this.setFrontIndicatorVisible(true);

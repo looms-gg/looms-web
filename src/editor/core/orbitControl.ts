@@ -55,6 +55,29 @@ export class OrbitControl {
     return this.controlling;
   }
 
+  /**
+   * A paint stroke crossed off the model: the rest of this drag orbits the
+   * camera. The compatibility mousedown that arms ordinary orbiting was
+   * suppressed by the paint gesture's preventDefault, so the paint side
+   * calls this to hand the gesture over mid-drag.
+   */
+  public resumeExternalDrag() {
+    this.cursorEnabled = true;
+    this.controlling = true;
+    this.stopCoast();
+  }
+
+  /**
+   * Feed an orbit delta during a drag that began as a paint stroke. The
+   * paint gesture canceled the compatibility mouse events ordinary orbiting
+   * listens to, so the paint side delivers the remaining deltas itself.
+   */
+  public applyExternalDragDelta(dx: number, dy: number) {
+    this.controlling = true;
+    this.rotateVelocity[0] += dx;
+    this.rotateVelocity[1] -= dy;
+  }
+
   /** Clears in-flight damping so scripted camera moves start from a stable pose. */
   public resetVelocity() {
     this.controlling = false;
@@ -123,6 +146,10 @@ export class OrbitControl {
       { passive: false },
     );
     window.addEventListener("blur", this.boundOnWindowBlur, { passive: true });
+    // A mouseup over another element (HUD, rail, outside the window) must
+    // still end cursor-orbit arming, or the camera keeps orbiting on plain
+    // mouse movement afterwards.
+    window.addEventListener("mouseup", this.boundOnMouseUp, { passive: true });
 
     // Subscribe to store changes to reset velocity when camera values change externally
     this.unsubscribe = subscribeToRenderer((state, prevState) => {
@@ -180,6 +207,7 @@ export class OrbitControl {
       this.boundOnMouseWheel,
     );
     window.removeEventListener("blur", this.boundOnWindowBlur);
+    window.removeEventListener("mouseup", this.boundOnMouseUp);
 
     // Unsubscribe from store
     this.unsubscribe?.();
