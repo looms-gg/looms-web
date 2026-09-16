@@ -16,7 +16,7 @@ function Bone({ className = "", rounded = "rounded-lg" }: { className?: string; 
 }
 
 /**
- * Editor — under construction.
+ * Editor teaser: under construction.
  *
  * A teaser, not a workspace: a blank skeleton preview of the planned tool
  * (pure blobs, no text/icons inside it), beside a short note on what will ship.
