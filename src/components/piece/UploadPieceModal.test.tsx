@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest"
 import { AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
 import { WardrobeProvider } from "../../state/wardrobe"
-import { coversForSlot, uploadCovers, UploadPieceModal } from "./UploadPieceModal"
+import { coversForSlot, uploadCovers } from "./publishGarment"
+import { UploadPieceModal } from "./UploadPieceModal"
 import { validateDimensions } from "../../lib/textureValidation"
 
 describe("UploadPieceModal and garment validation", () => {

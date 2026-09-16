@@ -7,13 +7,18 @@ import {
 import { useAuthOptional } from "../../state/auth"
 import { useWardrobe } from "../../state/wardrobe"
 import { useCatalog } from "../../state/catalog"
-import { supabase, type GarmentRow } from "../../lib/supabase"
-import { CLOTHING_SLOTS, GROUPS, SLOT_GROUP, type Group, type Slot } from "../../data/catalog"
+import { CLOTHING_SLOTS, type Group, type Slot } from "../../data/catalog"
 import { garmentToPiece } from "../../data/garment"
 import { groupsFromAtlas } from "../../skin/compose"
-import { MAX_LIMITS, sanitizeText, sanitizeUsername, validateFileSize } from "../../lib/sanitize"
-import { validatePngTexture } from "../../lib/textureValidation"
+import {
+  MAX_LIMITS,
+  sanitizeText,
+  sanitizeUsername,
+  validateFileSize,
+} from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
+import { validatePngTexture } from "../../lib/textureValidation"
+import { publishGarmentTexture } from "./publishGarment"
 import { Icon } from "../ui/Icon"
 import { CloseButton } from "../ui/CloseButton"
 import { ModalOverlay } from "../ui/ModalOverlay"
@@ -21,17 +26,6 @@ import { ModalOverlay } from "../ui/ModalOverlay"
 export interface UploadPieceModalProps {
   isOpen: boolean
   onClose: () => void
-}
-
-/** A set is a multi-region garment (bikini, tracksuit): one texture paints torso and legs. */
-export function coversForSlot(slot: Slot): Group[] {
-  return slot === "set" ? ["torso", "legs"] : [SLOT_GROUP[slot]]
-}
-
-/** Covers persist what the texture actually paints, so long hair keeps its torso overlay. */
-export function uploadCovers(slot: Slot, painted: Group[]): Group[] {
-  const declared = coversForSlot(slot)
-  return GROUPS.filter((group) => declared.includes(group) || painted.includes(group))
 }
 
 export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
@@ -106,57 +100,27 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
     setErrorMsg(null)
 
     const pieceName = sanitizeText(name, MAX_LIMITS.PIECE_NAME) || "Untitled Piece"
-    const pieceDescription = sanitizeText(description, MAX_LIMITS.PIECE_DESCRIPTION, {
-      multiline: true,
-    })
 
     try {
-      const pieceId = crypto.randomUUID()
-      const storagePath = `${user.id}/${pieceId}.png`
+      const result = await publishGarmentTexture({
+        userId: user.id,
+        username: profile?.username ?? null,
+        textureBlob: file,
+        name,
+        description,
+        slot,
+        isPublic,
+        painted,
+      })
 
-      const { error: uploadError } = await supabase.storage
-        .from("garments")
-        .upload(storagePath, file, {
-          contentType: "image/png",
-          upsert: true,
-        })
-
-      if (uploadError) {
-        throw new Error(`Storage upload failed: ${uploadError.message}`)
+      if ("error" in result) {
+        throw new Error(result.error)
       }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("garments").getPublicUrl(storagePath)
 
       const maker = profile?.username ? sanitizeUsername(profile.username) : "you"
-      const group = SLOT_GROUP[slot]
-      const covers = uploadCovers(slot, painted)
-      const row: GarmentRow = {
-        id: pieceId,
-        user_id: user.id,
-        name: pieceName,
-        description: pieceDescription || null,
-        slot,
-        body_group: group,
-        saved_count: 0,
-        like_count: 0,
-        added: Date.now(),
-        covers,
-        texture_url: publicUrl,
-        is_public: isPublic,
-        tags: [],
-        created_at: new Date().toISOString(),
-      }
 
-      const { error: dbError } = await supabase.from("garments").insert(row)
-
-      if (dbError) {
-        throw new Error(`Failed to save garment record: ${dbError.message}`)
-      }
-
-      upsert(garmentToPiece(row, maker))
-      addToWardrobe(pieceId)
+      upsert(garmentToPiece(result.row, maker))
+      addToWardrobe(result.pieceId)
       notify(`Uploaded "${pieceName}" to your wardrobe!`)
       onClose()
     } catch (err: unknown) {
@@ -171,7 +135,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
       open={isOpen}
       onClose={onClose}
       labelledBy="upload-piece-title"
-      panelClassName="modal-panel relative w-full max-w-xl rounded-[18px] border border-white/10 bg-base-300 p-6 shadow-2xl sm:p-7 max-h-[90vh] overflow-y-auto"
+      panelClassName="modal-panel relative w-full max-w-xl rounded-[18px] border border-base-content/10 bg-base-300 p-6 shadow-2xl sm:p-7 max-h-[90vh] overflow-y-auto"
     >
         <CloseButton onClick={onClose} className="absolute right-3 top-3" />
 
@@ -206,7 +170,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
           {/* File input / drag box */}
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-white/15 hover:border-primary/50 rounded-[18px] cursor-pointer bg-base-100/50 hover:bg-base-100 transition-colors text-center"
+            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-base-content/15 hover:border-primary/50 rounded-[18px] cursor-pointer bg-base-100/50 hover:bg-base-100 transition-colors text-center"
           >
             <input
               ref={fileInputRef}
@@ -219,7 +183,7 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
                 <img
                   src={previewUrl}
                   alt="Texture preview"
-                  className="size-24 rounded-lg bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px] object-contain p-1 border border-white/10 [image-rendering:pixelated]" />
+                  className="size-24 rounded-lg bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px] object-contain p-1 border border-base-content/10 [image-rendering:pixelated]" />
                 <span className="text-xs font-bold text-success flex items-center gap-1">
                   <Icon icon={Check} size="xs" />
                   {file?.name} (64x64)
