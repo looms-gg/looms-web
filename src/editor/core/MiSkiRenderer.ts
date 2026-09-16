@@ -17,7 +17,7 @@ import { createBackend } from "./backend/createBackend";
 import { downloadFile, type SaveImageLabels } from "./downloadFile";
 import { EditInputManager } from "./EditInputManager";
 import { identityM44, multiplyM4V3, type M44, type V3 } from "./maths";
-import { Mesh, MeshGroup } from "./mesh";
+import { Mesh, MeshGroup, type MinecraftPart } from "./mesh";
 import { MeshImageMaterial, MinecraftSkinMaterial } from "./MeshMaterial";
 import { MinecraftSkin } from "./MinecraftSkin";
 import { computeRay, getMeshAtRay, getMeshsAtRay } from "./rayTracing";
@@ -46,6 +46,7 @@ export class MiSkiRenderer extends Renderer {
   private environmentMesh: MeshGroup | null = null;
   private guideSkin: MinecraftSkin | null = null;
   private lastGuideBodyId: string | null = null;
+  private guidePartsVisible: Partial<Record<Parts, boolean>> = {};
 
   constructor(backend: Backend) {
     super(backend);
@@ -152,11 +153,43 @@ export class MiSkiRenderer extends Renderer {
     this.addMesh(guideSkin);
     this.backend.bindMeshGroup(guideSkin);
     this.updateGuideVisibility();
+    for (const part of Object.keys(this.guidePartsVisible) as Parts[]) {
+      this.applyGuidePartVisibility(part);
+    }
   }
 
   updateGuideVisibility() {
     if (this.guideSkin) {
       this.guideSkin.visible = getRendererState().guideBodyVisible;
+    }
+  }
+
+  /** Show or hide one part of the guide body (head, body, arms, legs). */
+  setGuidePartVisible(part: Parts, visible: boolean) {
+    this.guidePartsVisible[part] = visible;
+    this.applyGuidePartVisibility(part);
+  }
+
+  private applyGuidePartVisibility(part: Parts) {
+    const skin = this.guideSkin;
+    if (!skin) return;
+    const visible = this.guidePartsVisible[part] ?? true;
+    const parts: (MinecraftPart | null)[] = [];
+    if (part === "head") {
+      parts.push(skin.baseHead, skin.overlayHead);
+    } else if (part === "body") {
+      parts.push(skin.baseBody, skin.overlayBody);
+    } else if (part === "leftArm") {
+      parts.push(skin.baseLeftArm, skin.baseLeftSlimArm, skin.overlayLeftArm, skin.overlayLeftSlimArm);
+    } else if (part === "rightArm") {
+      parts.push(skin.baseRightArm, skin.baseRightSlimArm, skin.overlayRightArm, skin.overlayRightSlimArm);
+    } else if (part === "leftLeg") {
+      parts.push(skin.baseLeftLeg, skin.overlayLeftLeg);
+    } else if (part === "rightLeg") {
+      parts.push(skin.baseRightLeg, skin.overlayRightLeg);
+    }
+    for (const meshPart of parts) {
+      if (meshPart) meshPart.visible = visible;
     }
   }
 

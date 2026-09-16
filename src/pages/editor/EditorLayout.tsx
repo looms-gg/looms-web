@@ -11,6 +11,7 @@ import {
 } from "react";
 import { Icon } from "../../components/ui/Icon";
 import { PersonSimple, PersonSimpleThrow } from "@phosphor-icons/react";
+import type { Parts } from "../../editor/types";
 import { MiSkiEditingRenderer } from "../../editor/core/MiSkiRenderer";
 import { resetModelTranslation, resetModelRotation } from "../../editor/core/modelTransform";
 import { getRendererState, selectRedoCount, selectUndoCount, useInitRendererState, useRendererStore } from "../../editor/store";
@@ -116,6 +117,25 @@ export default function EditorLayout() {
     ctx.putImageData(material.imageData, 0, 0);
     return canvas;
   }, [renderer]);
+
+  const [guideParts, setGuideParts] = useState<Record<Parts, boolean>>({
+    head: true,
+    body: true,
+    leftArm: true,
+    rightArm: true,
+    leftLeg: true,
+    rightLeg: true,
+  });
+  const toggleGuidePart = useCallback(
+    (part: Parts) => {
+      setGuideParts((prev) => {
+        const next = { ...prev, [part]: !prev[part] };
+        renderer?.setGuidePartVisible(part, next[part]);
+        return next;
+      });
+    },
+    [renderer],
+  );
 
   const getUniqueColors = useCallback((): string[] => {
     return renderer instanceof MiSkiEditingRenderer
@@ -225,7 +245,10 @@ export default function EditorLayout() {
           <div className="pointer-events-none absolute right-3 top-14 flex flex-col items-center gap-2.5">
             <RotationGizmo />
             <div className="pointer-events-auto rounded-[18px] border border-base-content/10 bg-base-200 p-3 shadow-sm">
-              <DesktopPartFilter />
+              <DesktopPartFilter
+                guideVisibility={guideParts}
+                onToggleGuidePart={toggleGuidePart}
+              />
             </div>
           </div>
 
