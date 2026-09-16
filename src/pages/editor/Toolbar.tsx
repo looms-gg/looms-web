@@ -14,7 +14,6 @@ import {
   ArrowsLeftRight,
   Eyedropper,
   Gear,
-  GridFour,
   Hand,
   HandGrabbing,
 } from "@phosphor-icons/react";
