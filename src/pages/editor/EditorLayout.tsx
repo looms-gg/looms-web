@@ -144,7 +144,7 @@ export default function EditorLayout() {
             getUniqueColors={getUniqueColors}
           />
 
-          <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-2">
+          <div className="pointer-events-none absolute right-1.5 top-1.5 flex items-center gap-2">
             <button
               type="button"
               onClick={() => setSaveOpen(true)}
@@ -156,7 +156,7 @@ export default function EditorLayout() {
 
           {/* Top-right HUD: rotation gizmo above the part silhouettes,
               matching the MineSkin dashboard layout. */}
-          <div className="pointer-events-none absolute right-3 top-16 flex flex-col items-center gap-3">
+          <div className="pointer-events-none absolute right-1.5 top-14 flex flex-col items-center gap-2.5">
             <RotationGizmo />
             <div className="pointer-events-auto rounded-2xl border border-base-content/10 bg-base-200/90 p-3 shadow-lg backdrop-blur">
               <DesktopPartFilter />

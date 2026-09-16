@@ -70,7 +70,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div
       onContextMenu={(e) => e.preventDefault()}
-      className="pointer-events-auto absolute left-0 top-0 ml-3 mt-3 select-none rounded-2xl border border-base-content/10 bg-base-200/90 shadow-lg backdrop-blur"
+      className="pointer-events-auto absolute left-0 top-0 ml-1.5 mt-1.5 select-none rounded-2xl border border-base-content/10 bg-base-200/90 shadow-lg backdrop-blur"
     >
       <div className="max-h-[calc(100dvh-120px)] w-full overflow-y-auto">
         <div className="flex flex-col items-center gap-1 p-2">

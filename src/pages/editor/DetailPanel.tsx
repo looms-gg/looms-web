@@ -41,7 +41,7 @@ export default function DetailPanel({
         "pointer-events-auto fixed z-40",
         isTouch
           ? "inset-x-2 bottom-2 max-h-[60dvh]"
-          : "right-3 top-3 bottom-3 w-[330px]",
+          : "right-1.5 top-1.5 bottom-1.5 w-[330px]",
         className,
       )}
       role="dialog"
