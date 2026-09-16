@@ -2,8 +2,16 @@
 // Rebuilt on looms primitives: the MineSkin original used radix-ui dropdown,
 // which is not part of this stack. Same API surface, controlled open state,
 // outside-pointer + Escape dismissal via the shared useDismissable hook.
-import { useRef, useState, type ReactNode } from "react";
-import { useDismissable } from "../../../components/shell/useDismissable";
+// The panel renders through a portal anchored to the trigger's viewport rect,
+// so callers inside overflow containers (the tool rail) are not clipped.
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import { cn } from "../../../editor/core/utils";
 
 export interface DropdownProps {
@@ -81,6 +89,17 @@ export function DropdownLabel({
   );
 }
 
+const EDGE_MARGIN = 8;
+const PANEL_GAP = 6;
+
+interface PanelPlacement {
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+  transform?: string;
+}
+
 export default function Dropdown({
   trigger,
   children,
@@ -91,41 +110,105 @@ export default function Dropdown({
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<PanelPlacement | null>(null);
 
-  useDismissable(open, rootRef, () => setOpen(false));
+  // Outside-pointer + Escape dismissal. The portal panel is not a DOM child
+  // of the root, so the hit test must cover both elements.
+  useEffect(() => {
+    if (!open) return;
+    function handlePointer(e: PointerEvent) {
+      const target = e.target as Node;
+      if (
+        !rootRef.current?.contains(target) &&
+        !(panelRef.current?.contains(target) ?? false)
+      ) {
+        setOpen(false);
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointer);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointer);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [open]);
+
+  function computePlacement(): PanelPlacement {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return {};
+    const p: PanelPlacement = {};
+    if (side === "bottom") {
+      p.top = rect.bottom + PANEL_GAP;
+    } else {
+      p.bottom = window.innerHeight - rect.top + PANEL_GAP;
+    }
+    if (align === "start") {
+      p.left = Math.max(EDGE_MARGIN, rect.left);
+    } else if (align === "end") {
+      p.right = Math.max(EDGE_MARGIN, window.innerWidth - rect.right);
+    } else {
+      p.left = rect.left + rect.width / 2;
+      p.transform = "translateX(-50%)";
+    }
+    return p;
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
+  function toggle() {
+    const next = !open;
+    if (next) setPlacement(computePlacement());
+    setOpen(next);
+  }
 
   return (
     <div ref={rootRef} className="relative inline-block">
       <div
+        ref={triggerRef}
         aria-haspopup="true"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         {trigger}
       </div>
-      {open ? (
-        <div
-          role="menu"
-          className={cn(
-            "absolute z-50 min-w-[200px] rounded-xl border border-base-content/10 bg-base-200 p-1.5 shadow-xl backdrop-blur",
-            size === "sm" && "text-sm",
-            size === "md" && "text-base",
-            size === "lg" && "text-lg",
-            align === "start" && "left-0",
-            align === "center" && "left-1/2 -translate-x-1/2",
-            align === "end" && "right-0",
-            side === "bottom" ? "top-full mt-1.5" : "bottom-full mb-1.5",
-            contentClassName,
-          )}
-          onClick={(e) => {
-            if ((e.target as HTMLElement).closest("[role='menuitem']")) {
-              setOpen(false);
-            }
-          }}
-        >
-          {children}
-        </div>
-      ) : null}
+      {open && placement
+        ? createPortal(
+            <div
+              ref={panelRef}
+              role="menu"
+              style={placement as CSSProperties}
+              className={cn(
+                "fixed z-50 min-w-[200px] rounded-xl border border-base-content/10 bg-base-200 p-1.5 shadow-xl backdrop-blur",
+                size === "sm" && "text-sm",
+                size === "md" && "text-base",
+                size === "lg" && "text-lg",
+                contentClassName,
+              )}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest("[role='menuitem']")) {
+                  setOpen(false);
+                }
+              }}
+            >
+              {children}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
