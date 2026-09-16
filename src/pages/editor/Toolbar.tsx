@@ -111,14 +111,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
               onClick={undo || (() => {})}
               disabled={undoCount === 0 && !!undo}
             >
-              <Icon icon={ArrowsCounterClockwise} size="md" />
+              <Icon icon={ArrowUUpLeft} size="md" />
             </ToolButton>
             <ToolButton
               label={`Redo (${cmdKey}+Shift+Z)`}
               onClick={redo || (() => {})}
               disabled={redoCount === 0 && !!redo}
             >
-              <Icon icon={ArrowsClockwise} size="md" />
+              <Icon icon={ArrowUUpRight} size="md" />
             </ToolButton>
           </div>
 
