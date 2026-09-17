@@ -1,5 +1,21 @@
 import { GROUPS, SLOTS, SLOT_GROUP, type Group, type Piece, type Slot } from "./catalog"
-import type { GarmentRow } from "../lib/supabase"
+
+export type GarmentRow = {
+  id: string
+  user_id: string
+  name: string
+  description: string | null
+  slot: string
+  body_group: string
+  saved_count: number
+  like_count: number
+  added: number
+  covers: string[]
+  texture_url: string
+  is_public: boolean
+  tags: string[]
+  created_at: string
+}
 
 export function isSlot(value: string): value is Slot {
   return (SLOTS as readonly string[]).includes(value)

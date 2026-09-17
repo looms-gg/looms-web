@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
   createContentReport,
+  fetchPendingReportCount,
   fetchReports,
   updateReportStatus,
   adminDeleteContent,
@@ -76,6 +77,20 @@ describe("reports module", () => {
     expect(eqStatusMock).toHaveBeenCalledWith("status", "pending")
     expect(eqTargetMock).toHaveBeenCalledWith("target_type", "look")
     expect(reports).toHaveLength(1)
+  })
+
+  it("counts pending reports with a head-only query", async () => {
+    const eqMock = vi.fn().mockResolvedValue({ count: 7, error: null })
+    const selectMock = vi.fn().mockReturnValue({ eq: eqMock })
+
+    vi.spyOn(supabase, "from").mockReturnValue({
+      select: selectMock,
+    } as unknown as ReturnType<typeof supabase.from>)
+
+    const count = await fetchPendingReportCount()
+    expect(selectMock).toHaveBeenCalledWith("id", { count: "exact", head: true })
+    expect(eqMock).toHaveBeenCalledWith("status", "pending")
+    expect(count).toBe(7)
   })
 
   it("updates report status through the admin RPC", async () => {

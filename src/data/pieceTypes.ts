@@ -7,6 +7,20 @@ export type ClothingSlot = (typeof CLOTHING_SLOTS)[number]
 export const SLOTS = ["eyes", "hair", "hat", "face", "shirt", "set", "coat", "pants", "shoes"] as const
 export type Slot = (typeof SLOTS)[number]
 
+/** Top-to-bottom visual / sorting order for Studio collection categories:
+ * hat, hair, eyes, face, shirt, coat, pants, shoes, set */
+export const COLLECTION_CATEGORY_ORDER: readonly Slot[] = [
+  "hat",
+  "hair",
+  "eyes",
+  "face",
+  "shirt",
+  "coat",
+  "pants",
+  "shoes",
+  "set",
+] as const
+
 /** Bottom → top. A higher piece punches the second (outer) Minecraft layer of pieces below it. */
 // "set" sits just above "shirt": a set is a multi-region garment base (e.g. a
 // bikini), so shirts and coats paint over its torso and pants over its legs.
@@ -54,6 +68,21 @@ export type Piece = {
   userId?: string
   isPublic?: boolean
   offsetY?: number
+}
+
+/**
+ * Muted badge color per slot for tile name slivers (faded to transparent in CSS).
+ */
+export const SLOT_BADGE_COLOR: Record<Slot, string> = {
+  eyes: "#527d7a",
+  hair: "#96604e",
+  hat: "#8a6f4d",
+  face: "#97718c",
+  shirt: "#9a5a4a",
+  set: "#7c5f8a",
+  coat: "#5c7a55",
+  pants: "#4e5f82",
+  shoes: "#6b6f75",
 }
 
 export const SLOT_LABEL: Record<Slot, string> = {

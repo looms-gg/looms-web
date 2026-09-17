@@ -16,7 +16,7 @@ describe("RackGrid", () => {
     const el = host.firstElementChild as HTMLElement
     expect(el.tagName).toBe("DIV")
     expect(el.className.split(/\s+/)).toEqual(
-      expect.arrayContaining(RACK_GRID_CLASS.split(/\s+/)),
+      expect.arrayContaining(RACK_GRID_CLASS().split(/\s+/)),
     )
     expect(el.textContent).toBe("tile")
   })
@@ -27,6 +27,6 @@ describe("RackGrid", () => {
       createRoot(host).render(<RackGrid className="mt-2">x</RackGrid>)
     })
     const el = host.firstElementChild as HTMLElement
-    expect(el.className).toBe(`${RACK_GRID_CLASS} mt-2`)
+    expect(el.className).toBe(`${RACK_GRID_CLASS()} mt-2`)
   })
 })

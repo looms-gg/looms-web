@@ -1,6 +1,6 @@
 import { memo, useState } from "react"
-import { Bookmark, Check, PlusCircle, Trash, TShirt } from "@phosphor-icons/react"
-import { SLOT_LABEL, type Piece } from "../../data/catalog"
+import { Bookmark, Check, Plus, Trash, TShirt } from "@phosphor-icons/react"
+import { SLOT_BADGE_COLOR, SLOT_LABEL, type Piece } from "../../data/catalog"
 import { useAuthOptional } from "../../state/auth"
 import { useCatalog } from "../../state/catalog"
 import { useWardrobe } from "../../state/wardrobe"
@@ -31,9 +31,12 @@ export const PieceTile = memo(function PieceTile({
         title={piece.name}
         maker={piece.maker}
         media={<IsoThumb piece={piece} alt={piece.name} />}
+        badge={{
+          text: SLOT_LABEL[piece.slot],
+          color: SLOT_BADGE_COLOR[piece.slot],
+        }}
         meta={
           <>
-            <span className="truncate">{SLOT_LABEL[piece.slot]}</span>
             <span
               className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold tabular-nums text-base-content/55"
               title={`${piece.savedCount} saved`}
@@ -45,13 +48,13 @@ export const PieceTile = memo(function PieceTile({
         }
       >
         {wearMode ? (
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5">
             <button
               type="button"
-              className={`grid size-8 place-items-center rounded-full transition-colors duration-150 active:scale-[0.96] ${
+              className={`grid size-7 sm:size-8 place-items-center rounded-[6px] border-2 border-tactile-outline transition-all active:translate-y-[1px] ${
                 confirmRemove
-                  ? "bg-error text-white"
-                  : "text-base-content/50 hover:text-error"
+                  ? "bg-error text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
+                  : "bg-base-300 text-base-content/70 hover:bg-error hover:text-white"
               }`}
               title={confirmRemove ? "Confirm remove" : "Remove from wardrobe"}
               aria-label={
@@ -71,11 +74,11 @@ export const PieceTile = memo(function PieceTile({
               }}
               onBlur={() => setConfirmRemove(false)}
             >
-              <Icon icon={confirmRemove ? Check : Trash} size="md" />
+              <Icon icon={confirmRemove ? Check : Trash} size="sm" />
             </button>
             <button
               type="button"
-              className="grid size-8 place-items-center rounded-full text-base-content/70 transition-[color,transform] duration-150 hover:text-primary active:scale-[0.96]"
+              className="grid size-7 sm:size-8 place-items-center rounded-[6px] border-2 border-tactile-outline bg-base-300 text-base-content/80 transition-all hover:bg-primary hover:text-white active:translate-y-[1px]"
               title={`Wear ${piece.name}`}
               aria-label={`Wear ${piece.name}`}
               onClick={(event) => {
@@ -84,16 +87,16 @@ export const PieceTile = memo(function PieceTile({
                 wear(piece.id)
               }}
             >
-              <Icon icon={TShirt} size="md" />
+              <Icon icon={TShirt} size="sm" />
             </button>
           </span>
         ) : owned ? (
           <button
             type="button"
-            className={`grid size-11 place-items-center rounded-full transition-colors duration-150 active:scale-[0.96] ${
+            className={`grid size-7 sm:size-8 place-items-center rounded-[6px] border-2 border-tactile-outline transition-all active:translate-y-[1px] ${
               confirmRemove
-                ? "bg-error text-white"
-                : "bg-primary text-primary-content shadow-sm hover:bg-error hover:text-white"
+                ? "bg-error text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
+                : "bg-primary/25 text-primary hover:bg-error hover:text-white"
             }`}
             title={confirmRemove ? "Confirm remove" : "In wardrobe — click to remove"}
             aria-label={
@@ -117,12 +120,12 @@ export const PieceTile = memo(function PieceTile({
             }}
             onBlur={() => setConfirmRemove(false)}
           >
-            <Icon icon={confirmRemove ? Trash : Check} size="xs" />
+            <Icon icon={confirmRemove ? Trash : Check} size="sm" />
           </button>
         ) : (
           <button
             type="button"
-            className="grid size-11 place-items-center rounded-full text-base-content/70 transition-[color,transform] duration-150 hover:text-primary active:scale-[0.96]"
+            className="grid size-7 sm:size-8 place-items-center rounded-[6px] border-2 border-tactile-outline bg-base-300 text-base-content/80 transition-all hover:bg-primary hover:text-white active:translate-y-[1px] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1.5px_0_rgba(0,0,0,0.3)]"
             title="Add to wardrobe"
             aria-label={`Add ${piece.name} to wardrobe`}
             onClick={(event) => {
@@ -139,7 +142,7 @@ export const PieceTile = memo(function PieceTile({
               })
             }}
           >
-            <Icon icon={PlusCircle} size="lg" />
+            <Icon icon={Plus} size="sm" />
           </button>
         )}
       </TileShell>

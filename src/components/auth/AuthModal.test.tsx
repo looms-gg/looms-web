@@ -4,14 +4,17 @@ import { flushSync } from "react-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { AuthModal, type AuthModalProps } from "./AuthModal"
 import type { AuthContextValue } from "../../state/auth"
+import { makeAuthStub } from "../../test/authStub"
 
-const baseAuth = {
-  signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
-  signUpWithPassword: vi.fn().mockResolvedValue({ error: null }),
-  signInWithOtp: vi.fn().mockResolvedValue({ error: null }),
-  resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
-  signInWithOAuth: vi.fn().mockResolvedValue({ error: null }),
-  completeOnboarding: vi.fn().mockResolvedValue({ error: null }),
+const baseAuth: Record<string, unknown> = {
+  ...makeAuthStub({
+    signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
+    signUpWithPassword: vi.fn().mockResolvedValue({ error: null }),
+    signInWithOtp: vi.fn().mockResolvedValue({ error: null }),
+    resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
+    signInWithOAuth: vi.fn().mockResolvedValue({ error: null }),
+    completeOnboarding: vi.fn().mockResolvedValue({ error: null }),
+  }),
   connections: [],
   unlinkConnection: vi.fn().mockResolvedValue({ error: null }),
   setConnectionFeatured: vi.fn().mockResolvedValue({ error: null }),
@@ -25,7 +28,7 @@ vi.mock("../../state/auth", async (importOriginal) => {
   }
 })
 
-vi.mock("../../lib/turnstile", () => ({ isTurnstileEnabled: () => false }))
+vi.mock("../../lib/auth/turnstile", () => ({ isTurnstileEnabled: () => false }))
 
 function mountModal(overrides?: Partial<AuthModalProps>) {
   const host = document.createElement("div")

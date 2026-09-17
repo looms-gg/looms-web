@@ -7,7 +7,7 @@ import { fixturePieces } from "../../data/catalogSeed"
 import { AuthContext } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
 import { WardrobeProvider, useWardrobe } from "../../state/wardrobe"
-import { supabase } from "../../lib/supabase"
+import { mockSupabaseFrom } from "../../test/supabaseMock"
 import { WardrobePiecesPanel } from "./WardrobePiecesPanel"
 
 vi.mock("../../components/iso/IsoThumb", () => ({
@@ -36,9 +36,6 @@ const signedInAuth = {
   loading: false,
   emailVerified: true,
   pendingEmail: null,
-  emailVerifyOpen: false,
-  openEmailVerify: () => {},
-  dismissEmailVerify: () => {},
   resendConfirmation: async () => ({ error: null }),
   signInWithPassword: async () => ({ error: null }),
   signUpWithPassword: async () => ({ error: null }),
@@ -49,51 +46,17 @@ const signedInAuth = {
 } as never
 
 function mockCloudSession(ownedIds: string[] = []) {
-  vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-    if (table === "wardrobe_items") {
+  const controller = mockSupabaseFrom()
+  controller.on("wardrobe_items", (query) => {
+    if (query.operation === "select") {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: ownedIds.map((garment_id) => ({ garment_id })),
-              error: null,
-            }),
-          }),
-        }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        }),
-      } as never
+        data: ownedIds.map((garment_id) => ({ garment_id })),
+        error: null,
+      }
     }
-    if (table === "garments") {
-      return {
-        select: vi.fn().mockReturnValue({
-          or: vi.fn().mockReturnValue({
-            order: vi.fn().mockRejectedValue(new Error("skip remote catalog")),
-          }),
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockRejectedValue(new Error("skip remote catalog")),
-          }),
-        }),
-      } as never
-    }
-    return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }),
-      insert: vi.fn().mockResolvedValue({ error: null }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }),
-    } as never
+    return { data: null, error: null }
   })
+  controller.on("garments", { data: [], error: { message: "skip remote catalog" } })
 }
 
 function setInputValue(input: HTMLInputElement, value: string) {

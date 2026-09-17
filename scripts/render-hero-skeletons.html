@@ -12,8 +12,8 @@
     try {
       const { DEFAULT_BODY_ID } = await import("/src/data/bodies")
       const { composeSkin } = await import("/src/skin/compose")
-      const { applyHeroCameraPose, frameHeroCamera } = await import("/src/skin/heroPose")
-      const { lightSkinViewer, pauseViewerLoop, crispSkinTexture, skinviewModel } = await import("/src/skin/focus")
+      const { applyHeroCameraPose, frameHeroCamera, HERO_RENDER_SCALE } = await import("/src/skin/heroPose")
+      const { lightSkinViewer, pauseViewerLoop, crispSkinTexture, skinviewModel } = await import("/src/skin/viewer")
       const { compositeIsoThumbFx } = await import("/src/skin/thumbFx")
       const { SkinViewer } = await import("skinview3d")
 
@@ -25,8 +25,8 @@
       for (const pose of ["left", "center", "right"]) {
         const viewer = new SkinViewer({
           canvas: document.createElement("canvas"),
-          width: 280,
-          height: 310,
+          width: 280 * HERO_RENDER_SCALE,
+          height: 310 * HERO_RENDER_SCALE,
           renderPaused: true,
         })
         lightSkinViewer(viewer)
@@ -36,12 +36,24 @@
         applyHeroCameraPose(viewer.playerObject, pose)
         frameHeroCamera(viewer, pose)
         viewer.render()
+        const png = await compositeIsoThumbFx(viewer.canvas, viewer.canvas.width, viewer.canvas.height, {
+          normalize: false,
+          rim: 4 * HERO_RENDER_SCALE,
+          rimAlpha: 0.45,
+          punchX: 8 * HERO_RENDER_SCALE,
+          punchY: 8 * HERO_RENDER_SCALE,
+        })
+        // The JSON payload needs a string: convert a Blob result back.
+        const dataUrl = typeof png === "string"
+          ? png
+          : await new Promise((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result)
+              reader.onerror = () => reject(new Error("blob read failed"))
+              reader.readAsDataURL(png)
+            })
         payload[`hero-pose-${pose}`] = {
-          url: compositeIsoThumbFx(viewer.canvas, viewer.canvas.width, viewer.canvas.height, {
-            normalize: false,
-            rim: 4,
-            rimAlpha: 0.45,
-          }),
+          url: dataUrl,
           wash: "",
         }
         viewer.dispose()

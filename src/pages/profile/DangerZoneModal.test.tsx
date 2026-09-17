@@ -2,7 +2,7 @@ import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { supabase } from "../../lib/supabase"
+import { mockSupabaseRpc } from "../../test/supabaseMock"
 import { DangerZoneModal } from "./DangerZoneModal"
 
 describe("DangerZoneModal", () => {
@@ -48,7 +48,7 @@ describe("DangerZoneModal", () => {
   })
 
   it("calls the RPC and onDone when confirmed", async () => {
-    const rpc = vi.spyOn(supabase, "rpc").mockResolvedValue({ data: null, error: null } as never)
+    const rpc = mockSupabaseRpc()
     const { host, root, onDone } = renderModal()
 
     const input = host.querySelector("input") as HTMLInputElement
@@ -66,16 +66,17 @@ describe("DangerZoneModal", () => {
       await Promise.resolve()
     })
 
-    expect(rpc).toHaveBeenCalledWith("delete_my_account")
+    expect(rpc.rpcSpy).toHaveBeenCalledWith("delete_my_account")
     expect(onDone).toHaveBeenCalled()
     root.unmount()
   })
 
   it("keeps the modal and shows an error when the RPC fails", async () => {
-    vi.spyOn(supabase, "rpc").mockResolvedValue({
+    const rpc = mockSupabaseRpc()
+    rpc.setDefaultHandler({
       data: null,
       error: { message: "delete_my_account: not authenticated" },
-    } as never)
+    })
     const { host, root, onDone } = renderModal()
 
     const input = host.querySelector("input") as HTMLInputElement

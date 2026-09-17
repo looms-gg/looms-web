@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { ExploreRail } from "../components/explore/ExploreRail"
+import { ExploreRail } from "./explore/ExploreRail"
 import { HeadMeta } from "../components/shell/HeadMeta"
 import { useAuth } from "../state/auth"
 import { useCatalog } from "../state/catalog"
@@ -12,7 +12,7 @@ import { usePublicLooksFeed } from "./explore/usePublicLooksFeed"
 import { ExploreHeaderBar } from "./explore/ExploreHeaderBar"
 import { useSlotScrollEffect } from "./explore/useSlotScrollEffect"
 import { useExploreFilters } from "./explore/useExploreFilters"
-import { websiteJsonLd } from "../lib/seo"
+import { websiteJsonLd } from "../lib/content/seo"
 
 function getExploreMeta(mode: "pieces" | "looks") {
   if (mode === "looks") {
@@ -125,8 +125,6 @@ export function ExplorePage() {
         <ExploreRail
           mode={mode}
           onModeChange={setMode}
-          pieceCount={pieces.length}
-          lookCount={looks.length}
           sort={sort}
           slot={slot}
           lookSort={lookSort}

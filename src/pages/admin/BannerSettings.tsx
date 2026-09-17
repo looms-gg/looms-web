@@ -10,6 +10,58 @@ import {
 } from "../../lib/siteBanner"
 import type { BannerStyle, SiteBannerRow } from "../../lib/supabase"
 
+function BannerPreview({
+  style,
+  text,
+  linkUrl,
+  linkLabel,
+  dismissible,
+}: {
+  style: BannerStyle
+  text: string
+  linkUrl: string
+  linkLabel: string
+  dismissible: boolean
+}) {
+  const preview = bannerStyleClasses(style)
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-bold text-base-content/60">
+        Live Preview
+      </label>
+      <div className="overflow-hidden rounded-[18px] border border-base-content/15 bg-base-300/30 p-1">
+        <aside
+          className={`w-full rounded-xl border px-4 py-2.5 transition-colors duration-200 ${preview.wrapper}`}
+        >
+          <div className="flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
+            <div className="flex flex-1 items-center justify-center gap-2 text-center md:gap-3">
+              <span className={`shrink-0 ${preview.iconColor}`}>
+                <Icon icon={preview.icon} size="md" />
+              </span>
+              <span className="leading-snug">{text.trim() || "Your announcement text will show here."}</span>
+              {linkUrl.trim() ? (
+                <span
+                  className={`btn btn-xs rounded-full font-extrabold gap-1 shrink-0 ${preview.btnClass}`}
+                >
+                  {linkLabel.trim() || "Learn more"}
+                  <Icon icon={ArrowRight} size="xs" />
+                </span>
+              ) : null}
+            </div>
+
+            {dismissible ? (
+              <span className="opacity-40">
+                <Icon icon={X} size="sm" />
+              </span>
+            ) : null}
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
 export function BannerSettings() {
   const [banner, setBanner] = useState<SiteBannerRow | null>(null)
   const [isActive, setIsActive] = useState(false)
@@ -78,8 +130,6 @@ export function BannerSettings() {
     }
   }
 
-  const preview = bannerStyleClasses(style)
-
   if (loading) {
     return (
       <div className="py-16 text-center">
@@ -91,44 +141,17 @@ export function BannerSettings() {
   return (
     <div className="max-w-2xl space-y-8">
       {/* Live Preview */}
-      <div className="space-y-2">
-        <label className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
-          Live Preview
-        </label>
-        <div className="overflow-hidden rounded-[18px] border border-base-content/15 bg-base-300/30 p-1 shadow-sm">
-          <aside
-            className={`w-full rounded-xl border px-4 py-2.5 transition-colors duration-200 ${preview.wrapper}`}
-          >
-            <div className="flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
-              <div className="flex flex-1 items-center justify-center gap-2 text-center md:gap-3">
-                <span className={`shrink-0 ${preview.iconColor}`}>
-                  <Icon icon={preview.icon} size="md" />
-                </span>
-                <span className="leading-snug">{text.trim() || "Your announcement text will show here."}</span>
-                {linkUrl.trim() ? (
-                  <span
-                    className={`btn btn-xs rounded-full font-extrabold gap-1 shrink-0 ${preview.btnClass}`}
-                  >
-                    {linkLabel.trim() || "Learn more"}
-                    <Icon icon={ArrowRight} size="xs" />
-                  </span>
-                ) : null}
-              </div>
+      <BannerPreview
+        style={style}
+        text={text}
+        linkUrl={linkUrl}
+        linkLabel={linkLabel}
+        dismissible={dismissible} />
 
-              {dismissible ? (
-                <span className="opacity-40">
-                  <Icon icon={X} size="sm" />
-                </span>
-              ) : null}
-            </div>
-          </aside>
-        </div>
-      </div>
-
-      {/* Editor Form */}
+            {/* Editor Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Active Toggle */}
-        <div className="flex items-center justify-between rounded-[18px] border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/20 hover:bg-base-200/80 shadow-sm">
+        <div className="flex items-center justify-between rounded-[18px] bg-base-200/50 p-4 transition-colors hover:bg-base-200/80">
           <div>
             <h4 className="text-sm font-extrabold text-base-content">Site Announcement Active</h4>
             <p className="text-xs text-base-content/60 text-pretty">
@@ -145,7 +168,7 @@ export function BannerSettings() {
 
         {/* Text Input */}
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs font-extrabold uppercase tracking-wider text-base-content/60">
+          <div className="flex items-center justify-between text-xs font-bold text-base-content/60">
             <label htmlFor="banner-text">Banner Message Text</label>
             <span className="text-xs tabular-nums font-mono text-base-content/40">
               {text.length} / {MAX_LIMITS.SITE_BANNER_TEXT}
@@ -163,7 +186,7 @@ export function BannerSettings() {
 
         {/* Style Selection */}
         <div className="space-y-2">
-          <label className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
+          <label className="text-xs font-bold text-base-content/60">
             Color Style
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -181,9 +204,9 @@ export function BannerSettings() {
                   key={s.id}
                   type="button"
                   onClick={() => setStyle(s.id)}
-                  className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 font-extrabold capitalize transition-colors active:scale-[0.96] transition-transform ${
+                  className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 font-bold capitalize transition-colors ${
                     selected
-                      ? "border-primary bg-primary/15 text-primary shadow-sm"
+                      ? "border-primary bg-primary/15 text-primary"
                       : "border-base-content/10 bg-base-200/50 hover:bg-base-200/80 text-base-content/70"
                   }`}
                 >
@@ -198,7 +221,7 @@ export function BannerSettings() {
         {/* Optional Link & Label */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label htmlFor="banner-link-url" className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
+            <label htmlFor="banner-link-url" className="text-xs font-bold text-base-content/60">
               Link URL (Optional)
             </label>
             <input
@@ -211,7 +234,7 @@ export function BannerSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="banner-link-label" className="text-xs font-extrabold uppercase tracking-wider text-base-content/60">
+            <label htmlFor="banner-link-label" className="text-xs font-bold text-base-content/60">
               Button Label
             </label>
             <input
@@ -226,7 +249,7 @@ export function BannerSettings() {
         </div>
 
         {/* Dismissible Toggle */}
-        <div className="flex items-center justify-between rounded-[18px] border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/20 hover:bg-base-200/80 shadow-sm">
+        <div className="flex items-center justify-between rounded-[18px] bg-base-200/50 p-4 transition-colors hover:bg-base-200/80">
           <div>
             <h4 className="text-sm font-extrabold text-base-content">Dismissible by Users</h4>
             <p className="text-xs text-base-content/60 text-pretty">
@@ -258,7 +281,7 @@ export function BannerSettings() {
           <button
             type="submit"
             disabled={saving}
-            className="btn btn-primary min-h-11 rounded-full font-extrabold px-6 gap-2 shadow-sm transition-colors active:scale-[0.96] transition-transform"
+            className="btn btn-primary min-h-11 px-6 gap-2 font-bold"
           >
             <Icon icon={FloppyDisk} className={saving ? "animate-spin" : ""} />
             {saving ? "Saving..." : "Save Banner"}

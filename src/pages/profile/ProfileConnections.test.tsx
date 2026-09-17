@@ -2,17 +2,8 @@ import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { supabase } from "../../lib/supabase"
+import { mockSupabaseFrom } from "../../test/supabaseMock"
 import { ProfileConnections } from "./ProfileConnections"
-
-function fromChain(result: unknown) {
-  const chain = {
-    select: () => chain,
-    eq: () => chain,
-    then: (resolve: (v: unknown) => void) => Promise.resolve(result).then(resolve),
-  }
-  return chain
-}
 
 function mount(userId: string) {
   const host = document.createElement("div")
@@ -30,9 +21,10 @@ describe("ProfileConnections", () => {
   })
 
   it("renders a Discord badge when a featured row exists", async () => {
-    vi.spyOn(supabase, "from").mockReturnValue(
-      fromChain({ data: [{ provider: "discord" }], error: null }) as never,
-    )
+    mockSupabaseFrom().on("profile_connections", {
+      data: [{ provider: "discord" }],
+      error: null,
+    })
     const host = mount("u1")
     await act(async () => {
       await Promise.resolve()
@@ -42,9 +34,7 @@ describe("ProfileConnections", () => {
   })
 
   it("renders nothing when there are no featured rows", async () => {
-    vi.spyOn(supabase, "from").mockReturnValue(
-      fromChain({ data: [], error: null }) as never,
-    )
+    mockSupabaseFrom().on("profile_connections", { data: [], error: null })
     const host = mount("u1")
     await act(async () => {
       await Promise.resolve()

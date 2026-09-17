@@ -17,9 +17,8 @@ function makeBoard() {
   return {
     name: "Test Look",
     setName: vi.fn(),
-    rack: "all" as const,
-    setRack: vi.fn(),
-    hueOpen: false,
+    collectionSlot: "all" as const,
+    setCollectionSlot: vi.fn(),
     outfit: [],
     owned: [] as string[],
     ownedBySlot: emptyOwnedBySlot(),
@@ -47,6 +46,7 @@ function makeBoard() {
     wear: vi.fn(),
     clearSlot: vi.fn(),
     moveStack: vi.fn(),
+    reorderStack: vi.fn(),
     setModel: vi.fn(),
     setBody: vi.fn(),
     setBodyHue: vi.fn(),
@@ -108,5 +108,34 @@ describe("StudioMobileShell", () => {
     ) as HTMLButtonElement
     flushSync(() => { layersTab.click() })
     expect(host.querySelector(".studio-layers-head")).toBeTruthy()
+  })
+
+  it("shows the save tab and switching to preview calls onSave", () => {
+    const host = document.createElement("div")
+    const board = makeBoard()
+    flushSync(() => {
+      createRoot(host).render(
+        <MemoryRouter>
+          <StudioMobileShell board={board} />
+        </MemoryRouter>
+      )
+    })
+    const saveTab = host.querySelector(
+      "[data-testid='studio-mobile-tab-save']"
+    ) as HTMLButtonElement
+    expect(saveTab).toBeTruthy()
+    expect(saveTab.getAttribute("aria-label")).toBe("Save look")
+
+    // Leave preview, then use the save tab to jump back and save
+    const piecesTab = host.querySelector(
+      "[data-testid='studio-mobile-tab-pieces']"
+    ) as HTMLButtonElement
+    flushSync(() => { piecesTab.click() })
+    expect(host.querySelector(".studio-wardrobe-head")).toBeTruthy()
+
+    flushSync(() => { saveTab.click() })
+    expect(host.querySelector(".studio-wardrobe-head")).toBeNull()
+    expect(host.querySelector("[data-testid='mock-skin-stage']")).toBeTruthy()
+    expect(board.onSave).toHaveBeenCalled()
   })
 })

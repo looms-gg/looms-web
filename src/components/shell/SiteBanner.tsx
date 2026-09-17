@@ -30,7 +30,7 @@ function BannerActionLink({ url, label, btnClass }: BannerActionLinkProps) {
       href={url}
       target={isExternal ? "_blank" : undefined}
       rel={isExternal ? "noopener noreferrer" : undefined}
-      className={`btn btn-xs rounded-full font-extrabold gap-1 shrink-0 ${btnClass}`}
+      className={`btn btn-xs font-extrabold gap-1 shrink-0 ${btnClass}`}
     >
       {label || "Learn more"}
       <Icon icon={ArrowRight} size="xs" />

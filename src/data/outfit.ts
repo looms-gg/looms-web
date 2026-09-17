@@ -114,6 +114,21 @@ export function moveStackId(stack: string[], id: string, steps: number) {
   return next
 }
 
+export function reorderStackId(
+  stack: string[],
+  id: string,
+  targetIndex: number,
+): string[] {
+  const from = stack.indexOf(id)
+  if (from < 0) return stack
+  const clamped = Math.max(0, Math.min(targetIndex, stack.length - 1))
+  if (from === clamped) return stack
+  const next = [...stack]
+  const [item] = next.splice(from, 1)
+  next.splice(clamped, 0, item)
+  return next
+}
+
 export function isSameEquipped(a?: Equipped, b?: Equipped): boolean {
   if (!a && !b) return true
   const safeA = a ?? {}

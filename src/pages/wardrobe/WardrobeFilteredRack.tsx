@@ -49,7 +49,7 @@ export function WardrobeFilteredRack({
           }}
         />
       ) : (
-        <RackGrid>
+        <RackGrid cols={5}>
           {filtered.map((piece, i) => (
             <div
               key={piece.id}

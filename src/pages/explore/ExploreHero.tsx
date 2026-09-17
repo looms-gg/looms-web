@@ -4,7 +4,7 @@ import { PaintBrush } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
 import { DEFAULT_FEATURED_LOOKS, type PublicLook } from "../../state/publicLooks"
 import { HeroPosedFigure } from "../../components/hero/HeroPosedFigure"
-import { DISCORD_URL } from "../../lib/seo"
+import { DISCORD_URL } from "../../lib/content/seo"
 
 export function ExploreHero({
   trendingLooks = DEFAULT_FEATURED_LOOKS,
@@ -28,59 +28,10 @@ export function ExploreHero({
 
   return (
     <section className="plaza-panel hero-wardrobe rounded-[18px]">
-      <div className="hero-dots-container" aria-hidden="true">
-        <svg
-          className="hero-polka-svg"
-          viewBox="0 0 600 320"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <g className="hero-dots-grid">
-            <circle cx="135" cy="30" r="16" />
-            <circle cx="210" cy="30" r="24" />
-            <circle cx="285" cy="30" r="18" />
-            <circle cx="360" cy="30" r="26" />
-            <circle cx="435" cy="30" r="20" />
-            <circle cx="510" cy="30" r="28" />
-            <circle cx="585" cy="30" r="22" />
+      <div className="hero-dots-container" aria-hidden="true" />
 
-            <circle cx="98" cy="95" r="14" />
-            <circle cx="173" cy="95" r="22" />
-            <circle cx="248" cy="95" r="18" />
-            <circle cx="323" cy="95" r="28" />
-            <circle cx="398" cy="95" r="16" />
-            <circle cx="473" cy="95" r="24" />
-            <circle cx="548" cy="95" r="20" />
-
-            <circle cx="135" cy="160" r="20" />
-            <circle cx="210" cy="160" r="16" />
-            <circle cx="285" cy="160" r="26" />
-            <circle cx="360" cy="160" r="18" />
-            <circle cx="435" cy="160" r="28" />
-            <circle cx="510" cy="160" r="22" />
-            <circle cx="585" cy="160" r="16" />
-
-            <circle cx="98" cy="225" r="18" />
-            <circle cx="173" cy="225" r="26" />
-            <circle cx="248" cy="225" r="20" />
-            <circle cx="323" cy="225" r="16" />
-            <circle cx="398" cy="225" r="28" />
-            <circle cx="473" cy="225" r="18" />
-            <circle cx="548" cy="225" r="24" />
-
-            <circle cx="135" cy="290" r="22" />
-            <circle cx="210" cy="290" r="18" />
-            <circle cx="285" cy="290" r="24" />
-            <circle cx="360" cy="290" r="28" />
-            <circle cx="435" cy="290" r="16" />
-            <circle cx="510" cy="290" r="26" />
-            <circle cx="585" cy="290" r="20" />
-          </g>
-        </svg>
-      </div>
-
-      <div className="hero-copy max-w-xl">
-        <h1 className="text-[clamp(2rem,7vw,3.15rem)] font-extrabold leading-[1.1] tracking-tight text-balance">
+      <div className="hero-copy max-w-xl self-center text-left xl:-translate-y-2">
+        <h1 className="text-[clamp(2rem,7vw,3.15rem)] font-black leading-[1.08] tracking-tight text-balance">
           <span className="block">Meet your new</span>
           <span className="block">
             <span style={{ color: "var(--neon-pink)" }}>Minecraft</span>&nbsp;wardrobe.
@@ -90,10 +41,10 @@ export function ExploreHero({
           Stack clothing layers, swap outfits in seconds, and export a vanilla PNG. No pixel art
           required. Free to style and wear.
         </p>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-start gap-3">
           <Link
             to="/studio"
-            className="btn btn-primary rounded-full pl-5 pr-6 font-extrabold shadow-md active:scale-[0.96] transition-transform"
+            className="btn btn-primary pl-5 pr-6 font-extrabold"
           >
             <Icon icon={PaintBrush} size="sm" />
             Open Studio
@@ -102,7 +53,7 @@ export function ExploreHero({
             href={DISCORD_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-ghost rounded-full font-bold border border-base-content/20 hover:border-[#5865F2] hover:text-[#5865F2] active:scale-[0.96] transition-transform gap-2 pl-4 pr-5"
+            className="btn btn-ghost font-bold border border-base-content/20 hover:border-[#5865F2] hover:text-[#5865F2] gap-2 pl-4 pr-5"
             title="Join the looms Discord community"
           >
             <svg className="size-4 shrink-0 fill-current" viewBox="0 0 24 24" aria-hidden="true">
@@ -114,15 +65,15 @@ export function ExploreHero({
       </div>
 
       {/* 3 Friends Posing Together (Intimate Bust Portrait) */}
-      <div className="relative z-10 flex flex-col items-center -mb-7 md:-mb-14">
+      <div className="relative z-10 flex flex-col items-center self-center xl:self-start -translate-y-6 md:-translate-y-8 xl:-translate-y-11 -mb-7 md:-mb-14 xl:mb-0">
         {crownWorthy && yesterdayTop ? (
           <Link
             to={`/look/${yesterdayTop.id}`}
-            className="btn btn-xs sm:btn-sm rounded-full font-bold border border-base-content/15 bg-base-100/80 hover:border-primary gap-2 pl-3 pr-4 mb-2"
+            className="inline-flex items-center gap-2 text-xs font-bold mb-2 hover:opacity-80"
             title="The look the community liked most yesterday"
           >
-            <span className="font-extrabold text-primary">Yesterday's #1</span>
-            <span className="max-w-[140px] truncate opacity-70">{yesterdayTop.name}</span>
+            <span className="font-extrabold text-base-content">Yesterday's #1</span>
+            <span className="max-w-[140px] truncate text-base-content/75">{yesterdayTop.name}</span>
           </Link>
         ) : null}
 
@@ -140,7 +91,9 @@ export function ExploreHero({
                   key={idx}
                   type="button"
                   className={`btn btn-xs rounded-full font-extrabold max-w-[120px] truncate ${
-                    mobileTab === idx ? "btn-primary text-primary-content" : "btn-ghost border border-base-content/15"
+                    mobileTab === idx
+                      ? "btn-ghost border border-base-content/15 bg-base-content/10"
+                      : "btn-ghost border border-base-content/15"
                   }`}
                   onClick={() => setMobileTab(idx as 0 | 1 | 2)}
                 >
@@ -150,7 +103,7 @@ export function ExploreHero({
         </div>
 
         {/* Mobile View: single bust figure */}
-        <div className="w-full max-w-xs md:hidden flex justify-center py-2">
+        <div className="w-full max-w-sm md:hidden flex justify-center py-2">
           <HeroPosedFigure
             look={heroLooks[mobileTab]}
             pose={mobileTab === 0 ? "center" : mobileTab === 1 ? "left" : "right"}
@@ -159,7 +112,7 @@ export function ExploreHero({
         </div>
 
         {/* Desktop / Tablet View: 3 friends posing close together (almost a bust) */}
-        <div className="hero-stage hidden w-full max-w-2xl py-2 md:flex md:items-end md:justify-center">
+        <div className="hero-stage hidden w-full max-w-3xl lg:max-w-4xl py-2 md:flex md:items-end md:justify-center">
           <div className="hero-trio flex items-end">
             {/* Friend 2 (Left, leaning in close, forward over top the middle one) */}
             <HeroPosedFigure
@@ -173,14 +126,14 @@ export function ExploreHero({
               look={heroLooks[0]}
               pose="center"
               loading={loading}
-              className="z-10 scale-105 hover:z-30 -ml-25 sm:-ml-31 lg:-ml-37" />
+              className="z-10 scale-105 hover:z-30 -ml-28 sm:-ml-36 lg:-ml-44" />
 
             {/* Friend 3 (Right, leaning in close) */}
             <HeroPosedFigure
               look={heroLooks[2]}
               pose="right"
               loading={loading}
-              className="z-10 hover:z-30 -ml-19 sm:-ml-25 lg:-ml-29" />
+              className="z-10 hover:z-30 -ml-22 sm:-ml-28 lg:-ml-34" />
           </div>
         </div>
       </div>

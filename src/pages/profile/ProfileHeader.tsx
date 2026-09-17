@@ -11,7 +11,7 @@ import {
   formatLastSeen,
   initialsFromUsername,
   resolveAvatarUrl,
-} from "../../lib/profileDisplay"
+} from "../../lib/content/profileDisplay"
 
 /**
  * Display-only profile header. Editing (avatar, banner, username, bio,

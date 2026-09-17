@@ -1,6 +1,10 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createRoot } from "react-dom/client"
 import { AuthContext, type AuthContextValue } from "./state/auth"
+import {
+  VerifyEmailProvider,
+  useVerifyEmail,
+} from "./state/verifyEmail"
 import { VerifyEmailModal } from "./components/auth/VerifyEmailModal"
 import "./index.css"
 
@@ -17,18 +21,16 @@ const baseUser = {
 const noopAsyncSuccess = async () => ({ error: null })
 const noop = () => {}
 
-const baseAuthContext: Omit<AuthContextValue, "emailVerified" | "dismissEmailVerify"> = {
+const baseAuthContext: Omit<AuthContextValue, "emailVerified"> = {
   user: baseUser,
   session: {} as AuthContextValue["session"],
   profile: { id: "u1", username: "PixelWeaver" } as unknown as AuthContextValue["profile"],
   avatarUrl: null,
-  isAdmin: false,
   loading: false,
   profileError: null,
   dismissProfileError: noop,
   deleteAccount: noopAsyncSuccess,
   pendingEmail: "weaver@looms.dev",
-  emailVerifyOpen: true,
   signInWithPassword: noopAsyncSuccess,
   signUpWithPassword: noopAsyncSuccess,
   signInWithOAuth: noopAsyncSuccess,
@@ -39,29 +41,28 @@ const baseAuthContext: Omit<AuthContextValue, "emailVerified" | "dismissEmailVer
   updateProfile: noopAsyncSuccess,
   refreshProfile: async () => {},
   resendConfirmation: noopAsyncSuccess,
-  openEmailVerify: noop,
 }
 
 function Preview() {
   const [state, setState] = useState<"pending" | "verified">("pending")
-  const [theme, setTheme] = useState<"looms" | "looms-light">(
-    document.documentElement.getAttribute("data-theme") === "looms-light"
-      ? "looms-light"
-      : "looms",
-  )
+  const { show } = useVerifyEmail()
 
-  const setPending = () => setState("pending")
-  const setVerified = () => setState("verified")
-  const toggleTheme = () => {
-    const next = theme === "looms" ? "looms-light" : "looms"
-    setTheme(next)
-    document.documentElement.setAttribute("data-theme", next)
+  useEffect(() => {
+    show()
+  }, [show])
+
+  const setPending = () => {
+    setState("pending")
+    show()
+  }
+  const setVerified = () => {
+    setState("verified")
+    show()
   }
 
   const value: AuthContextValue = {
     ...baseAuthContext,
     emailVerified: state === "verified",
-    dismissEmailVerify: setPending,
   }
 
   return (
@@ -92,13 +93,6 @@ function Preview() {
         >
           Verified
         </button>
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="rounded-full px-3 py-1.5 text-xs font-bold text-white/60 transition-colors hover:text-white"
-        >
-          Theme
-        </button>
       </div>
 
       <AuthContext.Provider value={value}>
@@ -108,4 +102,8 @@ function Preview() {
   )
 }
 
-createRoot(document.getElementById("root")!).render(<Preview />)
+createRoot(document.getElementById("root")!).render(
+  <VerifyEmailProvider>
+    <Preview />
+  </VerifyEmailProvider>,
+)

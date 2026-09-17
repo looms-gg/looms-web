@@ -6,7 +6,7 @@ import {
   nextUsernameChangeAt,
   initialsFromUsername,
   resolveAvatarUrl,
-} from "../../lib/profileDisplay"
+} from "../../lib/content/profileDisplay"
 import { Icon } from "../../components/ui/Icon"
 import { MAX_LIMITS } from "../../lib/sanitize"
 import { useProfileImageUpload } from "./useProfileImageUpload"
@@ -194,7 +194,7 @@ function ProfileFields({
 
 export function ProfileSection() {
   const { profile, updateProfile } = useAuth()
-  const { upload, uploading, errorMsg: uploadError } = useProfileImageUpload()
+  const { upload, uploading } = useProfileImageUpload()
   const bannerInputRef = useRef<HTMLInputElement>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [cropState, setCropState] = useState<{
@@ -234,10 +234,10 @@ export function ProfileSection() {
   async function handleCropConfirm(crop: CropRect) {
     if (!cropState) return
     const { kind, file } = cropState
-    const ok = await upload(kind, file, crop)
+    const result = await upload(kind, file, crop)
     setCropState(null)
-    if (ok) setSavedMsg(kind === "avatar" ? "Avatar updated." : "Banner updated.")
-    else setErrorMsg(uploadError)
+    if (result.ok) setSavedMsg(kind === "avatar" ? "Avatar updated." : "Banner updated.")
+    else setErrorMsg(result.error)
   }
 
   const handleAvatarClick = () => avatarInputRef.current?.click()

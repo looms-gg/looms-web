@@ -5,6 +5,7 @@ import {
   ClockCounterClockwise,
   Flag,
   ShieldCheck,
+  Newspaper,
 } from "@phosphor-icons/react"
 import { Icon, type IconType } from "../components/ui/Icon"
 import { HeadMeta } from "../components/shell/HeadMeta"
@@ -13,8 +14,9 @@ import { ModerationQueue } from "./admin/ModerationQueue"
 import { LatestActivityFeed } from "./admin/LatestActivityFeed"
 import { BannerSettings } from "./admin/BannerSettings"
 import { AdminAuditLog } from "./admin/AdminAuditLog"
+import { BlogManager } from "./admin/BlogManager"
 
-type AdminTab = "moderation" | "activity" | "banner" | "audit"
+type AdminTab = "moderation" | "activity" | "banner" | "blog" | "audit"
 
 export function AdminPage() {
   const { user } = useAuth()
@@ -24,6 +26,7 @@ export function AdminPage() {
     { id: "moderation", label: "Moderation Queue", icon: Flag },
     { id: "activity", label: "Latest Activity", icon: ClockCounterClockwise },
     { id: "banner", label: "Site Banner", icon: Megaphone },
+    { id: "blog", label: "Blog Posts", icon: Newspaper },
     { id: "audit", label: "Audit Log", icon: ClipboardText },
   ]
 
@@ -53,9 +56,9 @@ export function AdminPage() {
         </div>
 
         {user ? (
-          <div className="rounded-xl border border-base-content/10 bg-base-200/50 px-3.5 py-2 text-right shadow-sm">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-base-content/40 block">
-              Signed in Administrator
+          <div className="text-right">
+            <span className="block text-xs font-bold text-base-content/40">
+              Signed in as
             </span>
             <span className="font-mono text-xs font-bold text-base-content/70 tabular-nums">
               {user.id}
@@ -76,9 +79,9 @@ export function AdminPage() {
               aria-selected={active}
               title={tab.label}
               onClick={() => setActiveTab(tab.id)}
-              className={`btn btn-sm btn-pill font-extrabold gap-2 transition-colors active:scale-[0.96] transition-transform ${
+              className={`btn btn-sm btn-pill font-bold gap-2 ${
                 active
-                  ? "btn-primary shadow-sm"
+                  ? "btn-primary"
                   : "btn-ghost text-base-content/70 hover:text-base-content"
               }`}
             >
@@ -94,6 +97,7 @@ export function AdminPage() {
         {activeTab === "moderation" && user ? <ModerationQueue /> : null}
         {activeTab === "activity" ? <LatestActivityFeed /> : null}
         {activeTab === "banner" && user ? <BannerSettings /> : null}
+        {activeTab === "blog" && user ? <BlogManager /> : null}
         {activeTab === "audit" && user ? <AdminAuditLog /> : null}
       </div>
     </div>

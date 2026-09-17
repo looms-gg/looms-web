@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import type { GarmentRow, LookRow } from "../../lib/supabase"
+import type { LookRow } from "../../lib/supabase"
+import type { GarmentRow } from "../../data/garment"
 import { orderLikedTargets } from "./profileApi"
 
 const garment = (id: string): GarmentRow =>

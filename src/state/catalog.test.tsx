@@ -8,8 +8,9 @@ import { WardrobeProvider, useWardrobe } from "./wardrobe"
 import { CatalogProvider, mapGarmentEmbed } from "./catalog"
 import * as authModule from "./auth"
 import type { AuthContextValue } from "./auth"
-import { supabase } from "../lib/supabase"
-import type { GarmentRow } from "../lib/supabase"
+import { makeAuthStub } from "../test/authStub"
+import { mockSupabaseFrom } from "../test/supabaseMock"
+import type { GarmentRow } from "../data/garment"
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -19,30 +20,14 @@ afterEach(() => {
 })
 
 function stubAuth(userId: string | null): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: userId ? ({ id: userId, email: "test@looms.dev" } as AuthContextValue["user"]) : null,
     session: userId ? ({} as AuthContextValue["session"]) : null,
     profile: userId
       ? ({ id: userId, username: "Tester" } as AuthContextValue["profile"])
       : null,
-    avatarUrl: null,
-    loading: false,
     emailVerified: Boolean(userId),
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-  } as unknown as AuthContextValue
+  })
 }
 
 const RACE_LOOK_ROW = {
@@ -85,42 +70,23 @@ function mockSupabaseTables(options: {
   garments: () => { data: unknown; error: unknown }
   wardrobeIds?: string[]
 }) {
-  const ordered = (data: unknown, error: unknown) =>
-    vi.fn().mockResolvedValue({ data, error })
-  return vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-    if (table === "looks") {
+  const controller = mockSupabaseFrom()
+  controller.setDefaultHandler((query) => {
+    throw new Error(`unexpected table ${query.table}`)
+  })
+  controller.on("looks", { data: options.lookRows, error: null })
+  controller.on("wardrobe_items", (query) => {
+    if (query.operation === "select") {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: ordered(options.lookRows, null),
-          }),
-        }),
-      } as never
+        data: (options.wardrobeIds ?? []).map((garment_id) => ({ garment_id })),
+        error: null,
+      }
     }
-    if (table === "wardrobe_items") {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: ordered(
-              (options.wardrobeIds ?? []).map((garment_id) => ({ garment_id })),
-              null,
-            ),
-          }),
-        }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-      } as never
-    }
-    if (table === "garments") {
-      const { data, error } = options.garments()
-      const order = ordered(data, error)
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({ order }),
-          or: vi.fn().mockReturnValue({ order }),
-        }),
-      } as never
-    }
-    return {} as never
+    return { data: null, error: null }
+  })
+  controller.on("garments", () => {
+    const { data, error } = options.garments()
+    return { data, error } as { data: never; error: never }
   })
 }
 

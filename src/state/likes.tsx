@@ -11,9 +11,9 @@ import {
 import { formatErrorMessage } from "../lib/errorFormat"
 import { supabase } from "../lib/supabase"
 import { useAuthOptional } from "./auth"
-import { likeKey, type LikeTargetType } from "./likeKey"
+import { likeKey } from "./likeKey"
+import type { LikeTargetType } from "../data/likeTarget"
 
-export type { LikeTargetType } from "./likeKey"
 export { likeKey, parseLikeKey } from "./likeKey"
 
 type LikesContextValue = {

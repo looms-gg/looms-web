@@ -9,9 +9,10 @@ import {
 } from "react"
 import type { Session, User } from "@supabase/supabase-js"
 import { supabase, type Database, type ProfileRow } from "../lib/supabase"
-import { isEmailVerified, isUnconfirmedAuthError } from "../lib/emailStatus"
+import { isEmailVerified, isUnconfirmedAuthError } from "../lib/auth/emailStatus"
 import { useEmailVerificationPoll } from "./emailVerificationPoll"
-import type { OAuthProvider } from "../lib/oauth"
+import { getEmailVerifyControls } from "./verifyEmail"
+import type { OAuthProvider } from "../lib/auth/oauth"
 import {
   MAX_LIMITS,
   sanitizeMinecraftUsername,
@@ -19,12 +20,33 @@ import {
   sanitizeUrl,
   sanitizeUsername,
 } from "../lib/sanitize"
-import { resolveAvatarUrl } from "../lib/profileDisplay"
+import { resolveAvatarUrl } from "../lib/content/profileDisplay"
 import { formatErrorMessage } from "../lib/errorFormat"
-import { fetchProfileRow, mapProfileRow } from "../lib/mapProfileRow"
+import { fetchProfileRow, mapProfileRow } from "../lib/content/mapProfileRow"
 import { absoluteAppUrl } from "../lib/basePath"
 
 const LAST_SEEN_CLIENT_THROTTLE_MS = 5 * 60 * 1000
+
+export type ProfileUpdates = {
+  username?: string
+  minecraft_username?: string | null
+  bio?: string | null
+  banner_url?: string | null
+  avatar_url?: string | null
+  show_last_seen?: boolean
+  show_likes?: boolean
+  notify_likes?: boolean
+  notify_comments?: boolean
+  notify_replies?: boolean
+}
+
+const BOOLEAN_UPDATE_FIELDS = [
+  "show_last_seen",
+  "show_likes",
+  "notify_likes",
+  "notify_comments",
+  "notify_replies",
+] as const satisfies readonly (keyof ProfileUpdates)[]
 
 /**
  * Normalize an auth/RPC error into the context's `{ error }` shape. The
@@ -40,16 +62,17 @@ export type AuthContextValue = {
   session: Session | null
   profile: ProfileRow | null
   avatarUrl: string | null
-  isAdmin: boolean
   loading: boolean
   profileError: string | null
   dismissProfileError: () => void
   emailVerified: boolean
   pendingEmail: string | null
-  emailVerifyOpen: boolean
-  openEmailVerify: () => void
-  dismissEmailVerify: () => void
   resendConfirmation: () => Promise<{ error: Error | null }>
+  /**
+   * Error is null also when the unconfirmed-confirmation flow opened
+   * (pendingEmail set, watchUnconfirmed started), not just on sign-in
+   * complete. Callers must not treat null as "signed in" unconditionally.
+   */
   signInWithPassword: (credentials: {
     email: string
     password: string
@@ -94,11 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<ProfileRow | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
-  const [emailVerifyOpen, setEmailVerifyOpen] = useState(false)
   const pendingUnlockRef = useRef<{ email: string; password: string } | null>(null)
   const unlockAttemptAtRef = useRef(0)
   const verifiedFlashTimer = useRef<number | null>(null)
@@ -117,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const watchUnconfirmed = useCallback((email: string, password: string) => {
     pendingUnlockRef.current = { email, password }
     setPendingEmail(email)
-    setEmailVerifyOpen(true)
+    getEmailVerifyControls().setOpen(true)
   }, [])
 
   const fetchProfile = useCallback(async (userId: string) => {
@@ -193,33 +214,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("visibilitychange", onVisibility)
   }, [session?.user, touchLastSeen])
 
-  // Server-derived admin flag: RLS lets admins see admin_users, so a probe
-  // for the caller's own id resolves to a row only for admins. The client
-  // copy is a convenience for UI (menu entries, guards); every privileged
-  // action is still gated server-side.
-  useEffect(() => {
-    if (!user) {
-      setIsAdmin(false)
-      return
-    }
-    let cancelled = false
-    void (async () => {
-      try {
-        const { data } = await supabase
-          .from("admin_users")
-          .select("user_id")
-          .eq("user_id", user.id)
-          .maybeSingle()
-        if (!cancelled) setIsAdmin(Boolean(data))
-      } catch {
-        if (!cancelled) setIsAdmin(false)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [user])
-
   useEffect(() => {
     if (!user) {
       openedForUserId.current = null
@@ -230,20 +224,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPendingEmail(user.email ?? null)
       if (openedForUserId.current !== user.id) {
         openedForUserId.current = user.id
-        setEmailVerifyOpen(true)
+        getEmailVerifyControls().setOpen(true)
       }
       return
     }
 
     pendingUnlockRef.current = null
     setPendingEmail(null)
-    if (!emailVerifyOpen) return
+    if (!getEmailVerifyControls().getOpen()) return
     if (verifiedFlashTimer.current) window.clearTimeout(verifiedFlashTimer.current)
     verifiedFlashTimer.current = window.setTimeout(() => {
-      setEmailVerifyOpen(false)
+      getEmailVerifyControls().setOpen(false)
       verifiedFlashTimer.current = null
     }, 1600)
-  }, [emailVerifyOpen, user])
+  }, [user])
 
   useEmailVerificationPoll({
     user,
@@ -380,17 +374,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut()
+  const clearLocalAuthState = useCallback(() => {
     setUser(null)
     setSession(null)
     setProfile(null)
     setPendingEmail(null)
-    setEmailVerifyOpen(false)
+    getEmailVerifyControls().setOpen(false)
     pendingUnlockRef.current = null
     openedForUserId.current = null
-    return { error: error ? new Error(error.message) : null }
   }, [])
+
+  const signOut = useCallback(async () => {
+    const { error } = await supabase.auth.signOut()
+    clearLocalAuthState()
+    return { error: error ? new Error(error.message) : null }
+  }, [clearLocalAuthState])
 
   // Self-serve GDPR deletion: the RPC removes the profile row (cascades clear
   // all user content); sign-out runs unconditionally afterwards so local state
@@ -398,43 +396,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAccount = useCallback(async () => {
     const { error: rpcError } = await supabase.rpc("delete_my_account")
     const { error: signOutError } = await supabase.auth.signOut()
-    setUser(null)
-    setSession(null)
-    setProfile(null)
-    setPendingEmail(null)
-    setEmailVerifyOpen(false)
-    pendingUnlockRef.current = null
-    openedForUserId.current = null
+    clearLocalAuthState()
     if (rpcError) return { error: toAuthError(rpcError) }
     return { error: signOutError ? new Error(signOutError.message) : null }
-  }, [])
+  }, [clearLocalAuthState])
 
   const updateProfile = useCallback(
-    async (updates: {
-      username?: string
-      minecraft_username?: string | null
-      bio?: string | null
-      banner_url?: string | null
-      avatar_url?: string | null
-      show_last_seen?: boolean
-      show_likes?: boolean
-      notify_likes?: boolean
-      notify_comments?: boolean
-      notify_replies?: boolean
-    }) => {
+    async (updates: ProfileUpdates) => {
       if (!user) return { error: new Error("Not authenticated") }
-      const cleanUpdates: {
-        username?: string
-        minecraft_username?: string | null
-        bio?: string | null
-        banner_url?: string | null
-        avatar_url?: string | null
-      show_last_seen?: boolean
-      show_likes?: boolean
-      notify_likes?: boolean
-      notify_comments?: boolean
-      notify_replies?: boolean
-    } = {}
+      const cleanUpdates: ProfileUpdates = {}
 
       if (updates.username !== undefined) {
         const cleanUsername = sanitizeUsername(updates.username)
@@ -463,20 +433,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ? sanitizeUrl(updates.avatar_url)
           : null
       }
-      if (updates.show_last_seen !== undefined) {
-        cleanUpdates.show_last_seen = updates.show_last_seen
-      }
-      if (updates.show_likes !== undefined) {
-        cleanUpdates.show_likes = updates.show_likes
-      }
-      if (updates.notify_likes !== undefined) {
-        cleanUpdates.notify_likes = updates.notify_likes
-      }
-      if (updates.notify_comments !== undefined) {
-        cleanUpdates.notify_comments = updates.notify_comments
-      }
-      if (updates.notify_replies !== undefined) {
-        cleanUpdates.notify_replies = updates.notify_replies
+      for (const field of BOOLEAN_UPDATE_FIELDS) {
+        if (updates[field] !== undefined) {
+          cleanUpdates[field] = updates[field]
+        }
       }
 
       const { error } = await supabase
@@ -508,14 +468,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error ? new Error(error.message) : null }
   }, [pendingEmail, user?.email])
 
-  const openEmailVerify = useCallback(() => {
-    setEmailVerifyOpen(true)
-  }, [])
-
-  const dismissEmailVerify = useCallback(() => {
-    setEmailVerifyOpen(false)
-  }, [])
-
   const dismissProfileError = useCallback(() => {
     setProfileError(null)
   }, [])
@@ -527,15 +479,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     avatarUrl,
-    isAdmin,
     loading,
     profileError,
     dismissProfileError,
     emailVerified,
     pendingEmail,
-    emailVerifyOpen,
-    openEmailVerify,
-    dismissEmailVerify,
     resendConfirmation,
     signInWithPassword,
     signUpWithPassword,

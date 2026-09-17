@@ -14,11 +14,11 @@ import {
   upsertPiece,
   type Piece,
 } from "../data/catalog"
-import { garmentToPiece } from "../data/garment"
-import { supabase, type GarmentRow } from "../lib/supabase"
+import { garmentToPiece, type GarmentRow } from "../data/garment"
+import { supabase } from "../lib/supabase"
 import { useAuthOptional } from "./auth"
 import { formatErrorMessage } from "../lib/errorFormat"
-import { coerceProfileEmbed } from "../lib/profileEmbed"
+import { coerceProfileEmbed } from "../lib/content/profileEmbed"
 
 type GarmentEmbedRow = GarmentRow & {
   profiles: unknown
@@ -48,23 +48,7 @@ export async function fetchGarments(userId?: string | null): Promise<Piece[]> {
   if (error) throw error
 
   return (data ?? []).map((row) =>
-    mapGarmentEmbed({
-      id: row.id,
-      user_id: row.user_id,
-      name: row.name,
-      description: row.description,
-      slot: row.slot,
-      body_group: row.body_group,
-      saved_count: row.saved_count,
-      like_count: row.like_count,
-      added: row.added,
-      covers: row.covers,
-      texture_url: row.texture_url,
-      is_public: row.is_public,
-      tags: row.tags,
-      created_at: row.created_at,
-      profiles: row.profiles,
-    }),
+    mapGarmentEmbed(row as GarmentEmbedRow),
   )
 }
 

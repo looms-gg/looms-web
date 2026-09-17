@@ -5,7 +5,7 @@ import { type Look } from "./persist"
 import { clampHue } from "../skin/hue"
 import { asLookDescription, asLookVisibility } from "./lookMeta"
 import { equippedFromStack } from "../data/outfit"
-import { coerceProfileEmbed } from "../lib/profileEmbed"
+import { coerceProfileEmbed } from "../lib/content/profileEmbed"
 
 export type LookSort = "Trending" | "Popular" | "Newest"
 export type LookModelFilter = "all" | "classic" | "slim"
@@ -30,7 +30,7 @@ export type PublicLook = {
   featured?: boolean
 }
 
-export function mapLookEmbedRow(row: {
+export type LookEmbedRow = {
   id: string
   user_id: string
   name: string
@@ -47,7 +47,9 @@ export function mapLookEmbedRow(row: {
   recent_like_count?: number
   username?: string
   avatar_url?: string | null
-}): PublicLook {
+}
+
+export function mapLookEmbedRow(row: LookEmbedRow): PublicLook {
   let maker = "maker"
   let makerAvatarUrl: string | null = null
 
@@ -203,7 +205,7 @@ export async function fetchPublicLooksFeed(): Promise<PublicLook[]> {
 
     if (error) throw error
     return ((data as unknown[]) ?? []).map((row) =>
-      mapLookEmbedRow(row as Parameters<typeof mapLookEmbedRow>[0]),
+      mapLookEmbedRow(row as LookEmbedRow),
     )
   } catch {
     return []
@@ -226,7 +228,7 @@ export async function fetchTrendingLooksPastDay(limit = 3): Promise<PublicLook[]
 
     if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
       const trending = rpcData.map((row) =>
-        mapLookEmbedRow(row as Parameters<typeof mapLookEmbedRow>[0]),
+        mapLookEmbedRow(row as LookEmbedRow),
       )
       if (trending.length >= limit) return trending.slice(0, limit)
       // Fill remaining with all-time public looks
@@ -273,7 +275,7 @@ export async function fetchYesterdayTopLook(): Promise<PublicLook | null> {
     if (error) return null
     const rows = Array.isArray(data) ? data : []
     if (rows.length === 0) return null
-    return mapLookEmbedRow(rows[0] as Parameters<typeof mapLookEmbedRow>[0])
+    return mapLookEmbedRow(rows[0] as LookEmbedRow)
   } catch {
     return null
   }
@@ -295,7 +297,7 @@ export async function fetchLookById(id: string): Promise<PublicLook | null> {
       .maybeSingle()
 
     if (error || !data) return null
-    return mapLookEmbedRow(data as Parameters<typeof mapLookEmbedRow>[0])
+    return mapLookEmbedRow(data as LookEmbedRow)
   } catch {
     return null
   }

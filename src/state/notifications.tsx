@@ -248,15 +248,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const clearAll = useCallback(async () => {
     if (!userId) return
     const prevRows = notifications
+    const prevUnread = unreadCount
     setNotifications([])
     setUnreadCount(0)
     const { error } = await supabase.from("notifications").delete().eq("user_id", userId)
     if (error) {
       setNotifications(prevRows)
-      setUnreadCount(prevRows.filter((r) => !r.read).length)
+      setUnreadCount(prevUnread)
       setLoadError(formatErrorMessage(error))
     }
-  }, [userId, notifications])
+  }, [userId, notifications, unreadCount])
 
   const value = useMemo(
     () => ({

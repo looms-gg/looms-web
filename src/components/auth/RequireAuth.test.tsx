@@ -3,37 +3,19 @@ import { flushSync } from "react-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import * as authModule from "../../state/auth"
 import type { AuthContextValue } from "../../state/auth"
+import { makeAuthStub } from "../../test/authStub"
 import { RequireAuth } from "./RequireAuth"
 
 function stubAuth(userId: string | null, loading = false): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: userId ? ({ id: userId, email: "test@looms.dev" } as AuthContextValue["user"]) : null,
     session: userId ? ({} as AuthContextValue["session"]) : null,
     profile: userId
       ? ({ id: userId, username: "Tester" } as AuthContextValue["profile"])
       : null,
-    avatarUrl: null,
-    isAdmin: false,
     loading,
     emailVerified: Boolean(userId),
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 function renderGate(ui: React.ReactNode, auth: AuthContextValue) {

@@ -50,4 +50,43 @@ describe("PieceSheet", () => {
     })
     expect(onEdit).toHaveBeenCalled()
   })
+
+  it("renders a paint affordance for creators that opens the editor", () => {
+    const onEditInPainter = vi.fn()
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <AuthProvider>
+          <LikesProvider>
+            <MemoryRouter>
+              <WardrobeProvider>
+                <PieceSheet
+                  piece={pieces[0]}
+                  owned
+                  wearing={false}
+                  isCreator
+                  onEdit={() => {}}
+                  onEditInPainter={onEditInPainter}
+                  onLikeCountChange={() => {}}
+                  onWear={() => {}}
+                  onAddToWardrobe={() => {}}
+                  onAddAndWear={() => {}}
+                  onRemoveFromWardrobe={() => {}}
+                />
+              </WardrobeProvider>
+            </MemoryRouter>
+          </LikesProvider>
+        </AuthProvider>,
+      )
+    })
+
+    const paint = host.querySelector(
+      "button[aria-label='Paint this piece']",
+    ) as HTMLButtonElement
+    expect(paint).not.toBeNull()
+    flushSync(() => {
+      paint.click()
+    })
+    expect(onEditInPainter).toHaveBeenCalled()
+  })
 })

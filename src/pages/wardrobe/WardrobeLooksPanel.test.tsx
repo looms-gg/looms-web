@@ -115,19 +115,11 @@ describe("WardrobeLooksPanel", () => {
     expect(host.textContent).not.toMatch(/No looks match/)
   })
 
-  it("opens the look inspector from a tile", () => {
+  it("links look tiles to the look page", () => {
     const host = renderLooks([rainDay])
 
-    const tile = [...host.querySelectorAll("button")].find(
-      (b) => b.getAttribute("aria-pressed") != null && b.textContent?.includes("Rain day"),
-    ) as HTMLButtonElement
-    expect(tile).toBeTruthy()
-
-    flushSync(() => {
-      tile.click()
-    })
-
-    expect(host.querySelector('[role="dialog"]')).not.toBeNull()
-    expect(host.querySelector("h2")?.textContent).toBe("Rain day")
+    const link = host.querySelector('a[href^="/look/"]')
+    expect(link).not.toBeNull()
+    expect(host.querySelector('[role="dialog"]')).toBeNull()
   })
 })

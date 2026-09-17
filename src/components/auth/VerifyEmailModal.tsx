@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { CheckCircle, CircleNotch, EnvelopeSimple } from "@phosphor-icons/react"
 import { useAuth } from "../../state/auth"
+import { useVerifyEmail } from "../../state/verifyEmail"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { Icon } from "../ui/Icon"
 import { CloseButton } from "../ui/CloseButton"
@@ -21,10 +22,12 @@ export function VerifyEmailModal() {
     user,
     pendingEmail,
     emailVerified,
-    emailVerifyOpen,
     resendConfirmation,
-    dismissEmailVerify,
   } = useAuth()
+  const {
+    open: emailVerifyOpen,
+    dismiss: dismissEmailVerify,
+  } = useVerifyEmail()
   const [resendWait, setResendWait] = useState(0)
   const [resendError, setResendError] = useState<string | null>(null)
   const [sending, setSending] = useState(false)

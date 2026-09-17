@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ResetPasswordPage } from "./ResetPasswordPage"
 import * as authModule from "../../state/auth"
+import { makeAuthStub } from "../../test/authStub"
 import { supabase } from "../../lib/supabase"
 
 let root: ReturnType<typeof createRoot> | null = null
@@ -25,33 +26,7 @@ function mountPage() {
 }
 
 function mockAuth(partial: Partial<authModule.AuthContextValue>) {
-  return vi.spyOn(authModule, "useAuthOptional").mockReturnValue({
-    user: null,
-    session: null,
-    profile: null,
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    emailVerified: false,
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    closeEmailVerify: vi.fn(),
-    resendEmailVerification: vi.fn(),
-    checkEmailVerification: vi.fn(),
-    loginWithDiscord: vi.fn(),
-    loginWithGoogle: vi.fn(),
-    loginWithPassword: vi.fn(),
-    signupWithPassword: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    updatePassword: vi.fn(),
-    signOut: vi.fn(),
-    refreshProfile: vi.fn(),
-    updateProfile: vi.fn(),
-    ...partial,
-  } as unknown as authModule.AuthContextValue)
+  return vi.spyOn(authModule, "useAuthOptional").mockReturnValue(makeAuthStub(partial))
 }
 
 describe("ResetPasswordPage", () => {

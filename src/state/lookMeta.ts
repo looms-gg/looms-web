@@ -5,8 +5,6 @@ import type { LookRow } from "../lib/supabase"
 import { type Look, type LookVisibility } from "./persist"
 import { clampHue } from "../skin/hue"
 
-export type { LookVisibility }
-
 export type LookMetaPatch = {
   name?: string
   description?: string

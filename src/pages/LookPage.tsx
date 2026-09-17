@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react"
+import { useState, type CSSProperties } from "react"
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import { useWardrobe } from "../state/wardrobe"
 import { publicLookToLook, type PublicLook } from "../state/publicLooks"
@@ -10,7 +10,7 @@ import {
   lookSeoDescription,
   lookSeoTitle,
   SITE_ORIGIN,
-} from "../lib/seo"
+} from "../lib/content/seo"
 import { tryDownloadSkinFile } from "../skin/compose"
 import { CommentsSection } from "../components/comments/CommentsSection"
 import { AuthModal } from "../components/auth/AuthModal"
@@ -21,35 +21,10 @@ import { ButtonLink } from "../components/ui/Button"
 import { LookSheet } from "./look/LookSheet"
 import { useLook } from "./look/useLook"
 import { PieceSkeleton } from "./piece/PieceSkeleton"
+import { resolveBackLink, useScrollToTop } from "./detailShared"
 
 function revealStyle(i: number): CSSProperties {
   return { "--piece-i": i } as CSSProperties
-}
-
-function resolveBackLink(locationState: unknown): { to: string; label: string } {
-  const stateFrom = (locationState as { from?: string } | null)?.from
-  const to = stateFrom || "/"
-  if (stateFrom?.startsWith("/wardrobe")) {
-    return { to, label: "← Wardrobe" }
-  }
-  if (stateFrom?.startsWith("/u/")) {
-    return { to, label: "← Profile" }
-  }
-  return { to, label: "← Explore" }
-}
-
-function useScrollToTop(key: string, id: string | undefined) {
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        window.scrollTo({ top: 0, left: 0, behavior: "instant" })
-      } catch {
-        // ignore
-      }
-      if (document.documentElement) document.documentElement.scrollTop = 0
-      if (document.body) document.body.scrollTop = 0
-    }
-  }, [id, key])
 }
 
 function LookPageMeta({ look }: { look: PublicLook }) {
@@ -139,11 +114,11 @@ export function LookPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <LookPageMeta look={look} />
       <Link
         to={backTo}
-        className="piece-reveal link inline-flex min-h-11 items-center text-sm font-bold text-primary no-underline"
+        className="piece-reveal link inline-flex min-h-11 items-center gap-0.5 text-sm font-bold text-base-content/70 no-underline transition-colors duration-150 hover:text-primary"
         style={revealStyle(0)}
       >
         {backLabel}

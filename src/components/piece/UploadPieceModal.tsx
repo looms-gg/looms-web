@@ -1,4 +1,4 @@
-import { useState, useRef, type ChangeEvent, type FormEvent } from "react"
+import { useEffect, useState, useRef, type ChangeEvent, type FormEvent } from "react"
 import {
   CloudArrowUp,
   Warning,
@@ -13,14 +13,13 @@ import { groupsFromAtlas } from "../../skin/compose"
 import {
   MAX_LIMITS,
   sanitizeText,
-  sanitizeUsername,
-  validateFileSize,
 } from "../../lib/sanitize"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { validatePngTexture } from "../../lib/textureValidation"
-import { publishGarmentTexture } from "./publishGarment"
+import { publishGarmentTexture } from "../../lib/piecePublish/publishGarment"
 import { Icon } from "../ui/Icon"
 import { CloseButton } from "../ui/CloseButton"
+import { Dropdown } from "../ui/Dropdown"
 import { ModalOverlay } from "../ui/ModalOverlay"
 
 export interface UploadPieceModalProps {
@@ -46,6 +45,12 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
+
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     setErrorMsg(null)
     const selectedFile = event.target.files?.[0]
@@ -59,7 +64,10 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
     const { objectUrl, img } = result
 
     setFile(selectedFile)
-    setPreviewUrl(objectUrl)
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return objectUrl
+    })
     setPainted([])
     const stamp = document.createElement("canvas")
     stamp.width = 64
@@ -90,12 +98,6 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
       return
     }
 
-    const sizeCheck = validateFileSize(file, MAX_LIMITS.FILE_SIZE_BYTES)
-    if (!sizeCheck.valid) {
-      setErrorMsg(sizeCheck.error ?? "File size too large.")
-      return
-    }
-
     setLoading(true)
     setErrorMsg(null)
 
@@ -114,12 +116,10 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
       })
 
       if ("error" in result) {
-        throw new Error(result.error)
+        throw result.error
       }
 
-      const maker = profile?.username ? sanitizeUsername(profile.username) : "you"
-
-      upsert(garmentToPiece(result.row, maker))
+      upsert(garmentToPiece(result.row, result.maker))
       addToWardrobe(result.pieceId)
       notify(`Uploaded "${pieceName}" to your wardrobe!`)
       onClose()
@@ -221,32 +221,32 @@ export function UploadPieceModal({ isOpen, onClose }: UploadPieceModalProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-base-content/80 mb-1">Slot</label>
-              <select
-                name="slot"
+              <Dropdown
+                className="w-full"
+                ariaLabel="Slot"
                 value={slot}
-                onChange={(e) => setSlot(e.target.value as Slot)}
-                className="select select-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary capitalize"
-              >
-                {CLOTHING_SLOTS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setSlot(value)}
+                options={CLOTHING_SLOTS.map((s) => ({ id: s, label: s }))}
+                itemClassName={(_option) => "capitalize"}
+                menuClassName="w-full"
+              />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-base-content/80 mb-1">
                 Visibility
               </label>
-              <select
+              <Dropdown
+                className="w-full"
+                ariaLabel="Visibility"
                 value={isPublic ? "public" : "private"}
-                onChange={(e) => setIsPublic(e.target.value === "public")}
-                className="select select-bordered w-full rounded-xl bg-base-100 text-sm focus:border-primary"
-              >
-                <option value="public">Public (Community)</option>
-                <option value="private">Private (Only You)</option>
-              </select>
+                onChange={(value) => setIsPublic(value === "public")}
+                options={[
+                  { id: "public", label: "Public (Community)" },
+                  { id: "private", label: "Private (Only You)" },
+                ]}
+                menuClassName="w-full"
+              />
             </div>
           </div>
 

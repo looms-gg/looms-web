@@ -6,12 +6,18 @@ import {
   CUBOID_FACES,
   HEAD,
   innerOuterPairs,
+  type Cuboid,
 } from "./uv"
 import { makeSkinCanvas } from "./paint"
 import { ensureModel, type SkinModel } from "./convert"
+import { runOnceInflight } from "./inflight"
+
+/** Groups a full-figure render must cover, derived from the catalog GROUPS. */
+export const FULL_GROUPS: Group[] = [...GROUPS]
 
 const ATLAS = 64
-const decoded = new Map<string, HTMLImageElement | Promise<HTMLImageElement>>()
+const decoded = new Map<string, HTMLImageElement>()
+const decoding = new Map<string, Promise<HTMLImageElement>>()
 
 /**
  * Cache of fully composed skin canvases, keyed by outfit + body + hue + model.
@@ -33,22 +39,23 @@ function composedKey(
 }
 
 function loadSkinImage(src: string) {
-  const hit = decoded.get(src)
-  if (hit instanceof HTMLImageElement) return Promise.resolve(hit)
-  if (hit) return hit
-  const pending = new Promise<HTMLImageElement>((resolve, reject) => {
-    const img = new Image()
-    img.decoding = "async"
-    if (/^https?:/i.test(src)) img.crossOrigin = "anonymous"
-    img.onload = () => {
-      decoded.set(src, img)
-      resolve(img)
-    }
-    img.onerror = () => reject(new Error(`Could not load skin ${src}`))
-    img.src = src
-  })
-  decoded.set(src, pending)
-  return pending
+  return runOnceInflight<HTMLImageElement>(
+    decoded,
+    decoding,
+    src,
+    () =>
+      new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image()
+        img.decoding = "async"
+        if (/^https?:/i.test(src)) img.crossOrigin = "anonymous"
+        img.onload = () => {
+          decoded.set(src, img)
+          resolve(img)
+        }
+        img.onerror = () => reject(new Error(`Could not load skin ${src}`))
+        img.src = src
+      }),
+  )
 }
 
 function blitOpaque(
@@ -174,17 +181,23 @@ export function shiftEyeImageData(pixels: Uint8ClampedArray, offsetY: number) {
   shiftFaceRegion(pixels, 40, 47, 8, 15, offsetY)
 }
 
-async function rasterPiece(piece: Piece, model: SkinModel) {
+/** Blit a piece's raw skin onto a fresh 64x64 canvas, eye offset applied. */
+async function rasterPieceBase(piece: Piece): Promise<HTMLCanvasElement> {
   const { canvas, ctx } = makeSkinCanvas()
   blitOpaque(ctx, await loadSkinImage(piece.skin))
-  const normalized = ensureModel(canvas, model)
+  if (piece.offsetY && piece.slot === "eyes") {
+    const imgData = ctx.getImageData(0, 0, ATLAS, ATLAS)
+    shiftEyeImageData(imgData.data, piece.offsetY)
+    ctx.putImageData(imgData, 0, 0)
+  }
+  return canvas
+}
+
+async function rasterPiece(piece: Piece, model: SkinModel) {
+  const normalized = ensureModel(await rasterPieceBase(piece), model)
   const normCtx = normalized.getContext("2d")
   if (!normCtx) throw new Error("2d canvas unavailable")
-  const imageData = normCtx.getImageData(0, 0, ATLAS, ATLAS)
-  if (piece.offsetY && piece.slot === "eyes") {
-    shiftEyeImageData(imageData.data, piece.offsetY)
-  }
-  return imageData
+  return normCtx.getImageData(0, 0, ATLAS, ATLAS)
 }
 
 export async function composeSkin(
@@ -264,14 +277,7 @@ export async function tryDownloadSkinFile(
 }
 
 export async function composePieceSkin(piece: Piece) {
-  const { canvas, ctx } = makeSkinCanvas()
-  blitOpaque(ctx, await loadSkinImage(piece.skin))
-  if (piece.offsetY && piece.slot === "eyes") {
-    const imgData = ctx.getImageData(0, 0, ATLAS, ATLAS)
-    shiftEyeImageData(imgData.data, piece.offsetY)
-    ctx.putImageData(imgData, 0, 0)
-  }
-  return canvas
+  return rasterPieceBase(piece)
 }
 
 function atlasOpaque(data: Uint8ClampedArray, x: number, y: number) {
@@ -327,28 +333,59 @@ export function partsFromAtlas(canvas: HTMLCanvasElement): SkinPart[] {
   })
 }
 
+/** Which body rack each rendered mesh paints. */
+export const PART_GROUP: Record<SkinPart, Group> = {
+  head: "head",
+  body: "torso",
+  rightArm: "torso",
+  leftArm: "torso",
+  rightLeg: "legs",
+  leftLeg: "legs",
+}
+
 /** Which body racks have paint — long hair often lands on torso overlay, not just the head. */
 export function groupsFromAtlas(canvas: HTMLCanvasElement): Group[] {
   const ctx = canvas.getContext("2d")
   if (!ctx) return ["head"]
   const { data } = ctx.getImageData(0, 0, ATLAS, ATLAS)
-  const hit = {
-    head:
-      atlasRegionPainted(data, 0, 0, 64, 16),
-    torso:
-      atlasRegionPainted(data, 16, 16, 40, 32) ||
-      atlasRegionPainted(data, 40, 16, 56, 32) ||
-      atlasRegionPainted(data, 16, 32, 40, 48) ||
-      atlasRegionPainted(data, 40, 32, 56, 48) ||
-      atlasRegionPainted(data, 32, 48, 64, 64),
-    legs:
-      atlasRegionPainted(data, 0, 16, 16, 32) ||
-      atlasRegionPainted(data, 0, 32, 16, 48) ||
-      atlasRegionPainted(data, 0, 48, 16, 64) ||
-      atlasRegionPainted(data, 16, 48, 32, 64),
+  const hit = new Set<Group>()
+  for (const part of SKIN_PARTS) {
+    const [x0, y0, x1, y1] = PART_REGIONS[part]
+    if (atlasRegionPainted(data, x0, y0, x1, y1)) hit.add(PART_GROUP[part])
   }
-  const groups = GROUPS.filter((group) => hit[group])
+  const groups = GROUPS.filter((group) => hit.has(group))
   return groups.length ? groups : ["head"]
+}
+
+function cuboidPainted(data: Uint8ClampedArray, cuboid: Cuboid): boolean {
+  for (const face of CUBOID_FACES) {
+    const f = cuboid[face]
+    if (atlasRegionPainted(data, f.x, f.y, f.x + f.w, f.y + f.h)) return true
+  }
+  return false
+}
+
+/**
+ * Which limbs' outer (second) skin layer regions hold paint, keyed like
+ * LimbId. Editor sessions default each limb's second layer on only when the
+ * texture actually paints it.
+ */
+export function outerPartsPainted(canvas: HTMLCanvasElement): Record<SkinPart, boolean> {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })
+  if (!ctx) {
+    return { head: false, body: false, rightArm: false, leftArm: false, rightLeg: false, leftLeg: false }
+  }
+  const { data } = ctx.getImageData(0, 0, ATLAS, ATLAS)
+  const pairs = innerOuterPairs(false)
+  const slimPairs = innerOuterPairs(true)
+  return {
+    head: cuboidPainted(data, pairs[0][1]) || cuboidPainted(data, slimPairs[0][1]),
+    body: cuboidPainted(data, pairs[1][1]) || cuboidPainted(data, slimPairs[1][1]),
+    rightArm: cuboidPainted(data, pairs[2][1]) || cuboidPainted(data, slimPairs[2][1]),
+    leftArm: cuboidPainted(data, pairs[3][1]) || cuboidPainted(data, slimPairs[3][1]),
+    rightLeg: cuboidPainted(data, pairs[4][1]) || cuboidPainted(data, slimPairs[4][1]),
+    leftLeg: cuboidPainted(data, pairs[5][1]) || cuboidPainted(data, slimPairs[5][1]),
+  }
 }
 
 export function focusForGroups(groups: Group[]): Group | "full" {

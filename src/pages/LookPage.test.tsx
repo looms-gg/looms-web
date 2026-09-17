@@ -5,10 +5,11 @@ import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { LookPage } from "./LookPage"
 import { AuthContext, type AuthContextValue } from "../state/auth"
+import { makeAuthStub } from "../test/authStub"
 import { CatalogProvider } from "../state/catalog"
 import { WardrobeProvider } from "../state/wardrobe"
 import { LikesProvider } from "../state/likes"
-import { supabase } from "../lib/supabase"
+import { mockSupabaseFrom } from "../test/supabaseMock"
 import * as publicLooksModule from "../state/publicLooks"
 import { peekPendingAction, clearPendingAction } from "../lib/pendingAction"
 
@@ -17,22 +18,7 @@ const activeRoots: ReturnType<typeof createRoot>[] = []
 beforeEach(() => {
   sessionStorage.clear()
   clearPendingAction()
-  vi.spyOn(supabase, "from").mockImplementation(() => {
-    const chain = {
-      select: () => chain,
-      eq: () => chain,
-      order: () => chain,
-      limit: () => chain,
-      insert: () => chain,
-      update: () => chain,
-      delete: () => chain,
-      single: () => Promise.resolve({ data: null, error: null }),
-      maybeSingle: () => Promise.resolve({ data: null, error: null }),
-      then: (resolve: (value: { data: unknown[]; error: null }) => void) =>
-        Promise.resolve({ data: [], error: null }).then(resolve),
-    }
-    return chain as never
-  })
+  mockSupabaseFrom()
 })
 
 afterEach(() => {
@@ -49,7 +35,7 @@ afterEach(() => {
 })
 
 function stubAuth(userId: string | null): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: userId
       ? ({ id: userId, email: "wearer@test.dev" } as AuthContextValue["user"])
       : null,
@@ -57,28 +43,8 @@ function stubAuth(userId: string | null): AuthContextValue {
     profile: userId
       ? ({ id: userId, username: "Wearer" } as AuthContextValue["profile"])
       : null,
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: Boolean(userId),
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 function mockPublicLook() {

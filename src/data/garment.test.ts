@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { garmentToPiece } from "./garment"
-import type { GarmentRow } from "../lib/supabase"
+import { garmentToPiece, type GarmentRow } from "./garment"
 
 const row: GarmentRow = {
   id: "ink-fall",

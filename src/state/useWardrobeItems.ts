@@ -1,5 +1,6 @@
 import { useCallback } from "react"
 import { getPiece } from "../data/catalog"
+import { formatErrorMessage } from "../lib/errorFormat"
 import { addAndWearPiece, addPiece, removePiece, wearOwned } from "./wardrobeActions"
 import {
   deleteCloudWardrobeItem,
@@ -66,9 +67,9 @@ export function useWardrobeItems({
       // Optimistic: drop the piece (and unequip it) right away, then sync.
       patch((prev) => removePiece(prev, pieceId))
       if (!userId) return { error: null }
-      const { error, errorMessage } = await deleteCloudWardrobeItem(userId, pieceId)
+      const { error } = await deleteCloudWardrobeItem(userId, pieceId)
       if (error) {
-        if (errorMessage) flash(errorMessage)
+        flash(formatErrorMessage(error))
         return { error }
       }
       return { error: null }

@@ -4,7 +4,7 @@ import {
   readCookieConsent,
   writeCookieConsent,
   type CookieConsent,
-} from "../lib/cookieConsent"
+} from "../lib/auth/cookieConsent"
 
 type CookieConsentContextValue = {
   consent: CookieConsent | null

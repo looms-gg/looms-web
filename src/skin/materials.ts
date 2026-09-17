@@ -21,10 +21,13 @@ type FlatMaterialOpts = {
   polygonOffset?: boolean
 }
 
-function createFlatMaterial(map: Texture | null, opts: FlatMaterialOpts) {
-  return new MeshStandardMaterial({
-    map,
-    color: 0xffffff,
+/** One recipe for both fresh materials and refits of skinview3d's own. */
+function flatMaterialProps(opts: FlatMaterialOpts, withColor: boolean) {
+  return {
+    // MeshStandardMaterial.color is a THREE.Color instance: assigning the raw
+    // number through Object.assign would clobber it (shader reads undefined
+    // channels and renders black), so only the constructor path sets color.
+    ...(withColor ? { color: 0xffffff } : {}),
     side: opts.side,
     roughness: 0.82,
     metalness: 0,
@@ -40,23 +43,23 @@ function createFlatMaterial(map: Texture | null, opts: FlatMaterialOpts) {
           polygonOffsetUnits: 1.0,
         }
       : {}),
-  })
+  }
+}
+
+function createFlatMaterial(map: Texture | null, opts: FlatMaterialOpts) {
+  return new MeshStandardMaterial({ map, ...flatMaterialProps(opts, true) })
+}
+
+export function freshFlatMaterial(opts: FlatMaterialOpts) {
+  return createFlatMaterial(null, opts)
 }
 
 function applyFlatMaterial(mat: MeshStandardMaterial, opts: FlatMaterialOpts) {
-  mat.roughness = 0.82
-  mat.metalness = 0
-  mat.flatShading = true
-  mat.transparent = true
-  mat.alphaTest = 1 / 255
-  mat.depthWrite = true
-  mat.side = opts.side
-  mat.toneMapped = false
-  if (opts.polygonOffset) {
-    mat.polygonOffset = true
-    mat.polygonOffsetFactor = 1.0
-    mat.polygonOffsetUnits = 1.0
-  }
+  Object.assign(mat, flatMaterialProps(opts, false))
+}
+
+export function refitFlatMaterial(mat: MeshStandardMaterial, opts: FlatMaterialOpts) {
+  applyFlatMaterial(mat, opts)
 }
 
 function ensureFlatMaterial(

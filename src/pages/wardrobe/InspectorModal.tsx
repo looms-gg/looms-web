@@ -18,7 +18,7 @@ export function InspectorModal({
       open={open}
       onClose={onClose}
       label={title}
-      panelClassName="modal-panel inspector-panel relative w-full max-w-[56rem] overflow-hidden rounded-[18px] border border-white/10 bg-base-300 shadow-2xl"
+      panelClassName="modal-panel inspector-panel relative w-full max-w-[56rem] overflow-hidden rounded-[18px] border border-base-content/10 bg-base-300 shadow-2xl"
     >
       <CloseButton onClick={onClose} className="absolute right-3 top-3 z-10" />
       <div className="h-full p-6 sm:p-8">{children}</div>

@@ -60,5 +60,3 @@ PRs welcome. Talk through bigger ideas on Discord first so we are not building p
 ## License
 
 looms-web is licensed under the GNU Affero General Public License v3.0. See [LICENSE](LICENSE).
-
-The admin skin editor at `src/editor/` is a port of [MineSkin PRO](https://github.com/hamza512b/mineskin) by hamza512b (AGPL-3.0), pinned at commit `98023b6ca269a26fe31fa5f3b03db00380a8eae6`.

@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from "react"
 import type { User } from "@supabase/supabase-js"
 import { supabase } from "../lib/supabase"
-import { isEmailVerified, isUnconfirmedAuthError } from "../lib/emailStatus"
+import { isEmailVerified, isUnconfirmedAuthError } from "../lib/auth/emailStatus"
 import { startBackoffPoll } from "../lib/backoffPoll"
 
 /** Minimum spacing between background sign-in attempts while waiting for email confirmation. */

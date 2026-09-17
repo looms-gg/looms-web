@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useAuthOptional } from "../../state/auth"
 import { formatErrorMessage } from "../../lib/errorFormat"
-import { pickOAuthUsername } from "../../lib/oauth"
+import { pickOAuthUsername } from "../../lib/auth/oauth"
 import { LoomsLogo } from "../ui/LoomsLogo"
 import { ModalOverlay } from "../ui/ModalOverlay"
 import { UsernameStep } from "./UsernameStep"

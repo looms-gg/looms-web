@@ -175,8 +175,8 @@ function ActivityFilterTabs({
           <button
             key={f}
             type="button"
-            className={`btn btn-sm btn-pill font-bold capitalize transition-colors active:scale-[0.96] transition-transform ${
-              current === f ? "btn-primary shadow-sm" : "btn-ghost text-base-content/70 hover:text-base-content"
+            className={`btn btn-sm btn-pill font-bold capitalize ${
+              current === f ? "btn-primary" : "btn-ghost text-base-content/70 hover:text-base-content"
             }`}
             onClick={() => onChange(f)}
           >
@@ -189,7 +189,7 @@ function ActivityFilterTabs({
         type="button"
         disabled={loading}
         onClick={onRefresh}
-        className="btn btn-ghost btn-sm font-bold gap-1.5 text-base-content/70 hover:text-base-content transition-colors active:scale-[0.96] transition-transform"
+        className="btn btn-ghost btn-sm font-bold gap-1.5 text-base-content/70 hover:text-base-content"
         title="Refresh activity"
       >
         <Icon icon={ArrowsClockwise} className={loading ? "animate-spin" : ""} />

@@ -16,7 +16,7 @@ import { SkinStage } from "../../components/iso/SkinStage"
 import { IsoThumb } from "../../components/iso/IsoThumb"
 import { LikeButton } from "../../components/piece/LikeButton"
 import type { PublicLook } from "../../state/publicLooks"
-import { getLookShareUrl, copyShareLink } from "../../lib/share"
+import { getLookShareUrl, copyShareLink } from "../../lib/content/share"
 import { useAuthOptional } from "../../state/auth"
 import { AuthModal } from "../../components/auth/AuthModal"
 import { ReportModal } from "../../components/moderation/ReportModal"
@@ -60,7 +60,7 @@ export function LookSheet({
   })
 
   return (
-    <section className="piece-sheet relative overflow-hidden rounded-[18px] bg-base-200">
+    <section className="piece-sheet relative overflow-hidden rounded-lg bg-base-200">
       <div className="grid md:grid-cols-[minmax(280px,1fr)_minmax(0,1.1fr)]">
         {/* Left: 3D / Live Stage Character Preview */}
         <div
@@ -68,7 +68,7 @@ export function LookSheet({
           style={revealStyle(1)}
           role="img"
           aria-label={`${look.name}, a layered Minecraft outfit by ${look.maker}, shown on a 3D Minecraft character`}
-          title={`${look.name} — Minecraft outfit preview`}
+          title={`${look.name}: Minecraft outfit preview`}
         >
           <SkinStage
             outfit={outfit}
@@ -117,7 +117,7 @@ export function LookSheet({
             >
               <Button
                 variant="primary"
-                className="px-5 font-extrabold shadow-sm active:scale-[0.96] transition-transform"
+                className="px-5 font-extrabold"
                 onClick={onWear}
               >
                 <Icon icon={TShirt} size="sm" className="mr-1.5" />
@@ -126,7 +126,7 @@ export function LookSheet({
 
               <Button
                 variant="ghost"
-                className="border border-base-content/20 font-extrabold active:scale-[0.96] transition-transform"
+                className="font-extrabold"
                 onClick={onDownload}
                 title="Download 64x64 Minecraft skin PNG"
               >
@@ -143,7 +143,6 @@ export function LookSheet({
               <Button
                 variant="ghost"
                 circle
-                className="border border-base-content/15 active:scale-[0.96] transition-transform"
                 onClick={() => void handleCopyLink()}
                 title="Copy share link"
                 aria-label="Copy share link"
@@ -155,7 +154,7 @@ export function LookSheet({
                 <Button
                   variant="ghost"
                   circle
-                  className="border border-base-content/15 opacity-60 hover:opacity-100 active:scale-[0.96] transition-transform"
+                  className="opacity-60 hover:opacity-100"
                   onClick={() => {
                     if (!auth?.user) {
                       setAuthOpen(true)
@@ -189,7 +188,7 @@ export function LookSheet({
                   <Link
                     key={piece.id}
                     to={`/piece/${piece.id}`}
-                    className="flex items-center gap-2.5 rounded-[18px] border border-base-content/10 bg-base-100/80 p-2 text-inherit no-underline transition-colors duration-150 hover:border-primary hover:bg-base-100"
+                    className="flex items-center gap-2.5 rounded-lg border border-base-content/10 bg-base-100/80 p-2 text-inherit no-underline transition-colors duration-150 hover:border-primary hover:bg-base-100"
                   >
                     <div className="size-10 shrink-0 overflow-hidden rounded-lg bg-base-300">
                       <IsoThumb piece={piece} alt={piece.name} className="size-full" />

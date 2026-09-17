@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest"
-import { compositeIsoThumbFx, ISO_RIM_FILL } from "./thumbFx"
+import { compositeIsoThumbFx, ISO_RIM_FILL, type ThumbImage } from "./thumbFx"
 
 // happy-dom does not implement canvas 2D rasterization; when getContext
 // returns null, thumbFx must throw (composite) or fall back (bake).
@@ -9,6 +9,17 @@ function canvas2dSupported(): boolean {
 }
 
 const supports2d = canvas2dSupported()
+
+// happy-dom's toBlob is a 0-byte stub, so canvasToPng falls back to a data
+// URL in tests; real browsers hand back a Blob. Accept either shape.
+async function toImgSrc(image: ThumbImage): Promise<string> {
+  return typeof image === "string" ? image : URL.createObjectURL(image)
+}
+
+function expectToBePng(image: ThumbImage) {
+  if (typeof image === "string") expect(image.startsWith("data:image/png")).toBe(true)
+  else expect(image).toBeInstanceOf(Blob)
+}
 
 describe("thumbFx", () => {
   it("keeps the warm off-white rim fill (never pure white)", () => {
@@ -31,16 +42,16 @@ describe("thumbFx", () => {
     })
 
     it.skipIf(!supports2d)(
-      "returns a PNG data URL of the same dimensions",
-      () => {
-        const url = compositeIsoThumbFx(canvas, 10, 10)
-        expect(url.startsWith("data:image/png;base64,")).toBe(true)
+      "returns a PNG image of the same dimensions",
+      async () => {
+        const image = await compositeIsoThumbFx(canvas, 10, 10)
+        expectToBePng(image)
       },
     )
 
     it.skipIf(!supports2d)(
-      "accepts a padded source and returns a PNG data URL",
-      () => {
+      "accepts a padded source and returns a PNG image",
+      async () => {
         // Padded so the baked shadow (offset -10,+5) and rim (+3,±3) fit
         const wide = document.createElement("canvas")
         wide.width = 26
@@ -48,23 +59,23 @@ describe("thumbFx", () => {
         const wctx = wide.getContext("2d") as CanvasRenderingContext2D
         wctx.fillStyle = "rgb(200, 30, 40)"
         wctx.fillRect(8, 8, 10, 10)
-        const baked = compositeIsoThumbFx(wide, 26, 26)
-        expect(baked.startsWith("data:image/png")).toBe(true)
+        const baked = await compositeIsoThumbFx(wide, 26, 26)
+        expectToBePng(baked)
       },
     )
 
     it.skipIf(!supports2d)(
       "throws on empty sources",
-      () => {
-        expect(() => compositeIsoThumbFx(canvas, 0, 10)).toThrow()
-        expect(() => compositeIsoThumbFx(canvas, 10, 0)).toThrow()
+      async () => {
+        await expect(compositeIsoThumbFx(canvas, 0, 10)).rejects.toThrow()
+        await expect(compositeIsoThumbFx(canvas, 10, 0)).rejects.toThrow()
       },
     )
 
     it.skipIf(supports2d)(
       "throws when canvas 2D is unavailable",
-      () => {
-        expect(() => compositeIsoThumbFx(canvas, 10, 10)).toThrow()
+      async () => {
+        await expect(compositeIsoThumbFx(canvas, 10, 10)).rejects.toThrow()
       },
     )
 
@@ -85,12 +96,14 @@ describe("thumbFx", () => {
         // pixel assertions are impossible there — bail without failing.
         if (sctx.getImageData(24, 24, 1, 1).data[3] === 0) return
 
-        const url = compositeIsoThumbFx(src, 64, 64)
+        const image = await compositeIsoThumbFx(src, 64, 64)
         const img = new Image()
         await new Promise<void>((resolve, reject) => {
           img.onload = () => resolve()
           img.onerror = () => reject(new Error("thumbFx test: decode failed"))
-          img.src = url
+          void toImgSrc(image).then((src) => {
+            img.src = src
+          })
         })
         const probe = document.createElement("canvas")
         probe.width = 64

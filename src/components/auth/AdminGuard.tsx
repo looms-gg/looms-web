@@ -3,9 +3,11 @@ import { Link } from "react-router-dom"
 import { ShieldCheck, ArrowLeft } from "@phosphor-icons/react"
 import { Icon } from "../ui/Icon"
 import { useAuth } from "../../state/auth"
+import { useIsAdmin } from "../../state/useIsAdmin"
 
 export function AdminGuard({ children }: { children: ReactNode }) {
-  const { user, isAdmin, loading } = useAuth()
+  const { user, loading } = useAuth()
+  const isAdmin = useIsAdmin()
 
   if (loading) {
     return (

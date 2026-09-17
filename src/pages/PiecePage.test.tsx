@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { pieces, upsertPiece } from "../data/catalog"
 import { WardrobeProvider } from "../state/wardrobe"
 import { AuthContext, type AuthContextValue } from "../state/auth"
+import { makeAuthStub } from "../test/authStub"
 import { CatalogProvider } from "../state/catalog"
 import * as catalogState from "../state/catalog"
 import { LikesProvider } from "../state/likes"
@@ -39,36 +40,15 @@ afterEach(() => {
 })
 
 function stubAuth(userId: string | null): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: userId
       ? ({ id: userId, email: "maker@test.dev" } as AuthContextValue["user"])
       : null,
-    session: null,
     profile: userId
       ? ({ id: userId, username: "Maker" } as AuthContextValue["profile"])
       : null,
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: Boolean(userId),
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: () => {},
-    dismissEmailVerify: () => {},
-    resendConfirmation: async () => ({ error: null }),
-    signInWithPassword: async () => ({ error: null }),
-    signUpWithPassword: async () => ({ error: null }),
-    signInWithOtp: async () => ({ error: null }),
-    signInWithOAuth: async () => ({ error: null }),
-    completeOnboarding: async () => ({ error: null }),
-    resetPasswordForEmail: async () => ({ error: null }),
-    signOut: async () => ({ error: null }),
-    deleteAccount: async () => ({ error: null }),
-    updateProfile: async () => ({ error: null }),
-    refreshProfile: async () => {},
-    profileError: null,
-    dismissProfileError: () => {},
-  }
+  })
 }
 
 function renderPiece(

@@ -2,13 +2,13 @@ import { useState } from "react"
 import { SignIn } from "@phosphor-icons/react"
 import { useAuth } from "../../state/auth"
 import { formatErrorMessage } from "../../lib/errorFormat"
-import { isEmailVerified } from "../../lib/emailStatus"
+import { isEmailVerified } from "../../lib/auth/emailStatus"
 import {
   canChangeUsername,
   formatLastSeen,
   resolveAvatarUrl,
   usernameLockMessage,
-} from "../../lib/profileDisplay"
+} from "../../lib/content/profileDisplay"
 import { DangerZoneModal } from "../profile/DangerZoneModal"
 import { Icon } from "../../components/ui/Icon"
 

@@ -92,7 +92,6 @@ describe("wardrobeItemSync", () => {
 
       const res = await deleteCloudWardrobeItem("u1", "garment_1")
       expect(res.error?.message).toBe("Row locked")
-      expect(res.errorMessage).toBeDefined()
     })
   })
 })

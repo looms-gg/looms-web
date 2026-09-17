@@ -12,6 +12,11 @@ export const MAX_LIMITS = {
   REPORT_DETAILS: 1000,
   SITE_BANNER_TEXT: 300,
   SITE_BANNER_LINK_LABEL: 50,
+  BLOG_TITLE: 120,
+  BLOG_EXCERPT: 300,
+  BLOG_CONTENT: 50000,
+  BLOG_SLUG: 100,
+  BLOG_THUMBNAIL_URL: 1000,
 } as const
 
 // Unicode directional overrides and invisible control characters:

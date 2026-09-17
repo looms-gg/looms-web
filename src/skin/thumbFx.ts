@@ -167,14 +167,41 @@ function applyRimMask(layer: HTMLCanvasElement, figure: OpaqueRect) {
 }
 
 /**
- * Composite shadow + rim + figure into a single PNG data URL. Throws when
- * canvas/2D is unavailable; callers should fall back to the un-baked image.
+ * Encode a canvas as a PNG Blob when the browser supports it. Blob sources
+ * skip the base64 encode/decode round-trip a data URL pays twice (once in JS
+ * memory, once in the image loader), and IndexedDB stores Blobs directly.
+ * Falls back to a data URL in environments without a working toBlob.
+ */
+export type ThumbImage = Blob | string
+
+export function canvasToPng(canvas: HTMLCanvasElement): Promise<ThumbImage> {
+  return new Promise((resolve) => {
+    try {
+      canvas.toBlob((blob) => {
+        if (blob && blob.size > 0) resolve(blob)
+        else resolve(canvas.toDataURL("image/png"))
+      }, "image/png")
+    } catch {
+      resolve(canvas.toDataURL("image/png"))
+    }
+  })
+}
+
+/** Turn a cached ThumbImage into something the image loader can display. */
+export function thumbImageToUrl(image: ThumbImage): string {
+  return typeof image === "string" ? image : URL.createObjectURL(image)
+}
+
+/**
+ * Composite shadow + rim + figure into a single PNG image (Blob, or a data
+ * URL where toBlob is unavailable). Throws when canvas/2D is unavailable;
+ * callers should fall back to the un-baked image.
  *
  * `normalize` (default true) crops to the figure and rescales it to the tile
  * fill. Pass false to bake the camera's own framing untouched — the hero bust
  * is already framed tightly and only shrinks when run through the tile fill.
  */
-export function compositeIsoThumbFx(
+export async function compositeIsoThumbFx(
   src: CanvasImageSource,
   width: number,
   height: number,
@@ -184,8 +211,12 @@ export function compositeIsoThumbFx(
     fillH?: number
     rim?: number
     rimAlpha?: number
+    // Punch shadow offset. Callers rendering above 1x (hero busts) scale it
+    // with the resolution so the baked shadow keeps its visual depth.
+    punchX?: number
+    punchY?: number
   },
-): string {
+): Promise<ThumbImage> {
   if (width <= 0 || height <= 0) throw new Error("thumbFx: empty source")
 
   const norm =
@@ -202,7 +233,7 @@ export function compositeIsoThumbFx(
   {
     const ctx = shadow.getContext("2d")
     if (!ctx) throw new Error("thumbFx: 2d context unavailable")
-    ctx.drawImage(silhouette, -PUNCH_X, PUNCH_Y)
+    ctx.drawImage(silhouette, -(options?.punchX ?? PUNCH_X), options?.punchY ?? PUNCH_Y)
     recolor(shadow, "#000000")
   }
 
@@ -234,5 +265,5 @@ export function compositeIsoThumbFx(
   ctx.drawImage(rim, 0, 0)
   ctx.globalCompositeOperation = "source-over"
   ctx.globalAlpha = 1
-  return out.toDataURL("image/png")
+  return canvasToPng(out)
 }

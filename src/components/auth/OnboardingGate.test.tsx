@@ -4,6 +4,7 @@ import { flushSync } from "react-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { OnboardingGate } from "./OnboardingGate"
 import type { AuthContextValue } from "../../state/auth"
+import { makeAuthStub } from "../../test/authStub"
 
 const state = vi.hoisted(() => ({ value: null as Record<string, unknown> | null }))
 
@@ -15,15 +16,18 @@ vi.mock("../../state/auth", async (importOriginal) => {
   }
 })
 
-const baseAuth = {
-  user: { id: "u1", email: "a@b.c", user_metadata: { global_name: "PixelWeaver" } },
+const baseAuth: Record<string, unknown> = makeAuthStub({
+  user: {
+    id: "u1",
+    email: "a@b.c",
+    user_metadata: { global_name: "PixelWeaver" },
+  } as unknown as AuthContextValue["user"],
   emailVerified: true,
-  profile: { onboarding_complete: false, username: "user" },
+  profile: { onboarding_complete: false, username: "user" } as AuthContextValue["profile"],
   completeOnboarding: vi.fn().mockResolvedValue({ error: null }),
   refreshProfile: vi.fn().mockResolvedValue(undefined),
   signOut: vi.fn().mockResolvedValue({ error: null }),
-  loading: false,
-}
+})
 
 function mountGate(authValue: Record<string, unknown> | null) {
   state.value = authValue

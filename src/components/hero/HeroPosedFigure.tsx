@@ -15,24 +15,25 @@ type LabelAlign = "auto" | "center"
 // Card geometry shared by the live figure and its skeleton, so the placeholder
 // sits in the exact box the render will occupy (same width, top offset, and
 // bust framing) instead of only approximating it.
-const FIGURE_BOX = "pt-9 sm:pt-10 lg:pt-12 w-[205px] sm:w-[246px] lg:w-[273px]"
+const FIGURE_BOX = "pt-3 sm:pt-4 lg:pt-5 w-[245px] sm:w-[290px] lg:w-[330px]"
 const BUST_BOX =
-  "w-full max-w-[269px] sm:max-w-[322px] lg:max-w-[359px] aspect-[9/10] flex items-end justify-center"
+  "w-full max-w-[315px] sm:max-w-[375px] lg:max-w-[425px] aspect-[9/10] flex items-end justify-center"
 
-// Labels sit outside the side figures at head height: the left friend's text
-// floats to the LEFT of the figure (right-aligned against it), the right
-// friend's to the RIGHT (left-aligned), the middle friend's centered above. A
-// lone figure (mobile tabs) always centers its label so it cannot hang past
-// the panel and clip.
+// Labels sit directly above each figure at head height: the left friend's text
+// is centered above the left head/shoulder, the right friend's above the right,
+// and the middle friend's centered above the center. A lone figure (mobile tabs)
+// always centers its label so it cannot hang past the panel and clip.
 function labelPositionClass(pose: HeroPose, labelAlign?: LabelAlign) {
   const center =
-    "top-5 sm:top-6 lg:top-7 left-1/2 -translate-x-[38%] items-center text-center w-full max-w-[165px]"
-  if (labelAlign === "center") return center
+    "top-4 sm:top-5 lg:top-6 left-[58%] -translate-x-1/2 items-center text-center w-full max-w-[170px]"
+  if (labelAlign === "center") {
+    return "top-4 sm:top-5 left-1/2 -translate-x-1/2 items-center text-center w-full max-w-[180px]"
+  }
   if (pose === "left") {
-    return "top-20 sm:top-24 lg:top-28 right-full translate-x-5 sm:translate-x-7 lg:translate-x-9 items-end text-right w-24 sm:w-28 lg:w-32"
+    return "top-4 sm:top-5 lg:top-6 left-10 sm:left-11 lg:left-12 items-center text-center w-32 sm:w-36 lg:w-40"
   }
   if (pose === "right") {
-    return "top-20 sm:top-24 lg:top-28 left-full -translate-x-5 sm:-translate-x-7 lg:-translate-x-9 items-start text-left w-24 sm:w-28 lg:w-32"
+    return "top-4 sm:top-5 lg:top-6 right-10 sm:right-11 lg:right-12 items-center text-center w-32 sm:w-36 lg:w-40"
   }
   return center
 }
@@ -43,10 +44,10 @@ function labelPositionClass(pose: HeroPose, labelAlign?: LabelAlign) {
 function LabelSkeletonBones() {
   return (
     <div className="flex flex-col items-center w-full py-0.5" aria-hidden="true">
-      <div className="relative mb-1.5 h-3.5 w-20 overflow-hidden rounded-md opacity-60 sm:h-4 sm:w-24">
+      <div className="relative mb-1 h-3 w-16 overflow-hidden rounded-md opacity-60 sm:h-3.5 sm:w-20">
         <div className="skin-bone rounded-md" />
       </div>
-      <div className="relative h-2.5 w-14 overflow-hidden rounded-md opacity-40 sm:h-3 sm:w-16">
+      <div className="relative h-2 w-12 overflow-hidden rounded-md opacity-40 sm:h-2.5 sm:w-14">
         <div className="skin-bone rounded-md" />
       </div>
     </div>
@@ -114,9 +115,10 @@ export function HeroPosedFigure({
       .then(({ heroPosedLookThumb }) => heroPosedLookThumb(look, pose))
       .then((res) => {
         if (alive) {
-          // Pending (catalog still loading): keep the placeholder — the effect
-          // re-runs when catalogLoading flips false and composes the full skin.
-          setImgUrl(res.pending ? null : res.url || null)
+          // Empty url (catalog still hydrating): keep the placeholder — the
+          // effect re-runs when catalogLoading flips false and composes the
+          // full skin.
+          setImgUrl(res.url || null)
         }
       })
       .catch(() => {
@@ -157,12 +159,12 @@ export function HeroPosedFigure({
           <>
             <Link
               to={`/look/${look.id}`}
-              className="truncate whitespace-nowrap overflow-hidden text-ellipsis text-[13px] sm:text-[15px] font-extrabold tracking-tight text-base-content hover:text-primary transition-colors duration-150 w-full"
+              className="truncate whitespace-nowrap overflow-hidden text-ellipsis text-xs sm:text-[13.5px] font-extrabold tracking-tight text-base-content hover:text-primary transition-colors duration-150 w-full"
               title={look.name}
             >
               {look.name}
             </Link>
-            <p className="truncate whitespace-nowrap overflow-hidden text-ellipsis text-[11px] sm:text-[13px] font-bold text-primary/90 w-full">
+            <p className="truncate whitespace-nowrap overflow-hidden text-ellipsis text-[10px] sm:text-xs font-bold text-base-content/60 w-full">
               <MakerLink username={look.maker} prefix="by @" />
             </p>
           </>

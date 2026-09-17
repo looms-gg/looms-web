@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { MemoryRouter } from "react-router-dom"
 import { WardrobeProvider } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
-import { ThemeProvider } from "../../state/theme"
 import * as authModule from "../../state/auth"
+import { VerifyEmailProvider } from "../../state/verifyEmail"
 import { Shell } from "./Shell"
 
 function mockGuestAuth() {
@@ -14,7 +14,6 @@ function mockGuestAuth() {
     session: null,
     profile: null,
     avatarUrl: null,
-    isAdmin: false,
     loading: false,
     profileError: null,
     dismissProfileError: vi.fn(),
@@ -23,9 +22,6 @@ function mockGuestAuth() {
     completeOnboarding: vi.fn(),
     emailVerified: true,
     pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
     resendConfirmation: vi.fn(),
     signInWithPassword: vi.fn(),
     signUpWithPassword: vi.fn(),
@@ -41,13 +37,13 @@ function renderWithProviders(ui: React.ReactNode, initialEntries: string[] = ["/
   const host = document.createElement("div")
   flushSync(() => {
     createRoot(host).render(
-      <ThemeProvider>
-        <LikesProvider>
-          <MemoryRouter initialEntries={initialEntries}>
+      <LikesProvider>
+        <MemoryRouter initialEntries={initialEntries}>
+          <VerifyEmailProvider>
             <WardrobeProvider>{ui}</WardrobeProvider>
-          </MemoryRouter>
-        </LikesProvider>
-      </ThemeProvider>,
+          </VerifyEmailProvider>
+        </MemoryRouter>
+      </LikesProvider>,
     )
   })
   return host
@@ -93,7 +89,6 @@ describe("Shell", () => {
         updated_at: "",
       },
       avatarUrl: "https://minotar.net/helm/Steve/128.png",
-      isAdmin: false,
       loading: false,
       profileError: null,
       dismissProfileError: vi.fn(),
@@ -102,9 +97,6 @@ describe("Shell", () => {
     completeOnboarding: vi.fn(),
       emailVerified: true,
       pendingEmail: null,
-      emailVerifyOpen: false,
-      openEmailVerify: vi.fn(),
-      dismissEmailVerify: vi.fn(),
       resendConfirmation: vi.fn(),
       signInWithPassword: vi.fn(),
       signUpWithPassword: vi.fn(),
@@ -146,7 +138,6 @@ describe("Shell", () => {
         updated_at: "",
       },
       avatarUrl: "https://minotar.net/helm/Steve/128.png",
-      isAdmin: false,
       loading: false,
       profileError: null,
       dismissProfileError: vi.fn(),
@@ -155,9 +146,6 @@ describe("Shell", () => {
     completeOnboarding: vi.fn(),
       emailVerified: false,
       pendingEmail: "weaver@example.com",
-      emailVerifyOpen: false,
-      openEmailVerify: vi.fn(),
-      dismissEmailVerify: vi.fn(),
       resendConfirmation: vi.fn(),
       signInWithPassword: vi.fn(),
       signUpWithPassword: vi.fn(),

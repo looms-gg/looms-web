@@ -54,7 +54,7 @@ export function ShellAccountMenu({
         aria-expanded={open}
         aria-label="User profile"
         title="User profile"
-        className="btn btn-ghost btn-xs sm:btn-sm rounded-full font-bold gap-2 px-2.5 sm:px-3 border border-white/10 bg-base-200/50 hover:bg-base-200 active:scale-[0.96] transition-transform"
+        className="btn btn-ghost btn-xs sm:btn-sm font-bold gap-2 px-2.5 sm:px-3 rounded-lg border border-base-content/12 bg-base-300/60 hover:bg-base-300 active:scale-[0.96] transition-transform"
         onClick={() => setOpen((v) => !v)}
       >
         {avatarUrl ? (
@@ -84,20 +84,11 @@ export function ShellAccountMenu({
       >
         {/* Identity header */}
         <div className="account-menu-header">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt=""
-              className="account-menu-avatar"
-              style={{ outline: "1px solid oklch(1 0 0 / 0.1)" }} />
-          ) : (
-            <span className="account-menu-avatar-fallback">{initials}</span>
-          )}
           <div className="account-menu-identity">
             <span className="account-menu-name truncate">{displayName}</span>
-            {minecraftUsername ? (
-              <span className="account-menu-mc truncate">MC: {minecraftUsername}</span>
-            ) : null}
+            <span className="account-menu-mc truncate">
+              {minecraftUsername ? "Minecraft Account" : "looms Account"}
+            </span>
           </div>
         </div>
 
@@ -113,7 +104,7 @@ export function ShellAccountMenu({
               role="menuitem"
             >
               <Icon icon={User} className="account-menu-item-icon" />
-              Profile
+              View Profile
             </NavLink>
           ) : null}
           <NavLink
@@ -204,7 +195,7 @@ export function ShellAuthControls({
       {user && !emailVerified ? (
         <button
           type="button"
-          className="btn btn-ghost btn-xs sm:btn-sm rounded-full font-bold text-primary"
+          className="btn btn-ghost btn-xs sm:btn-sm font-bold text-primary"
           onClick={onOpenEmailVerify}
         >
           Confirm email

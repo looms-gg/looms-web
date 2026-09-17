@@ -13,10 +13,12 @@ import {
   X,
 } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
+import { Dropdown } from "../../components/ui/Dropdown"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import {
   adminDeleteContent,
   adminSetModerationState,
+  fetchPendingReportCount,
   fetchReports,
   updateReportStatus,
   type ContentReportRow,
@@ -26,6 +28,7 @@ import {
 
 export function ModerationQueue() {
   const [reports, setReports] = useState<ContentReportRow[]>([])
+  const [pendingCount, setPendingCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("pending")
@@ -36,11 +39,15 @@ export function ModerationQueue() {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchReports({
-        status: statusFilter,
-        targetType: targetFilter,
-      })
+      const [data, pending] = await Promise.all([
+        fetchReports({
+          status: statusFilter,
+          targetType: targetFilter,
+        }),
+        fetchPendingReportCount(),
+      ])
       setReports(data)
+      setPendingCount(pending)
     } catch (err) {
       setError(formatErrorMessage(err))
     } finally {
@@ -152,8 +159,6 @@ export function ModerationQueue() {
     }
   }
 
-  const pendingCount = reports.filter((r) => r.status === "pending").length
-
   return (
     <div className="space-y-6">
       {/* Filter Bar */}
@@ -165,9 +170,9 @@ export function ModerationQueue() {
               <button
                 key={status}
                 type="button"
-                className={`btn btn-sm btn-pill font-bold capitalize transition-colors active:scale-[0.96] transition-transform ${
+                className={`btn btn-sm btn-pill font-bold capitalize ${
                   active
-                    ? "btn-primary shadow-sm"
+                    ? "btn-primary"
                     : "btn-ghost text-base-content/70 hover:text-base-content"
                 }`}
                 onClick={() => setStatusFilter(status)}
@@ -184,21 +189,22 @@ export function ModerationQueue() {
         </div>
 
         <div className="flex items-center gap-2">
-          <label htmlFor="target-filter" className="text-xs font-bold text-base-content/60">
+          <label className="text-xs font-bold text-base-content/60">
             Type:
           </label>
-          <select
-            id="target-filter"
+          <Dropdown
+            ariaLabel="Content type filter"
+            size="sm"
             value={targetFilter}
-            onChange={(e) => setTargetFilter(e.target.value as ReportTargetType | "all")}
-            className="select select-sm select-bordered rounded-xl font-semibold focus:outline-none focus:border-primary"
-          >
-            <option value="all">All Content</option>
-            <option value="look">Looks</option>
-            <option value="piece">Pieces</option>
-            <option value="comment">Comments</option>
-            <option value="profile">Profiles</option>
-          </select>
+            onChange={(value) => setTargetFilter(value)}
+            options={[
+              { id: "all", label: "All Content" },
+              { id: "look", label: "Looks" },
+              { id: "piece", label: "Pieces" },
+              { id: "comment", label: "Comments" },
+              { id: "profile", label: "Profiles" },
+            ]}
+          />
         </div>
       </div>
 
@@ -253,12 +259,12 @@ export function ModerationQueue() {
             return (
               <div
                 key={report.id}
-                className="group relative rounded-[18px] border border-base-content/10 bg-base-200/50 p-4 transition-colors hover:border-base-content/25 hover:bg-base-200/80 shadow-sm"
+                className="group relative rounded-[18px] bg-base-200/50 p-4 transition-colors hover:bg-base-200/80"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="badge badge-sm badge-ghost font-extrabold uppercase gap-1 tracking-wider text-xs">
+                      <span className="badge badge-sm badge-ghost font-bold gap-1 text-xs">
                         <Icon icon={getTargetIcon(report.target_type)} size="xs" />
                         {report.target_type}
                       </span>
@@ -292,7 +298,7 @@ export function ModerationQueue() {
                           to={targetLink}
                           target="_blank"
                           rel="noreferrer"
-                          className="btn btn-ghost btn-xs min-h-[28px] px-2.5 rounded-full gap-1 text-primary active:scale-[0.96] transition-transform"
+                          className="btn btn-ghost btn-xs min-h-[28px] px-2.5 gap-1 text-primary"
                           title="Inspect live content"
                         >
                           <Icon icon={Eye} size="xs" />
@@ -325,7 +331,7 @@ export function ModerationQueue() {
                           type="button"
                           disabled={isProcessing}
                           onClick={() => void handleStatusChange(report.id, "resolved", "approved")}
-                          className="btn btn-success btn-xs min-h-[30px] px-3 rounded-full font-bold gap-1 active:scale-[0.96] transition-transform shadow-sm"
+                          className="btn btn-success btn-xs min-h-[30px] px-3 font-bold gap-1"
                           title="Mark resolved"
                         >
                           <Icon icon={Check} size="xs" />
@@ -335,7 +341,7 @@ export function ModerationQueue() {
                           type="button"
                           disabled={isProcessing}
                           onClick={() => void handleStatusChange(report.id, "dismissed", "dismissed")}
-                          className="btn btn-ghost btn-xs min-h-[30px] px-3 rounded-full font-bold gap-1 text-base-content/70 hover:bg-base-300/60 active:scale-[0.96] transition-transform"
+                          className="btn btn-ghost btn-xs min-h-[30px] px-3 font-bold gap-1 text-base-content/70 hover:bg-base-300/60"
                           title="Dismiss report"
                         >
                           <Icon icon={X} size="xs" />
@@ -346,7 +352,7 @@ export function ModerationQueue() {
                             type="button"
                             disabled={isProcessing}
                             onClick={() => void handleHideContent(report)}
-                            className="btn btn-warning btn-outline btn-xs min-h-[30px] px-3 rounded-full font-bold gap-1 active:scale-[0.96] transition-transform"
+                            className="btn btn-warning btn-outline btn-xs min-h-[30px] px-3 font-bold gap-1"
                             title="Hide offending content from explore and search"
                           >
                             <Icon icon={EyeClosed} size="xs" />
@@ -358,7 +364,7 @@ export function ModerationQueue() {
                             type="button"
                             disabled={isProcessing}
                             onClick={() => void handleDeleteContent(report)}
-                            className="btn btn-error btn-outline btn-xs min-h-[30px] px-3 rounded-full font-bold gap-1 active:scale-[0.96] transition-transform"
+                            className="btn btn-error btn-outline btn-xs min-h-[30px] px-3 font-bold gap-1"
                             title="Delete offending content"
                           >
                             <Icon icon={Trash} size="xs" />

@@ -29,14 +29,14 @@ export async function insertCloudWardrobeItem(
 export async function deleteCloudWardrobeItem(
   userId: string,
   garmentId: string,
-): Promise<{ error: Error | null; errorMessage?: string }> {
+): Promise<{ error: Error | null }> {
   const { error } = await supabase
     .from("wardrobe_items")
     .delete()
     .eq("user_id", userId)
     .eq("garment_id", garmentId)
   if (error) {
-    return { error: new Error(error.message), errorMessage: formatErrorMessage(error) }
+    return { error: new Error(error.message) }
   }
   return { error: null }
 }

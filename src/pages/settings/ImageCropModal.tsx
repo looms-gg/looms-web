@@ -181,7 +181,7 @@ export function ImageCropModal({
       open={open}
       onClose={onClose}
       label={title}
-      panelClassName="modal-panel relative w-full max-w-md rounded-[18px] border border-white/10 bg-base-300 p-5 shadow-2xl"
+      panelClassName="modal-panel relative w-full max-w-md rounded-[18px] border border-base-content/10 bg-base-300 p-5 shadow-2xl"
     >
       <div className="flex items-center gap-3 pr-8">
         <h2 className="text-lg font-extrabold tracking-tight text-balance">{title}</h2>
@@ -195,7 +195,7 @@ export function ImageCropModal({
       {/* Preview + drag surface */}
       <div
         ref={previewRef}
-        className="group relative mt-4 w-full select-none overflow-hidden rounded-xl border border-white/10 bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px]"
+        className="group relative mt-4 w-full select-none overflow-hidden rounded-xl border border-base-content/10 bg-[repeating-conic-gradient(#333_0%_25%,#222_0%_50%)] bg-[size:16px_16px]"
         style={{ aspectRatio: aspect }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -293,7 +293,7 @@ export function ImageCropModal({
         </button>
       </div>
 
-      <div className="mt-5 flex justify-end gap-2 border-t border-white/10 pt-4">
+      <div className="mt-5 flex justify-end gap-2 border-t border-base-content/10 pt-4">
         <button
           type="button"
           className="btn btn-ghost btn-sm rounded-full font-bold transition-transform duration-150 ease-out active:scale-[0.96]"

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { loadTurnstileScript, resolveTurnstileSiteKey } from "../../lib/turnstile"
+import { loadTurnstileScript, resolveTurnstileSiteKey } from "../../lib/auth/turnstile"
 
 type TurnstileApi = {
   render: (

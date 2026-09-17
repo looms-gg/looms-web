@@ -43,9 +43,9 @@ export function updateCloudLook(look: Look, id: string, ownerId: string) {
 
 /** Update only the user-editable meta columns (rename, description, visibility). */
 export function updateCloudLookMeta(
+  fields: { name: string; description: string; visibility: LookVisibility },
   id: string,
   ownerId: string,
-  fields: { name: string; description: string; visibility: LookVisibility },
 ) {
   return supabase
     .from("looks")

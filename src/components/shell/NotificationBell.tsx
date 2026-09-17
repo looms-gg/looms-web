@@ -137,8 +137,11 @@ function NotificationPanel({
 
       {items.length === 0 && !loadError ? (
         <div data-empty className="notification-empty">
+          <span className="notification-empty-icon" aria-hidden>
+            <Icon icon={Bell} size="lg" />
+          </span>
           <p className="notification-empty-title">
-            {loading ? "Waking the bell..." : "Nothing here yet."}
+            {loading ? "Waking the bell..." : "No notifications yet"}
           </p>
           <p className="notification-empty-hint">
             Likes, comments, and replies to your pieces and looks show up here.
@@ -217,7 +220,7 @@ export function NotificationBell() {
         aria-expanded={open}
         aria-label={unreadCount > 0 ? `Notifications, ${badgeLabel(unreadCount)} unread` : "Notifications"}
         title="Notifications"
-        className={`btn btn-ghost relative size-11 min-h-11 rounded-full p-0 active:scale-[0.96] transition-transform ${
+        className={`btn btn-ghost relative h-9 w-9 min-h-9 rounded-lg p-0! hover:bg-base-content/6 active:scale-[0.96] transition-all ${
           unreadCount > 0 ? "notification-bell-unread" : ""
         }`}
         onClick={toggleOpen}

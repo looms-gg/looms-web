@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { beforeEach, describe, expect, it } from "vitest"
 import { CookieConsentProvider, useCookieConsent } from "./cookieConsent"
-import { COOKIE_CONSENT_KEY, readCookieConsent } from "../lib/cookieConsent"
+import { COOKIE_CONSENT_KEY, readCookieConsent } from "../lib/auth/cookieConsent"
 
 function Probe() {
   const c = useCookieConsent()

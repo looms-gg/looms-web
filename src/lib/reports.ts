@@ -2,12 +2,12 @@ import { MAX_LIMITS, sanitizeText } from "./sanitize"
 import {
   supabase,
   type ContentReportRow,
-  type GarmentRow,
   type LookRow,
   type ProfileRow,
   type ReportStatus,
   type ReportTargetType,
 } from "./supabase"
+import type { GarmentRow } from "../data/garment"
 
 export type { ContentReportRow, ReportStatus, ReportTargetType }
 
@@ -86,6 +86,19 @@ export async function fetchReports(options?: {
   const { data, error } = await query
   if (error) throw error
   return data ?? []
+}
+
+/**
+ * Exact pending-report total via a head-only count, independent of the
+ * queue's active filters so the badge stays meaningful under every filter.
+ */
+export async function fetchPendingReportCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("content_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending")
+  if (error) throw error
+  return count ?? 0
 }
 
 /**

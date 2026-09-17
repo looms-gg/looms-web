@@ -1,6 +1,6 @@
 import { useCallback } from "react"
 import type { Slot } from "../data/catalog"
-import { mergeStack, moveStackId } from "../data/outfit"
+import { mergeStack, moveStackId, reorderStackId } from "../data/outfit"
 import { MAX_LIMITS, sanitizeText } from "../lib/sanitize"
 import type { SkinModel } from "../skin/convert"
 import { clampHue } from "../skin/hue"
@@ -23,6 +23,15 @@ export function useWardrobeOutfitActions(patch: PatchFn) {
     (pieceId: string, steps: number) => {
       patch((prev) => ({
         next: { ...prev, stack: moveStackId(prev.stack, pieceId, steps) },
+      }))
+    },
+    [patch],
+  )
+
+  const reorderStack = useCallback(
+    (pieceId: string, targetIndex: number) => {
+      patch((prev) => ({
+        next: { ...prev, stack: reorderStackId(prev.stack, pieceId, targetIndex) },
       }))
     },
     [patch],
@@ -64,6 +73,7 @@ export function useWardrobeOutfitActions(patch: PatchFn) {
   return {
     clearSlot,
     moveStack,
+    reorderStack,
     setBody,
     setBodyHue,
     setModel,

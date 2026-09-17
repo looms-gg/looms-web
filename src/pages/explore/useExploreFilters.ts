@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import { filterExplorePieces, type SlotFilter, type Sort } from "../../lib/exploreBrowse"
 import { filterAndSortPublicLooks, type LookModelFilter, type LookSort, type PublicLook } from "../../state/publicLooks"
@@ -14,11 +14,18 @@ export function useExploreFilters(pieces: Piece[], looks: PublicLook[]) {
   const mode: "pieces" | "looks" =
     tabParam === "looks" || isLookLanding ? "looks" : "pieces"
 
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "")
   const [sort, setSort] = useState<Sort>("Trending")
   const [slot, setSlot] = useState<SlotFilter>("all")
   const [lookSort, setLookSort] = useState<LookSort>("Trending")
   const [lookModel, setLookModel] = useState<LookModelFilter>("all")
+
+  useEffect(() => {
+    const q = searchParams.get("q")
+    if (q !== null && q !== query) {
+      setQuery(q)
+    }
+  }, [searchParams])
 
   function setMode(nextMode: "pieces" | "looks") {
     if (isLookLanding && nextMode === "pieces") {

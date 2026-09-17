@@ -2,7 +2,7 @@ import { memo, useMemo } from "react"
 import { equippedFromStack, piecesFromEquipped } from "../../data/outfit"
 import { IsoThumb } from "../iso/IsoThumb"
 import { LikeButton } from "../piece/LikeButton"
-import { TileShell } from "../piece/TileShell"
+import { TileShell, LOOK_BADGE } from "../piece/TileShell"
 import type { PublicLook } from "../../state/publicLooks"
 
 export const LookTile = memo(function LookTile({
@@ -23,6 +23,7 @@ export const LookTile = memo(function LookTile({
       to={`/look/${look.id}`}
       title={look.name}
       maker={look.maker}
+      badge={LOOK_BADGE}
       media={
         <IsoThumb
           outfit={outfit}
@@ -45,6 +46,7 @@ export const LookTile = memo(function LookTile({
         id={look.id}
         count={look.likeCount}
         onCountChange={onLikeCountChange}
+        size="sm"
         className="shrink-0"
       />
     </TileShell>

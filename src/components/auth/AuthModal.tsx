@@ -3,6 +3,7 @@ import {
   DiscordLogo,
   GithubLogo,
   GoogleLogo,
+  SignIn,
   Warning,
 } from "@phosphor-icons/react"
 import { useAuthOptional } from "../../state/auth"
@@ -13,7 +14,7 @@ import {
   providerLabel,
   stashOAuthReturn,
   type OAuthProvider,
-} from "../../lib/oauth"
+} from "../../lib/auth/oauth"
 import { Icon } from "../ui/Icon"
 import { CloseButton } from "../ui/CloseButton"
 import { LoomsLogo } from "../ui/LoomsLogo"
@@ -488,17 +489,18 @@ export function AuthButtons() {
       <div className="flex items-center gap-1.5">
         <button
           type="button"
-          className="btn btn-ghost btn-xs sm:btn-sm rounded-full font-bold px-2.5 sm:px-3 text-xs sm:text-sm"
+          className="btn btn-ghost btn-xs sm:btn-sm font-bold px-2.5 sm:px-3 text-xs sm:text-sm gap-1.5"
           onClick={() => {
             setInitialMode("login")
             setOpen(true)
           }}
         >
-          Log in
+          <Icon icon={SignIn} size="sm" />
+          <span>Log in</span>
         </button>
         <button
           type="button"
-          className="btn btn-primary btn-xs sm:btn-sm rounded-full font-extrabold px-3 sm:px-4 text-xs sm:text-sm"
+          className="btn btn-primary btn-xs sm:btn-sm font-extrabold px-3 sm:px-4 text-xs sm:text-sm"
           onClick={() => {
             setInitialMode("signup")
             setOpen(true)

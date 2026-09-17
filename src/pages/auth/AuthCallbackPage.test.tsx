@@ -4,7 +4,7 @@ import { flushSync } from "react-dom"
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { supabase } from "../../lib/supabase"
-import { OAUTH_RETURN_KEY } from "../../lib/oauth"
+import { OAUTH_RETURN_KEY } from "../../lib/auth/oauth"
 import { AuthCallbackPage } from "./AuthCallbackPage"
 
 function LocationCatcher({ onLocation }: { onLocation: (path: string) => void }) {

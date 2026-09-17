@@ -9,31 +9,24 @@ type Board = ReturnType<typeof useStudioBoard>
  * the spread.
  */
 
-export function studioRackProps(board: Board) {
+export function collectionProps(board: Board) {
   return {
     ownedCount: board.owned.length,
     ownedBySlot: board.ownedBySlot,
     racks: board.racks,
-    rack: board.rack,
+    category: board.collectionSlot,
+    onCategory: board.setCollectionSlot,
     equipped: board.equipped,
-    onRack: board.setRack,
     onWear: (id: string) => (id.startsWith("eye-") ? board.wearEye(id) : board.wear(id)),
     onClear: board.clearSlot,
-    bodies: board.bodies,
-    body: board.body,
-    bodyId: board.bodyId,
-    bodyHue: board.bodyHue,
-    bodyTint: board.bodyTint,
-    hueOpen: board.hueOpen,
     equippedEyes: board.equipped.eyes,
     eyeOffset: board.eyeOffset,
-    onPickTone: board.pickTone,
-    onBodyHue: board.setBodyHue,
     onEyeOffset: board.setEyeOffset,
+    bodyTint: board.bodyTint,
   }
 }
 
-export function studioStageProps(board: Board) {
+export function stageProps(board: Board) {
   return {
     outfit: board.outfit,
     bodyId: board.bodyId,
@@ -50,16 +43,20 @@ export function studioStageProps(board: Board) {
   }
 }
 
-export function studioLayersProps(board: Board) {
+export function assemblyProps(board: Board) {
   return {
     body: board.body,
+    bodies: board.bodies,
     bodyTint: board.bodyTint,
     bodyHue: board.bodyHue,
     model: board.model,
     stackTopFirst: board.stackTopFirst,
     onModel: board.setModel,
     onMove: board.moveStack,
+    onReorder: board.reorderStack,
     onClear: board.clearSlot,
-    onOpenAppearance: () => board.setRack("appearance"),
+    onPickTone: board.pickTone,
+    onBodyHue: board.setBodyHue,
   }
 }
+

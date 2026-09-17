@@ -5,38 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { MemoryRouter } from "react-router-dom"
 import * as authModule from "../state/auth"
 import type { AuthContextValue } from "../state/auth"
+import { makeAuthStub } from "../test/authStub"
 import { AdminPage } from "./AdminPage"
 import * as reportsApi from "../lib/reports"
 import * as bannerApi from "../lib/siteBanner"
 import * as adminAuditApi from "../lib/adminAudit"
 
 function stubAuth(userId: string): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: { id: userId, email: "admin@looms.dev" } as AuthContextValue["user"],
     session: {} as AuthContextValue["session"],
     profile: { id: userId, username: "Admin" } as AuthContextValue["profile"],
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: true,
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 async function renderAdminPage(userId = "45e6be54-c9a5-4627-af39-9c14b27ec92e") {
@@ -89,6 +70,8 @@ describe("AdminPage", () => {
         created_at: new Date().toISOString(),
       },
     ])
+
+    vi.spyOn(reportsApi, "fetchPendingReportCount").mockResolvedValue(1)
 
     vi.spyOn(reportsApi, "fetchRecentPlatformActivity").mockResolvedValue({
       looks: [],

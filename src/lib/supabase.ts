@@ -1,12 +1,10 @@
 /** App-owned Supabase schema types. Do not parallel this with a generated Database file. */
 import { createClient } from "@supabase/supabase-js"
+import type { GarmentRow } from "../data/garment"
 import type { SkinModel } from "../data/model"
 import type { LikeTargetType } from "../data/likeTarget"
 import type { LookVisibility } from "../data/look"
-import type { OAuthProvider } from "./oauth"
-
-export type { LikeTargetType } from "../data/likeTarget"
-export type { LookVisibility } from "../data/look"
+import type { OAuthProvider } from "./auth/oauth"
 
 export type ProfileRow = {
   id: string
@@ -71,23 +69,6 @@ export type LookRow = {
   like_count?: number
   created_at: string
   updated_at: string
-}
-
-export type GarmentRow = {
-  id: string
-  user_id: string
-  name: string
-  description: string | null
-  slot: string
-  body_group: string
-  saved_count: number
-  like_count: number
-  added: number
-  covers: string[]
-  texture_url: string
-  is_public: boolean
-  tags: string[]
-  created_at: string
 }
 
 export type WardrobeItemRow = {
@@ -163,6 +144,21 @@ export type AdminAuditLogRow = {
   target_id: string | null
   details: Record<string, unknown> | null
   created_at: string
+}
+
+export type BlogPostRow = {
+  id: string
+  slug: string
+  title: string
+  excerpt: string
+  content: string
+  thumbnail_url: string | null
+  category: string
+  is_published: boolean
+  published_at: string | null
+  author_id: string
+  created_at: string
+  updated_at: string
 }
 
 export type Database = {
@@ -398,6 +394,24 @@ export type Database = {
           },
         ]
       }
+      blog_posts: {
+        Row: BlogPostRow
+        Insert: Omit<BlogPostRow, "id" | "created_at" | "updated_at"> & {
+          id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<BlogPostRow>
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -478,6 +492,25 @@ export type Database = {
           p_dismissible?: boolean
         }
         Returns: SiteBannerRow
+      }
+      admin_save_blog_post: {
+        Args: {
+          p_title: string
+          p_slug: string
+          p_excerpt: string
+          p_content: string
+          p_id?: string | null
+          p_thumbnail_url?: string | null
+          p_category?: string
+          p_is_published?: boolean
+        }
+        Returns: BlogPostRow
+      }
+      admin_delete_blog_post: {
+        Args: {
+          p_id: string
+        }
+        Returns: undefined
       }
     }
   }

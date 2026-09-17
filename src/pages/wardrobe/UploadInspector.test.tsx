@@ -7,8 +7,9 @@ import { type Piece } from "../../data/catalog"
 import { WardrobeProvider } from "../../state/wardrobe"
 import { CatalogProvider } from "../../state/catalog"
 import { AuthContext, type AuthContextValue } from "../../state/auth"
+import { makeAuthStub } from "../../test/authStub"
 import { UploadInspector } from "./UploadInspector"
-import { supabase } from "../../lib/supabase"
+import { mockSupabaseFrom } from "../../test/supabaseMock"
 
 vi.mock("../../components/iso/IsoThumb", () => ({
   IsoThumb: () => <div data-testid="mock-iso-thumb" />,
@@ -30,32 +31,12 @@ const mockPiece: Piece = {
 }
 
 function stubAuth(userId = "user-123"): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: { id: userId, email: "user@test.dev" } as AuthContextValue["user"],
     session: {} as AuthContextValue["session"],
     profile: { id: userId, username: "cen0b" } as AuthContextValue["profile"],
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: true,
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 function PathPeek() {
@@ -104,19 +85,7 @@ describe("UploadInspector", () => {
   })
 
   it("renames garment on Enter", async () => {
-    const updateSpy = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    })
-    vi.spyOn(supabase, "from").mockImplementation(() => {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-        update: updateSpy,
-      } as never
-    })
+    const from = mockSupabaseFrom()
 
     const host = document.createElement("div")
     flushSync(() => {
@@ -152,23 +121,13 @@ describe("UploadInspector", () => {
       input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
     })
 
-    expect(updateSpy).toHaveBeenCalledWith({ name: "Neon Trench" })
+    const updates = from.getQueries("garments", "update")
+    expect(updates).toHaveLength(1)
+    expect(updates[0].payload).toEqual({ values: { name: "Neon Trench" }, options: undefined })
   })
 
   it("toggles public/private status", async () => {
-    const updateSpy = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    })
-    vi.spyOn(supabase, "from").mockImplementation(() => {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-        update: updateSpy,
-      } as never
-    })
+    const from = mockSupabaseFrom()
 
     const host = document.createElement("div")
     flushSync(() => {
@@ -195,7 +154,9 @@ describe("UploadInspector", () => {
       toggle.click()
     })
 
-    expect(updateSpy).toHaveBeenCalledWith({ is_public: false })
+    const updates = from.getQueries("garments", "update")
+    expect(updates).toHaveLength(1)
+    expect(updates[0].payload).toEqual({ values: { is_public: false }, options: undefined })
   })
 
   it("clicking Wear in Studio equips garment and navigates", async () => {
@@ -228,19 +189,7 @@ describe("UploadInspector", () => {
   })
 
   it("enforces maxLength and sanitizes garment name on submit", async () => {
-    const updateSpy = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    })
-    vi.spyOn(supabase, "from").mockImplementation(() => {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-        update: updateSpy,
-      } as never
-    })
+    const from = mockSupabaseFrom()
 
     const host = document.createElement("div")
     flushSync(() => {
@@ -276,23 +225,13 @@ describe("UploadInspector", () => {
       input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
     })
 
-    expect(updateSpy).toHaveBeenCalledWith({ name: "Neon Cloak" })
+    const updates = from.getQueries("garments", "update")
+    expect(updates).toHaveLength(1)
+    expect(updates[0].payload).toEqual({ values: { name: "Neon Cloak" }, options: undefined })
   })
 
   it("enforces maxLength on description textarea and sanitizes description", async () => {
-    const updateSpy = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    })
-    vi.spyOn(supabase, "from").mockImplementation(() => {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-        update: updateSpy,
-      } as never
-    })
+    const from = mockSupabaseFrom()
 
     const host = document.createElement("div")
     flushSync(() => {
@@ -328,6 +267,8 @@ describe("UploadInspector", () => {
       textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
     })
 
-    expect(updateSpy).toHaveBeenCalledWith({ description: "Fresh style" })
+    const updates = from.getQueries("garments", "update")
+    expect(updates).toHaveLength(1)
+    expect(updates[0].payload).toEqual({ values: { description: "Fresh style" }, options: undefined })
   })
 })

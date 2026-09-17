@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { formatErrorMessage } from "../../lib/errorFormat"
-import type { GarmentRow, LookRow, ProfileRow } from "../../lib/supabase"
+import type { LookRow, ProfileRow } from "../../lib/supabase"
+import type { GarmentRow } from "../../data/garment"
 import {
   fetchLikedContent,
   fetchProfileByUsername,

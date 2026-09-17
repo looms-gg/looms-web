@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import type { ProfileRow } from "../../lib/supabase"
 import * as authModule from "../../state/auth"
 import type { AuthContextValue } from "../../state/auth"
+import { makeAuthStub } from "../../test/authStub"
 import { ProfileSection } from "./ProfileSection"
 
 afterEach(() => {
@@ -43,11 +44,13 @@ function setInputValue(input: HTMLInputElement | HTMLTextAreaElement, value: str
 
 function renderSection(profile: ProfileRow = baseProfile) {
   const updateProfile = vi.fn(async () => ({ error: null }))
-  vi.spyOn(authModule, "useAuth").mockReturnValue({
-    user: { id: "u1" },
-    profile,
-    updateProfile,
-  } as unknown as AuthContextValue)
+  vi.spyOn(authModule, "useAuth").mockReturnValue(
+    makeAuthStub({
+      user: { id: "u1" } as AuthContextValue["user"],
+      profile,
+      updateProfile,
+    }),
+  )
 
   const host = document.createElement("div")
   document.body.appendChild(host)
@@ -102,11 +105,13 @@ describe("ProfileSection", () => {
           error: new Error("profile update rate limit exceeded"),
         }) as never,
     )
-    vi.spyOn(authModule, "useAuth").mockReturnValue({
-      user: { id: "u1" },
-      profile: baseProfile,
-      updateProfile,
-    } as unknown as AuthContextValue)
+    vi.spyOn(authModule, "useAuth").mockReturnValue(
+      makeAuthStub({
+        user: { id: "u1" } as AuthContextValue["user"],
+        profile: baseProfile,
+        updateProfile,
+      }),
+    )
 
     const host = document.createElement("div")
     document.body.appendChild(host)

@@ -1,14 +1,12 @@
 import { useMemo, useState, type CSSProperties } from "react"
-import { useNavigate } from "react-router-dom"
 import { MagnifyingGlass } from "@phosphor-icons/react"
 import { piecesFromEquipped } from "../../data/outfit"
 import { Icon } from "../../components/ui/Icon"
 import { IsoThumb } from "../../components/iso/IsoThumb"
+import { TileShell, LOOK_BADGE } from "../../components/piece/TileShell"
 import { RackGrid } from "../../components/piece/RackGrid"
 import { MAX_LIMITS } from "../../lib/sanitize"
-import { useWardrobe, type Look } from "../../state/wardrobe"
-import { LookInspector } from "./LookInspector"
-import { InspectorModal } from "./InspectorModal"
+import { type Look } from "../../state/wardrobe"
 import { WardrobeEmpty } from "./WardrobeEmpty"
 import { EmptyState } from "../../components/ui/EmptyState"
 
@@ -18,11 +16,7 @@ function outfitOf(look: Look) {
 }
 
 export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
-  const { loadLook } = useWardrobe()
-  const navigate = useNavigate()
   const [lookQuery, setLookQuery] = useState("")
-  const [inspectedLookId, setInspectedLookId] = useState<string | null>(null)
-  const inspectedLook = looks.find((look) => look.id === inspectedLookId) ?? null
 
   const filteredLooks = useMemo(() => {
     const q = lookQuery.trim().toLowerCase()
@@ -82,39 +76,38 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
                 }
               />
             ) : (
-              <RackGrid>
+              <RackGrid cols={5}>
                 {filteredLooks.map((look, i) => {
-                  const isOpen = look.id === inspectedLookId
                   return (
-                    <button
+                    <div
                       key={look.id}
-                      type="button"
-                      aria-pressed={isOpen}
-                      className={`look-tile rack-cell piece-tile tile-lift bg-base-200 text-left ${
-                        isOpen ? "look-tile-on" : ""
-                      }`}
+                      className="rack-cell"
                       style={{ "--i": Math.min(i, 9) } as CSSProperties}
-                      onClick={() => setInspectedLookId(look.id)}
                     >
-                      <IsoThumb
-                        outfit={outfitOf(look)}
-                        bodyId={look.bodyId}
-                        bodyHue={look.bodyHue}
-                        model={look.model}
-                        alt={look.name} />
-                      <div className="bg-neutral px-4 py-3 min-w-0">
-                        <h3
-                          className="truncate whitespace-nowrap overflow-hidden text-ellipsis font-extrabold"
-                          title={look.name}
-                        >
-                          {look.name}
-                        </h3>
-                        <p className="text-sm font-semibold text-primary">
-                          <span className="tabular-nums">{outfitOf(look).length}</span>{" "}
-                          layers
-                        </p>
-                      </div>
-                    </button>
+                      <TileShell
+                        to={`/look/${look.id}`}
+                        title={look.name}
+                        media={
+                          <IsoThumb
+                            outfit={outfitOf(look)}
+                            bodyId={look.bodyId}
+                            bodyHue={look.bodyHue}
+                            model={look.model}
+                            alt={look.name} />
+                        }
+                        badge={LOOK_BADGE}
+                        meta={
+                          <span className="text-xs font-extrabold text-base-content/60">
+                            <span className="tabular-nums font-bold text-primary">
+                              {outfitOf(look).length}
+                            </span>{" "}
+                            layers
+                            <span className="opacity-40"> · </span>
+                            <span className="capitalize">{look.model}</span>
+                          </span>
+                        }
+                      />
+                    </div>
                   )
                 })}
               </RackGrid>
@@ -122,21 +115,6 @@ export function WardrobeLooksPanel({ looks }: { looks: Look[] }) {
           </div>
         )}
       </div>
-
-      <InspectorModal
-        open={Boolean(inspectedLook)}
-        title={inspectedLook?.name ?? "Look"}
-        onClose={() => setInspectedLookId(null)}
-      >
-        {inspectedLook ? (
-          <LookInspector
-            look={inspectedLook}
-            onEditOutfit={() => {
-              loadLook(inspectedLook)
-              void navigate("/studio")
-            }} />
-        ) : null}
-      </InspectorModal>
     </>
   )
 }

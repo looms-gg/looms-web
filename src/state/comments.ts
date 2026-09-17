@@ -5,7 +5,7 @@
  */
 import { supabase } from "../lib/supabase"
 import { MAX_LIMITS, sanitizeText } from "../lib/sanitize"
-import { coerceProfileEmbed } from "../lib/profileEmbed"
+import { coerceProfileEmbed } from "../lib/content/profileEmbed"
 
 export type CommentTargetType = "garment" | "look"
 
@@ -34,19 +34,21 @@ export type CommentEmbedRow = {
   profiles: CommentProfileEmbed
 }
 
+export type CommentRow = {
+  id: string
+  user_id: string
+  parent_id: string | null
+  body: string
+  created_at: string
+  updated_at: string
+  profiles: unknown
+  garment_id?: string
+  look_id?: string
+}
+
 export function mapCommentRow(
   targetType: CommentTargetType,
-  row: {
-    id: string
-    user_id: string
-    parent_id: string | null
-    body: string
-    created_at: string
-    updated_at: string
-    profiles: unknown
-    garment_id?: string
-    look_id?: string
-  },
+  row: CommentRow,
 ): CommentItem {
   const targetId = (targetType === "garment" ? row.garment_id : row.look_id) ?? ""
   return {
@@ -90,8 +92,8 @@ export async function fetchComments(
       .order("created_at", { ascending: true })
 
     if (error) throw error
-    return ((data as unknown[]) ?? []).map((row) =>
-      mapCommentRow("garment", row as Parameters<typeof mapCommentRow>[1]),
+    return ((data as CommentRow[]) ?? []).map((row) =>
+      mapCommentRow("garment", row),
     )
   }
 
@@ -102,8 +104,8 @@ export async function fetchComments(
     .order("created_at", { ascending: true })
 
   if (error) throw error
-  return ((data as unknown[]) ?? []).map((row) =>
-    mapCommentRow("look", row as Parameters<typeof mapCommentRow>[1]),
+  return ((data as CommentRow[]) ?? []).map((row) =>
+    mapCommentRow("look", row),
   )
 }
 
@@ -131,7 +133,7 @@ export async function createComment(input: {
 
     if (error) throw error
     if (!data) throw new Error("Couldn't create comment.")
-    return mapCommentRow("garment", data as Parameters<typeof mapCommentRow>[1])
+    return mapCommentRow("garment", data as CommentRow)
   }
 
   const { data, error } = await supabase
@@ -147,7 +149,7 @@ export async function createComment(input: {
 
   if (error) throw error
   if (!data) throw new Error("Couldn't create comment.")
-  return mapCommentRow("look", data as Parameters<typeof mapCommentRow>[1])
+  return mapCommentRow("look", data as CommentRow)
 }
 
 export async function updateComment(input: {
@@ -170,7 +172,7 @@ export async function updateComment(input: {
 
     if (error) throw error
     if (!data) throw new Error("Couldn't update comment.")
-    return mapCommentRow("garment", data as Parameters<typeof mapCommentRow>[1])
+    return mapCommentRow("garment", data as CommentRow)
   }
 
   const { data, error } = await supabase
@@ -183,7 +185,7 @@ export async function updateComment(input: {
 
   if (error) throw error
   if (!data) throw new Error("Couldn't update comment.")
-  return mapCommentRow("look", data as Parameters<typeof mapCommentRow>[1])
+  return mapCommentRow("look", data as CommentRow)
 }
 
 export async function deleteComment(input: {

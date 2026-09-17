@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react"
 import { supabase, type ConnectionProvider, type ConnectionRow } from "../lib/supabase"
-import { formatErrorMessage } from "../lib/errorFormat"
 import { useAuthOptional } from "./auth"
 
 export type ConnectionsContextValue = {
@@ -22,7 +21,7 @@ export type ConnectionsContextValue = {
 export const ConnectionsContext = createContext<ConnectionsContextValue | null>(null)
 
 function toConnectionsError(error: { message: string } | null): Error | null {
-  return error ? new Error(formatErrorMessage(error)) : null
+  return error ? new Error(error.message) : null
 }
 
 export function ConnectionsProvider({ children }: { children: ReactNode }) {

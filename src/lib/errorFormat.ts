@@ -3,9 +3,11 @@
  * into user-friendly notices for rate limiting, quotas, and validation.
  *
  * Failure-reporting conventions by layer (deliberate split):
- * 1. State contexts that own their UI feedback (wardrobe, likes, catalog,
+ * 1. State contexts that own their UI feedback (wardrobe, catalog,
  *    notifications) mutate void and set their own error/notice state.
- * 2. Call-site-driven mutations (auth) return a typed `{ error }` result so
+ * 2. State contexts that leave surfacing to the caller (likes) return a
+ *    typed `{ error }` result for the call site to format.
+ * 3. Call-site-driven mutations (auth) return a typed `{ error }` result so
  *    each caller decides how to surface it.
  * 3. lib-layer fetchers and comments.ts throw raw errors; every catch must
  *    route the value through formatErrorMessage — never render it directly.

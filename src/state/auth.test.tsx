@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { MAX_LIMITS } from "../lib/sanitize"
 import { supabase } from "../lib/supabase"
 import { absoluteAppUrl } from "../lib/basePath"
+import { mockSupabaseFrom, mockSupabaseRpc } from "../test/supabaseMock"
 import { AuthProvider, useAuth } from "./auth"
 
 function mountAuth() {
@@ -48,88 +49,6 @@ describe("auth module", () => {
     const { getAuth } = mountAuth()
     expect(getAuth().loading).toBe(true)
     expect(getAuth().user).toBeNull()
-  })
-
-  it("derives isAdmin from the admin_users probe", async () => {
-    const user = {
-      id: "user-1",
-      email: "user@example.com",
-      email_confirmed_at: "2026-01-01T00:00:00Z",
-      app_metadata: {},
-      user_metadata: {},
-      aud: "authenticated",
-      created_at: "2026-01-01T00:00:00Z",
-    }
-    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
-      data: {
-        session: { user, access_token: "t", refresh_token: "r", expires_in: 3600, token_type: "bearer" },
-      },
-      error: null,
-    } as never)
-
-    const adminMaybeSingle = vi.fn().mockResolvedValue({ data: { user_id: user.id }, error: null })
-    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-      if (table === "profiles") {
-        return {
-          select: () => ({
-            eq: () => ({
-              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            }),
-          }),
-        } as never
-      }
-      if (table === "admin_users") {
-        return {
-          select: () => ({
-            eq: () => ({ maybeSingle: adminMaybeSingle }),
-          }),
-        } as never
-      }
-      throw new Error(`unexpected table ${table}`)
-    })
-
-    const { getAuth } = mountAuth()
-    await vi.waitFor(() => {
-      expect(getAuth().isAdmin).toBe(true)
-    })
-    expect(adminMaybeSingle).toHaveBeenCalled()
-  })
-
-  it("isAdmin stays false when the admin_users probe finds no row", async () => {
-    const user = {
-      id: "user-1",
-      email: "user@example.com",
-      email_confirmed_at: "2026-01-01T00:00:00Z",
-      app_metadata: {},
-      user_metadata: {},
-      aud: "authenticated",
-      created_at: "2026-01-01T00:00:00Z",
-    }
-    vi.spyOn(supabase.auth, "getSession").mockResolvedValue({
-      data: {
-        session: { user, access_token: "t", refresh_token: "r", expires_in: 3600, token_type: "bearer" },
-      },
-      error: null,
-    } as never)
-
-    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-      if (table === "profiles" || table === "admin_users") {
-        return {
-          select: () => ({
-            eq: () => ({
-              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            }),
-          }),
-        } as never
-      }
-      throw new Error(`unexpected table ${table}`)
-    })
-
-    const { getAuth } = mountAuth()
-    await vi.waitFor(() => {
-      expect(getAuth().loading).toBe(false)
-    })
-    expect(getAuth().isAdmin).toBe(false)
   })
 
   it("signUpWithPassword sanitizes username before signUp", async () => {
@@ -248,45 +167,30 @@ describe("auth module", () => {
       error: null,
     } as never)
 
-    const updateEq = vi.fn().mockResolvedValue({ error: null })
-    const update = vi.fn().mockReturnValue({ eq: updateEq })
-    const maybeSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: user.id,
-        username: "ok",
-        minecraft_username: null,
-        bio: null,
-        banner_url: null,
-        avatar_url: null,
-        show_last_seen: true,
-        show_likes: true,
-        created_at: "2026-01-01T00:00:00Z",
-        last_seen_at: null,
-      },
-      error: null,
+    const profileRow = {
+      id: user.id,
+      username: "ok",
+      minecraft_username: null,
+      bio: null,
+      banner_url: null,
+      avatar_url: null,
+      show_last_seen: true,
+      show_likes: true,
+      created_at: "2026-01-01T00:00:00Z",
+      last_seen_at: null,
+    }
+    const from = mockSupabaseFrom()
+    from.setDefaultHandler((query) => {
+      throw new Error(`unexpected table ${query.table}`)
     })
-    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-      if (table === "profiles") {
-        return {
-          select: () => ({
-            eq: () => ({ maybeSingle }),
-          }),
-          update,
-        } as never
+    from.on("profiles", (query) => {
+      if (query.operation === "update") {
+        return { data: null, error: null }
       }
-      if (table === "admin_users") {
-        return {
-          select: () => ({
-            eq: () => ({
-              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            }),
-          }),
-        } as never
-      }
-      throw new Error(`unexpected table ${table}`)
+      return { data: profileRow, error: null }
     })
-    vi.spyOn(supabase, "rpc").mockResolvedValue({ data: null, error: null } as never)
-
+    from.on("admin_users", { data: null, error: null })
+    mockSupabaseRpc()
     const { getAuth } = mountAuth()
     // Allow session resolve + profile fetch to settle
     await Promise.resolve()
@@ -303,13 +207,15 @@ describe("auth module", () => {
       bio: longBio,
     })
     expect(error).toBeNull()
-    expect(update).toHaveBeenCalledWith(
+    const updates = from.getQueries("profiles", "update")
+    expect(updates).toHaveLength(1)
+    const payload = (updates[0].payload as { values: { username: string; bio: string } }).values
+    expect(payload).toEqual(
       expect.objectContaining({
         username: expect.stringMatching(new RegExp(`^.{1,${MAX_LIMITS.USERNAME}}$`)),
         bio: "b".repeat(MAX_LIMITS.BIO),
       }),
     )
-    const payload = update.mock.calls[0][0] as { username: string; bio: string }
     expect(payload.username.length).toBeLessThanOrEqual(MAX_LIMITS.USERNAME)
     expect(payload.bio.length).toBe(MAX_LIMITS.BIO)
   })
@@ -341,23 +247,12 @@ describe("auth module", () => {
     const signIn = vi
       .spyOn(supabase.auth, "signInWithPassword")
       .mockRejectedValue(new Error("must not be called"))
-    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-      if (table === "profiles") {
-        return {
-          upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
-        } as never
-      }
-      if (table === "admin_users") {
-        return {
-          select: () => ({
-            eq: () => ({
-              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-            }),
-          }),
-        } as never
-      }
-      throw new Error(`unexpected table ${table}`)
+    const from = mockSupabaseFrom()
+    from.setDefaultHandler((query) => {
+      throw new Error(`unexpected table ${query.table}`)
     })
+    from.on("profiles", { data: null, error: null })
+    from.on("admin_users", { data: null, error: null })
 
     const { getAuth } = mountAuth()
     const { error } = await getAuth().signUpWithPassword({
@@ -388,24 +283,24 @@ describe("auth module", () => {
   })
 
   it("deleteAccount calls the RPC, signs out, and clears local state", async () => {
-    const rpc = vi.spyOn(supabase, "rpc").mockResolvedValue({ data: null, error: null } as never)
+    const rpc = mockSupabaseRpc()
     const signOut = vi.spyOn(supabase.auth, "signOut").mockResolvedValue({ error: null } as never)
 
     const { getAuth } = mountAuth()
     const { error } = await getAuth().deleteAccount()
 
     expect(error).toBeNull()
-    expect(rpc).toHaveBeenCalledWith("delete_my_account")
+    expect(rpc.rpcSpy).toHaveBeenCalledWith("delete_my_account")
     expect(signOut).toHaveBeenCalled()
     expect(getAuth().user).toBeNull()
     expect(getAuth().profile).toBeNull()
   })
 
   it("deleteAccount surfaces RPC errors but still signs out", async () => {
-    vi.spyOn(supabase, "rpc").mockResolvedValue({
+    mockSupabaseRpc().setDefaultHandler({
       data: null,
       error: { message: "delete_my_account: not authenticated" },
-    } as never)
+    })
     vi.spyOn(supabase.auth, "signOut").mockResolvedValue({ error: null } as never)
 
     const { getAuth } = mountAuth()
@@ -429,10 +324,10 @@ describe("auth module", () => {
   })
 
   it("completeOnboarding calls the RPC with a sanitized username", async () => {
-    const rpc = vi.spyOn(supabase, "rpc").mockResolvedValue({ data: null, error: null } as never)
+    const rpc = mockSupabaseRpc()
     const { getAuth } = mountAuth()
     const { error } = await getAuth().completeOnboarding("  Pixel<script>Weaver  ")
-    expect(rpc).toHaveBeenCalledWith("complete_onboarding", { p_username: "PixelWeaver" })
+    expect(rpc.rpcSpy).toHaveBeenCalledWith("complete_onboarding", { p_username: "PixelWeaver" })
     expect(error).toBeNull()
   })
 

@@ -3,12 +3,13 @@ import { flushSync } from "react-dom"
 import { MemoryRouter } from "react-router-dom"
 import { describe, expect, it, vi, afterEach } from "vitest"
 import { pieces, replaceCatalog } from "../../data/catalog"
+import { SLOT_LABEL } from "../../data/pieceTypes"
 import { fixturePieces } from "../../data/catalogSeed"
 import { AuthContext, AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
 import { WardrobeProvider, useWardrobe } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
-import { supabase } from "../../lib/supabase"
+import { mockSupabaseFrom } from "../../test/supabaseMock"
 import { PieceTile } from "./PieceTile"
 
 afterEach(() => {
@@ -39,6 +40,15 @@ describe("PieceTile", () => {
     const host = renderTile(<PieceTile piece={pieces[0]} />)
     expect(host.querySelector(`a[href="/piece/${pieces[0].id}"]`)).not.toBeNull()
     expect(host.querySelector(`a[href="/u/${pieces[0].maker}"]`)).not.toBeNull()
+  })
+
+  it("overlays the slot label as a colored fading badge on the media", () => {
+    const piece = pieces[0]
+    const host = renderTile(<PieceTile piece={piece} />)
+    const badge = host.querySelector(".tile-badge") as HTMLElement
+    expect(badge).not.toBeNull()
+    expect(badge.textContent).toBe(SLOT_LABEL[piece.slot])
+    expect(badge.style.getPropertyValue("--badge-color")).toBeTruthy()
   })
 
   it("does not render a like button on tiles", () => {
@@ -88,41 +98,14 @@ describe("PieceTile", () => {
 
   it("removes an owned piece via two-tap on the checkmark", async () => {
     const piece = pieces.find((p) => p.slot !== "eyes")!
-    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-      if (table === "wardrobe_items") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({
-                data: [{ garment_id: piece.id }],
-                error: null,
-              }),
-            }),
-          }),
-          insert: vi.fn().mockResolvedValue({ error: null }),
-          delete: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          }),
-        } as never
+    const from = mockSupabaseFrom()
+    from.on("wardrobe_items", (query) => {
+      if (query.operation === "select") {
+        return { data: [{ garment_id: piece.id }], error: null }
       }
-      return {
-        select: vi.fn().mockReturnValue({
-          or: vi.fn().mockReturnValue({
-            order: vi
-              .fn()
-              .mockResolvedValue({ data: [], error: { message: "skip remote catalog" } }),
-          }),
-          eq: vi.fn().mockReturnValue({
-            order: vi
-              .fn()
-              .mockResolvedValue({ data: [], error: { message: "skip remote catalog" } }),
-            then: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-      } as never
+      return { data: null, error: null }
     })
+    from.on("garments", { data: [], error: { message: "skip remote catalog" } })
 
     const signedInAuth = {
       user: { id: "user-a", email: "a@test.dev" },
@@ -132,9 +115,6 @@ describe("PieceTile", () => {
       loading: false,
       emailVerified: true,
       pendingEmail: null,
-      emailVerifyOpen: false,
-      openEmailVerify: () => {},
-      dismissEmailVerify: () => {},
       resendConfirmation: async () => ({ error: null }),
       signInWithPassword: async () => ({ error: null }),
       signUpWithPassword: async () => ({ error: null }),

@@ -8,7 +8,7 @@ import {
   providerLabel,
   stashOAuthReturn,
   type OAuthProvider,
-} from "../../lib/oauth"
+} from "../../lib/auth/oauth"
 import type { ConnectionProvider, ConnectionRow } from "../../lib/supabase"
 import { Icon } from "../../components/ui/Icon"
 

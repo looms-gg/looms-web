@@ -1,10 +1,11 @@
 import { useState, type CSSProperties } from "react"
-import { Bookmark, Check, Flag, Link as LinkIcon, Plus, Trash } from "@phosphor-icons/react"
+import { Check, Flag, Link as LinkIcon, Plus } from "@phosphor-icons/react"
 import type { Piece } from "../../data/catalog"
 import { Icon } from "../../components/ui/Icon"
-import { Button, ButtonLink } from "../../components/ui/Button"
+import { Button } from "../../components/ui/Button"
 import { LikeButton } from "../../components/piece/LikeButton"
-import { copyShareLink, getPieceShareUrl } from "../../lib/share"
+import { SaveButton } from "../../components/piece/SaveButton"
+import { copyShareLink, getPieceShareUrl } from "../../lib/content/share"
 import { useAuthOptional } from "../../state/auth"
 import { AuthModal } from "../../components/auth/AuthModal"
 import { ReportModal } from "../../components/moderation/ReportModal"
@@ -34,7 +35,6 @@ export function PieceActions({
   const [copied, setCopied] = useState(false)
   const [authOpen, setAuthOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
-  const [confirmRemove, setConfirmRemove] = useState(false)
 
   async function handleShare() {
     const url = getPieceShareUrl(piece.id)
@@ -55,24 +55,12 @@ export function PieceActions({
         id={piece.id}
         count={piece.likeCount}
         onCountChange={onLikeCountChange} />
-      <span
-        className="inline-flex h-11 items-center gap-1.5 rounded-full border border-base-content/15 bg-base-100 px-3 text-sm font-extrabold tabular-nums text-base-content/70"
-        title={`${piece.savedCount} ${piece.savedCount === 1 ? "save" : "saves"}`}
-      >
-        <Icon icon={Bookmark} size="xs" />
-        {piece.savedCount}
-        <span className="font-bold text-base-content/45">saved</span>
-      </span>
-      <Button
-        variant={copied ? "success" : "ghost"}
-        className="min-h-11 font-bold border border-base-content/15"
-        onClick={handleShare}
-        title={copied ? "Link copied to clipboard!" : `Share ${piece.name}`}
-        aria-label={copied ? "Link copied" : `Share ${piece.name}`}
-      >
-        <Icon icon={copied ? Check : LinkIcon} size="sm" className="mr-1.5" />
-        {copied ? "Copied!" : "Share"}
-      </Button>
+      <SaveButton
+        name={piece.name}
+        count={piece.savedCount}
+        owned={owned}
+        onAdd={onAddToWardrobe}
+        onRemove={onRemoveFromWardrobe} />
       {owned ? (
         <>
           <Button
@@ -87,32 +75,6 @@ export function PieceActions({
             }
           >
             {wearing ? "Wearing" : "Wear in studio"}
-          </Button>
-          <Button
-            variant={confirmRemove ? "error" : "ghost"}
-            className={`min-h-11 font-bold border transition-colors ${
-              confirmRemove
-                ? "text-white font-extrabold"
-                : "border-base-content/15 text-base-content/60 hover:border-error hover:text-error"
-            }`}
-            onClick={() => {
-              if (!confirmRemove) {
-                setConfirmRemove(true)
-                return
-              }
-              setConfirmRemove(false)
-              onRemoveFromWardrobe()
-            }}
-            onBlur={() => setConfirmRemove(false)}
-            title={confirmRemove ? "Confirm remove" : "Remove this piece from your wardrobe"}
-            aria-label={
-              confirmRemove
-                ? `Confirm removing ${piece.name} from wardrobe`
-                : `Remove ${piece.name} from wardrobe`
-            }
-          >
-            <Icon icon={confirmRemove ? Trash : Check} size="sm" className="mr-1.5" />
-            {confirmRemove ? "Confirm remove?" : "Saved"}
           </Button>
         </>
       ) : (
@@ -130,11 +92,16 @@ export function PieceActions({
           </Button>
         </>
       )}
-      {owned ? (
-        <ButtonLink to="/studio" variant="ghost" className="min-h-11 font-bold">
-          Open studio
-        </ButtonLink>
-      ) : null}
+      <Button
+        variant={copied ? "success" : "ghost"}
+        className="min-h-11 font-bold border border-base-content/15"
+        onClick={handleShare}
+        title={copied ? "Link copied to clipboard!" : `Share ${piece.name}`}
+        aria-label={copied ? "Link copied" : `Share ${piece.name}`}
+      >
+        <Icon icon={copied ? Check : LinkIcon} size="sm" className="mr-1.5" />
+        {copied ? "Copied!" : "Share"}
+      </Button>
       {!isCreator ? (
         <Button
           variant="ghost"

@@ -9,6 +9,7 @@ import { CatalogProvider } from "../state/catalog"
 import { WardrobeProvider } from "../state/wardrobe"
 import { LikesProvider } from "../state/likes"
 import { mockSupabaseFrom } from "../test/supabaseMock"
+import { makeAuthStub } from "../test/authStub"
 
 vi.mock("../components/iso/SkinStage", () => ({
   SkinStage: () => <div data-testid="mock-skin-stage" />,
@@ -19,32 +20,12 @@ vi.mock("../components/iso/IsoThumb", () => ({
 }))
 
 function stubAuth(userId: string): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: { id: userId, email: "test@looms.dev" } as AuthContextValue["user"],
     session: {} as AuthContextValue["session"],
     profile: { id: userId, username: "Tester" } as AuthContextValue["profile"],
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: true,
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 const activeRoots: ReturnType<typeof createRoot>[] = []
@@ -98,5 +79,9 @@ describe("StudioPage", () => {
     // Confirm mock skin stage exists
     const stage = host.querySelector("[data-testid='mock-skin-stage']")
     expect(stage).not.toBeNull()
+
+    // Confirm Collection and Assembly panels are rendered
+    expect(host.textContent).toContain("Collection")
+    expect(host.textContent).toContain("Assembly")
   })
 })

@@ -1,13 +1,13 @@
 import { useState } from "react"
 import { StudioMobileNav, type MobileStage } from "./StudioMobileNav"
 import { StudioStagePanel } from "./StudioStagePanel"
-import { StudioRack } from "./StudioRack"
-import { StudioLayers } from "./StudioLayers"
+import { StudioCollection } from "./StudioCollection"
+import { StudioAssembly } from "./StudioAssembly"
 import type { useStudioBoard } from "./useStudioBoard"
 import {
-  studioLayersProps,
-  studioRackProps,
-  studioStageProps,
+  assemblyProps,
+  collectionProps,
+  stageProps,
 } from "./studioPanelProps"
 
 type Board = ReturnType<typeof useStudioBoard>
@@ -20,23 +20,24 @@ export function StudioMobileShell({ board }: { board: Board }) {
       <div className="studio-mobile-stage">
         <div className="studio-mobile-panel" key={stage}>
           {stage === "preview" && (
-            <StudioStagePanel {...studioStageProps(board)} />
+            <StudioStagePanel {...stageProps(board)} />
           )}
           {stage === "pieces" && (
-            <StudioRack {...studioRackProps(board)} />
+            <StudioCollection {...collectionProps(board)} />
           )}
           {stage === "layers" && (
-            <StudioLayers
-              {...studioLayersProps(board)}
-              onOpenAppearance={() => {
-                board.setRack("appearance")
-                setStage("pieces")
-              }}
-            />
+            <StudioAssembly {...assemblyProps(board)} />
           )}
         </div>
       </div>
-      <StudioMobileNav stage={stage} onStage={setStage} />
+      <StudioMobileNav
+        stage={stage}
+        onStage={setStage}
+        saveAction={() => {
+          setStage("preview")
+          board.onSave()
+        }}
+      />
     </div>
   )
 }

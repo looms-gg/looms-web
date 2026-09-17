@@ -209,5 +209,24 @@ describe("ExploreHero", () => {
     const skeletons = host.querySelectorAll(".skin-bone")
     expect(skeletons.length).toBeGreaterThanOrEqual(3)
   })
+
+  it("renders the hero backdrop as a quiet dot texture", async () => {
+    const host = document.createElement("div")
+
+    await act(async () => {
+      flushSync(() => {
+        createRoot(host).render(
+          <MemoryRouter>
+            <ExploreHero trendingLooks={topLooks} />
+          </MemoryRouter>,
+        )
+      })
+    })
+
+    const dots = host.querySelector(".hero-dots-container")
+    expect(dots).not.toBeNull()
+    expect(dots?.querySelector("img")).toBeNull()
+  })
 })
+
 

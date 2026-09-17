@@ -4,7 +4,8 @@ import { AuthModal } from "../auth/AuthModal"
 import { Icon } from "../ui/Icon"
 import { formatErrorMessage } from "../../lib/errorFormat"
 import { useAuthOptional } from "../../state/auth"
-import { useLikesOptional, type LikeTargetType } from "../../state/likes"
+import { useLikesOptional } from "../../state/likes"
+import type { LikeTargetType } from "../../data/likeTarget"
 
 export function LikeButton({
   type,
@@ -12,12 +13,14 @@ export function LikeButton({
   count = 0,
   onCountChange,
   className = "",
+  size = "md",
 }: {
   type: LikeTargetType
   id: string
   count?: number
   onCountChange?: (next: number) => void
   className?: string
+  size?: "sm" | "md"
 }) {
   const auth = useAuthOptional()
   const likes = useLikesOptional()
@@ -37,10 +40,12 @@ export function LikeButton({
     <>
       <button
         type="button"
-        className={`relative inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-base-content/20 bg-base-100 px-2.5 transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.96] ${
+        className={`btn ${
+          size === "sm" ? "h-7 min-h-7 gap-1 px-2 text-xs font-bold" : "h-10 min-h-10 gap-1.5 px-3 text-sm font-bold"
+        } ${
           liked
-            ? "border-secondary text-secondary"
-            : "text-base-content/80 hover:border-secondary hover:text-secondary"
+            ? "bg-secondary/20 text-secondary"
+            : "bg-base-300 text-base-content/80 hover:text-secondary"
         } ${className}`}
         aria-pressed={liked}
         aria-label={

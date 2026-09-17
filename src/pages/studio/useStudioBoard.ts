@@ -1,11 +1,9 @@
 import {
   useCallback,
   useState,
-  type Dispatch,
   type FormEvent,
-  type SetStateAction,
 } from "react"
-import { getPiece, SLOTS, type Piece, type Slot } from "../../data/catalog"
+import { getPiece, COLLECTION_CATEGORY_ORDER, type Piece, type Slot } from "../../data/catalog"
 import { findMatchingLook, piecesFromEquipped } from "../../data/outfit"
 import { bodies, bodyOrDefault } from "../../data/bodies"
 import { parseEyeId, formatEyeId, clampEyeOffset } from "../../data/eyes"
@@ -30,21 +28,14 @@ export function ownedBySlotMap(owned: string[], catalog: Piece[] = []) {
 }
 
 export function filledSlots(ownedBySlot: Record<Slot, Piece[]>) {
-  return SLOTS.filter((slot) => ownedBySlot[slot].length > 0)
+  return COLLECTION_CATEGORY_ORDER.filter((slot) => (ownedBySlot[slot]?.length ?? 0) > 0)
 }
 
 export function pickBodyTone(
   id: string,
-  bodyId: string,
   setBody: (id: string) => void,
-  setHueOpen: Dispatch<SetStateAction<boolean>>,
 ) {
-  if (id === bodyId) {
-    setHueOpen((open) => !open)
-    return
-  }
   setBody(id)
-  setHueOpen(false)
 }
 
 export async function exportLook(
@@ -91,8 +82,8 @@ function useStudioLook(wardrobe: ReturnType<typeof useWardrobe>) {
     setPrevLookId(null)
   }
 
-  const onSave = (event: FormEvent) => {
-    event.preventDefault()
+  const onSave = (event?: FormEvent) => {
+    event?.preventDefault()
     const clean = sanitizeText(name, MAX_LIMITS.LOOK_NAME) || "Untitled look"
     const existing = findLookByName(wardrobe.looks, clean)
     if (existing) {
@@ -168,8 +159,7 @@ export function useStudioBoard() {
   const lookState = useStudioLook(wardrobe)
   const eyeState = useStudioEyes(wardrobe.equipped.eyes, wardrobe.wear)
 
-  const [rack, setRack] = useState<StudioRackTab>("all")
-  const [hueOpen, setHueOpen] = useState(false)
+  const [collectionSlot, setCollectionSlot] = useState<"all" | Slot>("all")
   const outfit = piecesFromEquipped(wardrobe.equipped, wardrobe.stack)
   const ownedBySlot = ownedBySlotMap(wardrobe.owned, catalogPieces)
   const racks = filledSlots(ownedBySlot)
@@ -177,8 +167,17 @@ export function useStudioBoard() {
   const bodyTint = shiftHex(body.swatch, wardrobe.bodyHue)
 
   const pickTone = useCallback(
-    (id: string) => pickBodyTone(id, wardrobe.bodyId, wardrobe.setBody, setHueOpen),
-    [wardrobe.bodyId, wardrobe.setBody],
+    (id: string) => wardrobe.setBody(id),
+    [wardrobe.setBody],
+  )
+
+  const reorderStack = useCallback(
+    (pieceId: string, visualTargetIndex: number) => {
+      // In stackTopFirst, visual index 0 is topmost layer (last in stack).
+      const targetIndex = Math.max(0, outfit.length - 1 - visualTargetIndex)
+      wardrobe.reorderStack(pieceId, targetIndex)
+    },
+    [outfit.length, wardrobe.reorderStack],
   )
 
   const downloadSkin = useCallback(
@@ -196,13 +195,14 @@ export function useStudioBoard() {
     owned: wardrobe.owned,
     ownedBySlot,
     racks,
-    rack,
-    setRack,
+    collectionSlot,
+    setCollectionSlot,
     equipped: wardrobe.equipped,
     wear: wardrobe.wear,
     wearEye: eyeState.wearEye,
     clearSlot: wardrobe.clearSlot,
     moveStack: wardrobe.moveStack,
+    reorderStack,
     setModel: wardrobe.setModel,
     body,
     bodyTint,
@@ -211,7 +211,6 @@ export function useStudioBoard() {
     bodyHue: wardrobe.bodyHue,
     setBodyHue: wardrobe.setBodyHue,
     model: wardrobe.model,
-    hueOpen,
     outfit,
     stackTopFirst: [...outfit].reverse(),
     eyeOffset: eyeState.eyeOffset,

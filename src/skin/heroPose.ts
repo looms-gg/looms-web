@@ -4,9 +4,10 @@ import { DEFAULT_BODY_ID } from "../data/bodies"
 import { piecesFromEquipped, equippedFromStack } from "../data/outfit"
 import type { SkinModel } from "./convert"
 import { composeSkin } from "./compose"
-import { crispSkinTexture, expandVisible, lightSkinViewer, pauseViewerLoop, viewerModelName } from "./focus"
+import { crispSkinTexture, expandVisible, lightSkinViewer, pauseViewerLoop, viewerModelName } from "./viewer"
+import { runOnceInflight } from "./inflight"
 import { getStoredThumb, setStoredThumb } from "./thumbCache"
-import { compositeIsoThumbFx } from "./thumbFx"
+import { canvasToPng, compositeIsoThumbFx, thumbImageToUrl, type ThumbImage } from "./thumbFx"
 import { washFromCanvas } from "./wash"
 
 export type HeroPose = "center" | "left" | "right"
@@ -27,15 +28,22 @@ export type HeroLook = {
 export type HeroPoseThumbResult = {
   url: string
   wash: string
-  // True when the look's stack references pieces the catalog registry has not
-  // hydrated yet: the composed skin would be missing layers (a "naked" hero
-  // figure). Never cached — the caller should retry once the catalog loads.
-  pending?: boolean
 }
 
 const memCache = new Map<string, HeroPoseThumbResult>()
 const inflight = new Map<string, Promise<HeroPoseThumbResult>>()
+// IndexedDB payload: the encoded PNG (Blob preferred, data URL fallback).
+type StoredHeroThumb = { png: ThumbImage; wash: string }
 let viewer: SkinViewer | null = null
+
+// Render resolution for hero busts. 3x the display size so the PNG stays
+// crisp on HiDPI screens at the bust's full CSS width (~425px). The baked fx
+// (punch shadow, rim band) scale with the same factor to keep their visual
+// thickness identical to the 1x bake. scripts/render-hero-skeletons.html
+// mirrors these constants for the offline skeleton renders.
+export const HERO_RENDER_SCALE = 3
+const HERO_RIM = 4 * HERO_RENDER_SCALE
+const HERO_PUNCH = 8 * HERO_RENDER_SCALE
 
 const fitBox = new Box3()
 const fitSize = new Vector3()
@@ -113,8 +121,8 @@ function getHeroViewer(): SkinViewer {
   try {
     const next = new SkinViewer({
       canvas: document.createElement("canvas"),
-      width: 280,
-      height: 310,
+      width: 280 * HERO_RENDER_SCALE,
+      height: 310 * HERO_RENDER_SCALE,
       renderPaused: true,
     })
     lightSkinViewer(next)
@@ -146,30 +154,32 @@ function renderHeroFrame(
   v.render()
 }
 
-function captureViewerThumb(v: SkinViewer): string {
+async function captureViewerThumb(v: SkinViewer): Promise<ThumbImage> {
   // Bake the camera's framed bust as-is (no tile normalization): the hero
   // container displays it with `contain`, so normalizing to the tile fill
   // only shrank the characters.
   try {
-    return compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height, {
+    return await compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height, {
       normalize: false,
-      rim: 4,
+      rim: HERO_RIM,
       rimAlpha: 0.45,
+      punchX: HERO_PUNCH,
+      punchY: HERO_PUNCH,
     })
   } catch {
-    return v.canvas.toDataURL("image/png")
+    return canvasToPng(v.canvas)
   }
 }
 
 async function generateHeroThumb(
   look: HeroLook,
   pose: HeroPose,
-): Promise<HeroPoseThumbResult> {
+): Promise<{ png: ThumbImage; wash: string }> {
   const pieces = piecesFromEquipped(equippedFromStack(look.stack), look.stack)
   // Refuse to compose (and cache) while any stacked piece is still missing
   // from the registry: those slots would silently drop out of the skin.
   if (hasUnloadedPieces(look.stack, pieces)) {
-    return { url: "", wash: "", pending: true }
+    return { png: "", wash: "" }
   }
 
   const model = look.model ?? "classic"
@@ -185,12 +195,12 @@ async function generateHeroThumb(
   try {
     v = getHeroViewer()
   } catch {
-    return { url: "", wash }
+    return { png: "", wash }
   }
 
   renderHeroFrame(v, skin, model, pose)
-  const url = captureViewerThumb(v)
-  return { url, wash }
+  const png = await captureViewerThumb(v)
+  return { png, wash }
 }
 
 export async function heroPosedLookThumb(
@@ -206,36 +216,33 @@ export async function heroPosedLookThumb(
   // v17: the rim became an inner overlay tinting the render's lit edge.
   // v18: hero busts use the lighter piece rim preset to match the app.
   // v19: thinner rim highlight (4px, 0.45 alpha) so large characters stay crisp.
-  const key = `hero-bust:v19:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
+  // v20: busts render at 3x resolution (840x930) for HiDPI sharpness; fx offsets
+  // scaled with the render so the baked shadow and rim look unchanged.
+  // v21: thumbs store a PNG Blob instead of a base64 data URL (see piece v77).
+  const key = `hero-bust:v21:${look.id}:${pose}:${look.bodyId}:${look.bodyHue}:${look.model}:${stackKey}`
 
-  const hit = memCache.get(key)
-  if (hit) return hit
-
-  const pending = inflight.get(key)
-  if (pending) return pending
-
-  const work = (async () => {
-    const stored = await getStoredThumb<HeroPoseThumbResult>(key)
+  return runOnceInflight(memCache, inflight, key, async () => {
+    const stored = await getStoredThumb<StoredHeroThumb>(key)
     if (stored) {
-      memCache.set(key, stored)
-      return stored
+      const result: HeroPoseThumbResult = {
+        url: thumbImageToUrl(stored.png),
+        wash: stored.wash,
+      }
+      memCache.set(key, result)
+      return result
     }
 
-    const res = await generateHeroThumb(look, pose)
-    // Never cache a failed capture (empty url): the hero would show its
-    // skeleton forever on every future visit.
-    if (res.url) {
-      memCache.set(key, res)
-      setStoredThumb(key, res)
+    const { png, wash } = await generateHeroThumb(look, pose)
+    // Never cache a failed capture (empty image): the hero would show its
+    // skeleton forever on every future visit. A Blob image is always real;
+    // the data-URL fallback is empty-string when the capture failed.
+    const failed = typeof png === "string" && !png
+    if (!failed) {
+      const result: HeroPoseThumbResult = { url: thumbImageToUrl(png), wash }
+      memCache.set(key, result)
+      setStoredThumb(key, { png, wash })
+      return result
     }
-    return res
-  })()
-
-  inflight.set(key, work)
-  void work
-    .finally(() => {
-      if (inflight.get(key) === work) inflight.delete(key)
-    })
-    .catch(() => {})
-  return work
+    return { url: "", wash }
+  })
 }

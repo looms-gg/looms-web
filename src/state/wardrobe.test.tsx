@@ -4,81 +4,36 @@ import { describe, expect, it, vi } from "vitest"
 import { pieces } from "../data/catalog"
 import { WardrobeProvider, useWardrobe, type Look } from "./wardrobe"
 import * as authModule from "./auth"
-import { supabase } from "../lib/supabase"
+import { makeAuthStub } from "../test/authStub"
+import { mockSupabaseFrom, type SupabaseMockController } from "../test/supabaseMock"
 import type { AuthContextValue } from "./auth"
 import { persistDefaults } from "./persist"
 
 function stubAuth(userId: string | null): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: userId ? ({ id: userId, email: "test@looms.dev" } as AuthContextValue["user"]) : null,
     session: userId ? ({} as AuthContextValue["session"]) : null,
     profile: userId
       ? ({ id: userId, username: "Tester" } as AuthContextValue["profile"])
       : null,
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: Boolean(userId),
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
-function mockLooksTable(options?: { wardrobeIds?: string[] }) {
+function mockLooksTable(options?: { wardrobeIds?: string[] }): SupabaseMockController {
   const wardrobeIds = options?.wardrobeIds ?? []
-  return vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-    if (table === "wardrobe_items") {
+  const controller = mockSupabaseFrom()
+  controller.on("wardrobe_items", (query) => {
+    if (query.operation === "select") {
       return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: wardrobeIds.map((garment_id) => ({ garment_id })),
-              error: null,
-            }),
-          }),
-        }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        }),
-      } as never
+        data: wardrobeIds.map((garment_id) => ({ garment_id })),
+        error: null,
+      }
     }
-    return {
-      insert: vi.fn().mockResolvedValue({ error: null }),
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }),
-      delete: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }),
-    } as never
+    return { data: null, error: null }
   })
+  controller.on("looks", { data: [], error: null })
+  return controller
 }
 
 describe("session module", () => {
@@ -291,25 +246,7 @@ describe("session module", () => {
   })
 
   it("persists looks to supabase when user is logged in", () => {
-    const insertSpy = vi.fn().mockResolvedValue({ error: null })
-    vi.spyOn(supabase, "from").mockReturnValue({
-      insert: insertSpy,
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }),
-      delete: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }),
-    } as any)
+    const from = mockLooksTable()
 
     const mockAuthVal = stubAuth("user-test-1")
     vi.spyOn(authModule, "useAuth").mockReturnValue(mockAuthVal)
@@ -335,11 +272,14 @@ describe("session module", () => {
       session.saveLook("Cloud Cape Outfit")
     })
 
-    expect(insertSpy).toHaveBeenCalled()
-    expect(insertSpy).toHaveBeenCalledWith(
+    const insertQueries = from.getQueries("looks", "insert")
+    expect(insertQueries).toHaveLength(1)
+    expect(insertQueries[0].payload).toEqual(
       expect.objectContaining({
-        user_id: "user-test-1",
-        name: "Cloud Cape Outfit",
+        values: expect.objectContaining({
+          user_id: "user-test-1",
+          name: "Cloud Cape Outfit",
+        }),
       }),
     )
   })
@@ -461,7 +401,7 @@ describe("session module", () => {
 
   it("inserts wardrobe_items then owns the piece when signed in", async () => {
     const pieceId = pieces[0].id
-    const fromSpy = mockLooksTable({ wardrobeIds: [] })
+    const from = mockLooksTable({ wardrobeIds: [] })
     localStorage.clear()
 
     let session!: ReturnType<typeof useWardrobe>
@@ -488,12 +428,12 @@ describe("session module", () => {
     await vi.waitFor(() => {
       expect(session.owns(pieceId)).toBe(true)
     })
-    expect(fromSpy).toHaveBeenCalledWith("wardrobe_items")
+    expect(from.getQueries("wardrobe_items", "insert")).toHaveLength(1)
   })
 
   it("removes a wardrobe item locally and from the cloud when signed in", async () => {
     const piece = pieces.find((p) => p.slot !== "eyes")!
-    const fromSpy = mockLooksTable({ wardrobeIds: [piece.id] })
+    const from = mockLooksTable({ wardrobeIds: [piece.id] })
     localStorage.clear()
 
     let session!: ReturnType<typeof useWardrobe>
@@ -530,11 +470,7 @@ describe("session module", () => {
     expect(session.owns(piece.id)).toBe(false)
     expect(session.equipped[piece.slot]).toBeUndefined()
 
-    const deleteCalls = fromSpy.mock.results
-      .filter((r) => r.type === "return")
-      .map((r) => r.value)
-    expect(fromSpy).toHaveBeenCalledWith("wardrobe_items")
-    void deleteCalls
+    expect(from.getQueries("wardrobe_items", "delete")).toHaveLength(1)
   })
 
   it("does not persist guest looks across remount", () => {
@@ -634,28 +570,23 @@ describe("session module", () => {
   it("hydrates equipped slots from stack when loading cloud looks", async () => {
     localStorage.clear()
     const pieceId = pieces[0].id
-    vi.spyOn(supabase, "from").mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockResolvedValue({
-            data: [
-              {
-                id: "cloud-look-1",
-                name: "Winter Fit",
-                stack: [pieceId],
-                body_id: "slate",
-                body_hue: 0,
-                model: "classic",
-                created_at: new Date().toISOString(),
-                description: "Snowy day",
-                visibility: "public",
-              },
-            ],
-            error: null,
-          }),
-        }),
-      }),
-    } as never)
+    const from = mockLooksTable()
+    from.on("looks", {
+      data: [
+        {
+          id: "cloud-look-1",
+          name: "Winter Fit",
+          stack: [pieceId],
+          body_id: "slate",
+          body_hue: 0,
+          model: "classic",
+          created_at: new Date().toISOString(),
+          description: "Snowy day",
+          visibility: "public",
+        },
+      ],
+      error: null,
+    })
 
     let session!: ReturnType<typeof useWardrobe>
     function Consumer() {

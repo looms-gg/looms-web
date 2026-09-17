@@ -1,29 +1,14 @@
-import { useEffect, useState } from "react"
-import { StudioRack } from "./studio/StudioRack"
+import { StudioCollection } from "./studio/StudioCollection"
 import { StudioStagePanel } from "./studio/StudioStagePanel"
-import { StudioLayers } from "./studio/StudioLayers"
+import { StudioAssembly } from "./studio/StudioAssembly"
 import { useStudioBoard } from "./studio/useStudioBoard"
+import { useIsMobile } from "../components/ui/useIsMobile"
 import { StudioMobileShell } from "./studio/StudioMobileShell"
 import {
-  studioLayersProps,
-  studioRackProps,
-  studioStageProps,
+  assemblyProps,
+  collectionProps,
+  stageProps,
 } from "./studio/studioPanelProps"
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(() =>
-    typeof window !== "undefined"
-      ? window.matchMedia("(max-width: 767px)").matches
-      : false
-  )
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)")
-    const handler = (e: MediaQueryListEvent) => setMobile(e.matches)
-    mq.addEventListener("change", handler)
-    return () => mq.removeEventListener("change", handler)
-  }, [])
-  return mobile
-}
 
 export function StudioPage() {
   const board = useStudioBoard()
@@ -35,9 +20,9 @@ export function StudioPage() {
 
   return (
     <div className="studio-board">
-      <StudioRack {...studioRackProps(board)} />
-      <StudioStagePanel {...studioStageProps(board)} />
-      <StudioLayers {...studioLayersProps(board)} />
+      <StudioCollection {...collectionProps(board)} />
+      <StudioStagePanel {...stageProps(board)} />
+      <StudioAssembly {...assemblyProps(board)} />
     </div>
   )
 }

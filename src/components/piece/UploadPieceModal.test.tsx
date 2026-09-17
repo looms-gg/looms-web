@@ -1,10 +1,11 @@
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
+import { act } from "react"
 import { describe, expect, it } from "vitest"
 import { AuthProvider } from "../../state/auth"
 import { CatalogProvider } from "../../state/catalog"
 import { WardrobeProvider } from "../../state/wardrobe"
-import { coversForSlot, uploadCovers } from "./publishGarment"
+import { coversForSlot, uploadCovers } from "../../lib/piecePublish/publishGarment"
 import { UploadPieceModal } from "./UploadPieceModal"
 import { validateDimensions } from "../../lib/textureValidation"
 
@@ -38,7 +39,7 @@ describe("UploadPieceModal and garment validation", () => {
     expect(host.textContent).toMatch(/Upload Garment Piece/i)
     expect(host.textContent).toMatch(/Slot/i)
     expect(host.querySelector('input[name="name"]')).not.toBeNull()
-    expect(host.querySelector('select[name="slot"]')).not.toBeNull()
+    expect(host.querySelector('[aria-label="Slot"]')).not.toBeNull()
   })
 
   it("renders upload piece modal with maxLength attributes on name and description", () => {
@@ -84,9 +85,13 @@ describe("UploadPieceModal and garment validation", () => {
       )
     })
 
-    const options = host.querySelectorAll('select[name="slot"] option')
-    const values = Array.from(options).map((option) => (option as HTMLOptionElement).value)
-    expect(values).toContain("set")
+    act(() => {
+      ;(host.querySelector('[aria-label="Slot"]') as HTMLElement).click()
+    })
+
+    const buttons = host.querySelectorAll('[role="menuitemradio"]')
+    const labels = Array.from(buttons).map((option) => option.textContent)
+    expect(labels).toContain("set")
   })
 
   it("maps a set upload to torso and legs covers", () => {

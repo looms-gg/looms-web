@@ -7,7 +7,7 @@ import { pieces, upsertPiece } from "../data/catalog"
 import { WardrobeProvider, useWardrobe } from "../state/wardrobe"
 import { AuthContext } from "../state/auth"
 import { CatalogProvider } from "../state/catalog"
-import { supabase } from "../lib/supabase"
+import { mockSupabaseFrom } from "../test/supabaseMock"
 import { WardrobePage } from "./WardrobePage"
 
 vi.mock("../components/iso/IsoThumb", () => ({
@@ -34,9 +34,6 @@ const signedInAuth = {
   loading: false,
   emailVerified: true,
   pendingEmail: null,
-  emailVerifyOpen: false,
-  openEmailVerify: () => {},
-  dismissEmailVerify: () => {},
   resendConfirmation: async () => ({ error: null }),
   signInWithPassword: async () => ({ error: null }),
   signUpWithPassword: async () => ({ error: null }),
@@ -47,31 +44,7 @@ const signedInAuth = {
 } as never
 
 function mockCloudSession() {
-  vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-    if (table === "wardrobe_items") {
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-      } as never
-    }
-    return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }),
-      insert: vi.fn().mockResolvedValue({ error: null }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }),
-    } as never
-  })
+  mockSupabaseFrom()
 }
 
 function renderWardrobe(path = "/wardrobe", authValue: unknown = signedInAuth) {
@@ -99,23 +72,10 @@ function PathPeek() {
   return <span data-testid="path">{loc.pathname}</span>
 }
 
-function setInputValue(input: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value",
-  )?.set
-  setter?.call(input, value)
-  input.dispatchEvent(new Event("input", { bubbles: true }))
-}
-
-function openTileModal(host: HTMLElement, name: string) {
-  const tile = [...host.querySelectorAll("button")].find(
-    (b) => b.getAttribute("aria-pressed") != null && b.textContent?.includes(name),
-  ) as HTMLButtonElement
-  expect(tile).toBeTruthy()
-  flushSync(() => {
-    tile.click()
-  })
+function lookTileLink(host: HTMLElement, name: string) {
+  return [...host.querySelectorAll("a")].find(
+    (a) => a.getAttribute("href")?.startsWith("/look/") && a.textContent?.includes(name),
+  ) as HTMLAnchorElement
 }
 
 function renderWardrobeWithLooks(...names: string[]) {
@@ -175,22 +135,23 @@ describe("WardrobePage", () => {
     expect(host.textContent).toMatch(/Wardrobe/)
   })
 
-  it("opens a look modal and Edit outfit navigates to studio", async () => {
+  it("links a look tile to the look page", () => {
     const host = renderWardrobeWithLooks("Rain day")
 
-    openTileModal(host, "Rain day")
-    expect(host.querySelector("h2")?.textContent).toBe("Rain day")
+    const link = lookTileLink(host, "Rain day")
+    expect(link).toBeTruthy()
+    expect(link.getAttribute("href")).toMatch(/^\/look\//)
+  })
 
-    const editOutfit = [...host.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "Edit outfit",
-    ) as HTMLButtonElement
-    expect(editOutfit).toBeTruthy()
+  it("navigates to the look page from a look tile", async () => {
+    const host = renderWardrobeWithLooks("Rain day")
 
+    const link = lookTileLink(host, "Rain day")
     await act(async () => {
-      editOutfit.click()
+      link.click()
     })
 
-    expect(host.querySelector('[data-testid="path"]')?.textContent).toBe("/studio")
+    expect(host.querySelector('[data-testid="path"]')?.textContent).toMatch(/^\/look\//)
   })
 
   it("never shows a Wear this control on look tiles", () => {
@@ -198,100 +159,8 @@ describe("WardrobePage", () => {
     expect(host.textContent).not.toMatch(/Wear this/)
   })
 
-  it("opens the look inspector modal from a tile without navigating", async () => {
-    const host = renderWardrobeWithLooks("Rain day", "Storm")
-
-    expect(host.querySelector("h2")).toBeNull()
-    expect(host.querySelector('[data-testid="path"]')?.textContent).toBe("/wardrobe")
-
-    openTileModal(host, "Rain day")
-
-    expect(host.querySelector('[role="dialog"]')).not.toBeNull()
-    expect(host.querySelector("h2")?.textContent).toBe("Rain day")
-    expect(host.querySelector('[data-testid="path"]')?.textContent).toBe("/wardrobe")
-
-    const closeBtn = host.querySelector(
-      'button[aria-label="Close"]',
-    ) as HTMLButtonElement
-    flushSync(() => {
-      closeBtn.click()
-    })
-    await vi.waitFor(() => {
-      expect(host.querySelector('[role="dialog"]')).toBeNull()
-    })
-    expect(host.querySelector("h2")).toBeNull()
-  })
-
-  it("renames a look through updateLookMeta", () => {
-    const host = renderWardrobeWithLooks("Rain day")
-    openTileModal(host, "Rain day")
-
-    const editName = host.querySelector(
-      'button[aria-label="Edit name"]',
-    ) as HTMLButtonElement
-    flushSync(() => {
-      editName.click()
-    })
-
-    const input = host.querySelector(
-      'input[aria-label="Look name"]',
-    ) as HTMLInputElement
-    flushSync(() => {
-      setInputValue(input, "Storm")
-    })
-    flushSync(() => {
-      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
-    })
-
-    expect(host.querySelector("h2")?.textContent).toBe("Storm")
-  })
-
-  it("reverts a blank inspector name to the committed look name", () => {
-    const host = renderWardrobeWithLooks("Rain day")
-    openTileModal(host, "Rain day")
-
-    const editName = host.querySelector(
-      'button[aria-label="Edit name"]',
-    ) as HTMLButtonElement
-    flushSync(() => {
-      editName.click()
-    })
-
-    const input = host.querySelector(
-      'input[aria-label="Look name"]',
-    ) as HTMLInputElement
-    flushSync(() => {
-      setInputValue(input, "   ")
-    })
-    flushSync(() => {
-      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }))
-    })
-
-    expect(host.querySelector("h2")?.textContent).toBe("Rain day")
-  })
-
   it("renders pieces tab with search, slot pills, and wear tile actions", async () => {
-    const { supabase } = await import("../lib/supabase")
-    vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-      if (table === "wardrobe_items") {
-        return {
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({ data: [], error: null }),
-            }),
-          }),
-          insert: vi.fn().mockResolvedValue({ error: null }),
-        } as never
-      }
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-      } as never
-    })
+    mockSupabaseFrom()
 
     let session!: ReturnType<typeof useWardrobe>
     function Capture() {
@@ -312,9 +181,6 @@ describe("WardrobePage", () => {
                 loading: false,
                 emailVerified: true,
                 pendingEmail: null,
-                emailVerifyOpen: false,
-                openEmailVerify: () => {},
-                dismissEmailVerify: () => {},
                 resendConfirmation: async () => ({ error: null }),
                 signInWithPassword: async () => ({ error: null }),
                 signUpWithPassword: async () => ({ error: null }),
@@ -364,9 +230,6 @@ describe("WardrobePage", () => {
       loading: false,
       emailVerified: true,
       pendingEmail: null,
-      emailVerifyOpen: false,
-      openEmailVerify: () => {},
-      dismissEmailVerify: () => {},
       resendConfirmation: async () => ({ error: null }),
       signInWithPassword: async () => ({ error: null }),
       signUpWithPassword: async () => ({ error: null }),
@@ -409,9 +272,6 @@ describe("WardrobePage", () => {
       loading: false,
       emailVerified: true,
       pendingEmail: null,
-      emailVerifyOpen: false,
-      openEmailVerify: () => {},
-      dismissEmailVerify: () => {},
       resendConfirmation: async () => ({ error: null }),
       signInWithPassword: async () => ({ error: null }),
       signUpWithPassword: async () => ({ error: null }),

@@ -3,58 +3,9 @@ import type { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../../data/bodies"
 import { preparePreview, type Piece } from "../../data/catalog"
 import { composePieceSkin, composeSkin, groupsFromAtlas, partsFromAtlas } from "../../skin/compose"
-import { applyGroupFocus, crispSkinTexture, isoPoseAnimation, mountLiveViewer, poseGroupForParts, viewerModelName } from "../../skin/focus"
+import { applyGroupFocus, crispSkinTexture, isoPoseAnimation, mountLiveViewer, poseGroupForParts, viewerModelName } from "../../skin/viewer"
 import type { SkinModel } from "../../skin/convert"
-import { ISO_RIM_FILL } from "../../skin/thumbFx"
-
-// Visual width of the rim band in CSS pixels; matches the old --iso-rim-x/y.
-// Single-piece renders carry a lighter rim (thinner band, less opacity).
-const RIM_CSS_PX = 4
-const PIECE_RIM_CSS_PX = 3
-const RIM_OPACITY = 0.45
-const PIECE_RIM_OPACITY = 0.45
-
-function copySilhouette(from: HTMLCanvasElement, to: HTMLCanvasElement, fill: string) {
-  if (to.width !== from.width || to.height !== from.height) {
-    to.width = from.width
-    to.height = from.height
-  }
-  const ctx = to.getContext("2d")
-  if (!ctx) return
-  ctx.clearRect(0, 0, to.width, to.height)
-  ctx.drawImage(from, 0, 0)
-  ctx.globalCompositeOperation = "source-in"
-  ctx.fillStyle = fill
-  ctx.fillRect(0, 0, to.width, to.height)
-  ctx.globalCompositeOperation = "source-over"
-}
-
-/**
- * Live twin of the thumbFx rim: the frame eroded away from the light, tinted
- * with the rim fill — a band that hugs the lit edge INSIDE the figure so the
- * highlight overlays the render instead of outlining it.
- */
-function copyRimBand(
-  from: HTMLCanvasElement,
-  to: HTMLCanvasElement,
-  fill: string,
-  bandPx: number,
-) {
-  if (to.width !== from.width || to.height !== from.height) {
-    to.width = from.width
-    to.height = from.height
-  }
-  const ctx = to.getContext("2d")
-  if (!ctx) return
-  ctx.clearRect(0, 0, to.width, to.height)
-  ctx.drawImage(from, 0, 0)
-  ctx.globalCompositeOperation = "destination-out"
-  ctx.drawImage(from, -bandPx, bandPx)
-  ctx.globalCompositeOperation = "source-in"
-  ctx.fillStyle = fill
-  ctx.fillRect(0, 0, to.width, to.height)
-  ctx.globalCompositeOperation = "source-over"
-}
+import { RIM_CSS_PX, RIM_OPACITY, PIECE_RIM_CSS_PX, PIECE_RIM_OPACITY, paintStageFx } from "../../skin/stageFx"
 
 export function SkinStage({
   outfit,
@@ -99,6 +50,9 @@ export function SkinStage({
         canvas,
         parent?.clientWidth || 360,
         parent?.clientHeight || 420,
+        // FX overlays read the frame back in the same task as viewer.render(),
+        // so the retained drawing buffer (GPU copy per composite) is pure cost.
+        { preserveDrawingBuffer: false },
       )
     } catch {
       return
@@ -106,32 +60,14 @@ export function SkinStage({
     viewerRef.current = viewer
     viewer.renderPaused = true
 
-    const scratch = document.createElement("canvas")
-
     // Copy the last rendered WebGL frame into the fx overlays. Runs inside the
     // shared rAF callback right after viewer.render(), so the figure and its
     // shadow/rim always show the same frame.
     const paintFx = () => {
       const src = canvasRef.current
-      if (src && src.width > 0) {
-        if (scratch.width !== src.width || scratch.height !== src.height) {
-          scratch.width = src.width
-          scratch.height = src.height
-        }
-        const sCtx = scratch.getContext("2d")
-        if (!sCtx) return
-        sCtx.clearRect(0, 0, scratch.width, scratch.height)
-        sCtx.drawImage(src, 0, 0)
-
-        const [shadow, rim] = fxRefs.current
-        if (shadow) copySilhouette(scratch, shadow, "#000")
-        if (rim) {
-          // The WebGL canvas may render at device-pixel resolution, so convert
-          // the CSS-pixel band width into the frame's own pixel space.
-          const scale = src.clientWidth > 0 ? src.width / src.clientWidth : 1
-          const cssPx = (piecePreviewRef.current ? PIECE_RIM_CSS_PX : RIM_CSS_PX)
-          copyRimBand(scratch, rim, ISO_RIM_FILL, Math.max(2, Math.round(cssPx * scale)))
-        }
+      if (src) {
+        const cssPx = piecePreviewRef.current ? PIECE_RIM_CSS_PX : RIM_CSS_PX
+        paintStageFx(src, fxRefs.current, cssPx)
       }
     }
 

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest"
 import {
+  COLLECTION_CATEGORY_ORDER,
   focusForPiece,
   pieceCovers,
   preparePreview,
+  SLOT_BADGE_COLOR,
   SLOT_GROUP,
   SLOT_LABEL,
   SLOT_STACK,
@@ -90,5 +92,28 @@ describe("pieceTypes", () => {
   it("treats set as a torso fallback group with a label", () => {
     expect(SLOT_GROUP.set).toBe("torso")
     expect(SLOT_LABEL.set).toBe("Set")
+  })
+
+  it("gives every slot a muted hex badge color", () => {
+    expect(Object.keys(SLOT_BADGE_COLOR).sort()).toEqual(
+      ["coat", "eyes", "face", "hair", "hat", "pants", "set", "shirt", "shoes"].sort(),
+    )
+    for (const color of Object.values(SLOT_BADGE_COLOR)) {
+      expect(color).toMatch(/^#[0-9a-f]{6}$/)
+    }
+  })
+
+  it("orders collection categories starting with hat, hair, eyes, face, shirt, coat, pants, shoes, set", () => {
+    expect(COLLECTION_CATEGORY_ORDER).toEqual([
+      "hat",
+      "hair",
+      "eyes",
+      "face",
+      "shirt",
+      "coat",
+      "pants",
+      "shoes",
+      "set",
+    ])
   })
 })

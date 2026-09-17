@@ -1,9 +1,11 @@
 import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
-import { afterEach, describe, expect, it, vi } from "vitest"
-import { supabase } from "../lib/supabase"
+import { afterEach, describe, expect, it, vi, type MockInstance } from "vitest"
 import * as authModule from "./auth"
+import { makeAuthStub } from "../test/authStub"
+import { supabase } from "../lib/supabase"
+import { mockSupabaseFrom } from "../test/supabaseMock"
 import type { AuthContextValue } from "./auth"
 import {
   NotificationsProvider,
@@ -13,34 +15,14 @@ import {
 } from "./notifications"
 
 function stubAuth(userId: string | null): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: userId ? ({ id: userId, email: "test@looms.dev" } as AuthContextValue["user"]) : null,
     session: userId ? ({} as AuthContextValue["session"]) : null,
     profile: userId
       ? ({ id: userId, username: "Tester" } as AuthContextValue["profile"])
       : null,
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: Boolean(userId),
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void }
@@ -72,54 +54,32 @@ type SelectResult = {
 }
 
 type NotificationsMock = {
-  fromSpy: ReturnType<typeof vi.spyOn>
+  fromSpy: MockInstance
   holdSelect: Deferred<SelectResult>
-  holdUnread: Deferred<{ count: number | null; error: { message: string } | null }>
-  holdMarkAll: Deferred<{ error: { message: string } | null }>
-  holdClearAll: Deferred<{ error: { message: string } | null }>
+  holdUnread: Deferred<{ data: null; count: number | null; error: { message: string } | null }>
+  holdMarkAll: Deferred<{ data: null; error: { message: string } | null }>
+  holdClearAll: Deferred<{ data: null; error: { message: string } | null }>
 }
 
 function mockNotificationsTable(): NotificationsMock {
   const holdSelect = deferred<SelectResult>()
-  const holdUnread = deferred<{ count: number | null; error: { message: string } | null }>()
-  const holdMarkAll = deferred<{ error: { message: string } | null }>()
-  const holdClearAll = deferred<{ error: { message: string } | null }>()
+  const holdUnread = deferred<{ data: null; count: number | null; error: { message: string } | null }>()
+  const holdMarkAll = deferred<{ data: null; error: { message: string } | null }>()
+  const holdClearAll = deferred<{ data: null; error: { message: string } | null }>()
 
-  const fromSpy = vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-    if (table !== "notifications") {
-      return {} as never
-    }
+  const controller = mockSupabaseFrom()
+  controller.on("notifications", (query) => {
     // Two select shapes: the bounded list query (eq → order → limit → then)
     // and the head-only unread count (eq → eq → then).
-    return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockReturnValue({
-            limit: vi.fn().mockReturnValue({
-              then: holdSelect.promise.then.bind(holdSelect.promise),
-              catch: holdSelect.promise.catch.bind(holdSelect.promise),
-              finally: holdSelect.promise.finally.bind(holdSelect.promise),
-            }),
-          }),
-          eq: vi.fn().mockReturnValue({
-            then: holdUnread.promise.then.bind(holdUnread.promise),
-            catch: holdUnread.promise.catch.bind(holdUnread.promise),
-            finally: holdUnread.promise.finally.bind(holdUnread.promise),
-          }),
-        }),
-      }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockImplementation(() => holdMarkAll.promise),
-        }),
-      }),
-      delete: vi.fn().mockReturnValue({
-        eq: vi.fn().mockImplementation(() => holdClearAll.promise),
-      }),
-    } as never
+    if (query.operation === "select") {
+      const payload = query.payload as { options?: { head?: boolean } } | undefined
+      return payload?.options?.head ? holdUnread.promise : holdSelect.promise
+    }
+    if (query.operation === "update") return holdMarkAll.promise
+    return holdClearAll.promise
   })
 
-  return { fromSpy, holdSelect, holdUnread, holdMarkAll, holdClearAll }
+  return { fromSpy: controller.fromSpy, holdSelect, holdUnread, holdMarkAll, holdClearAll }
 }
 
 function mountNotifications(userId: string | null) {
@@ -179,7 +139,7 @@ async function settleSelect(
   })
   await act(async () => {
     mock.holdSelect.resolve(result)
-    mock.holdUnread.resolve({ count: unreadCount, error: null })
+    mock.holdUnread.resolve({ data: null, count: unreadCount, error: null })
   })
   await act(async () => {})
 }
@@ -262,30 +222,33 @@ describe("NotificationsProvider", () => {
     expect(mounted.read().count).toBe(0)
 
     await act(async () => {
-      mock.holdMarkAll.resolve({ error: { message: "update failed" } })
+      mock.holdMarkAll.resolve({ data: null, error: { message: "update failed" } })
       await markPromise
     })
     expect(mounted.read().count).toBe(1)
     mounted.unmount()
   })
 
-  it("clears all rows and rolls back on error", async () => {
+  it("clears all rows and rolls back rows and unread badge on error", async () => {
     const mock = mockNotificationsTable()
     const mounted = mountNotifications("user-a")
-    await settleSelect(mock, selectResult([{ id: "n1", read: true }]), 0)
-    expect(mounted.read().list).toBe("n1")
+    await settleSelect(mock, selectResult([{ id: "n1", read: true }, { id: "n2" }]), 1)
+    expect(mounted.read().list).toBe("n1,n2")
+    expect(mounted.read().count).toBe(1)
 
     let clearPromise!: Promise<void>
     flushSync(() => {
       clearPromise = mounted.api.clearAll()
     })
     expect(mounted.read().list).toBe("")
+    expect(mounted.read().count).toBe(0)
 
     await act(async () => {
-      mock.holdClearAll.resolve({ error: { message: "delete failed" } })
+      mock.holdClearAll.resolve({ data: null, error: { message: "delete failed" } })
       await clearPromise
     })
-    expect(mounted.read().list).toBe("n1")
+    expect(mounted.read().list).toBe("n1,n2")
+    expect(mounted.read().count).toBe(1)
     mounted.unmount()
   })
 

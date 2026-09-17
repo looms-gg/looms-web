@@ -8,8 +8,8 @@ import { routerBasename } from "./lib/basePath"
 import { ExplorePage } from "./pages/ExplorePage"
 import { LegalDocument } from "./pages/legal/LegalDocument"
 import { WardrobeProvider } from "./state/wardrobe"
-import { ThemeProvider } from "./state/theme"
 import { AuthProvider } from "./state/auth"
+import { VerifyEmailProvider } from "./state/verifyEmail"
 import { ConnectionsProvider } from "./state/connections"
 import { CatalogProvider } from "./state/catalog"
 import { LikesProvider } from "./state/likes"
@@ -21,11 +21,13 @@ const PiecePage = lazy(() => import("./pages/PiecePage").then((m) => ({ default:
 const LookPage = lazy(() => import("./pages/LookPage").then((m) => ({ default: m.LookPage })))
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })))
 const StudioPage = lazy(() => import("./pages/StudioPage").then((m) => ({ default: m.StudioPage })))
-const EditorPage = lazy(() => import("./pages/editor/EditorPage").then((m) => ({ default: m.EditorPage })))
+const EditorPage = lazy(() => import("./pages/EditorPage").then((m) => ({ default: m.EditorPage })))
 const WardrobePage = lazy(() => import("./pages/WardrobePage").then((m) => ({ default: m.WardrobePage })))
 const AdminPage = lazy(() => import("./pages/AdminPage").then((m) => ({ default: m.AdminPage })))
-const SettingsRoute = lazy(() =>
-  import("./pages/settings/SettingsPage").then((m) => ({ default: m.SettingsRoute })),
+const BlogPage = lazy(() => import("./pages/BlogPage").then((m) => ({ default: m.BlogPage })))
+const BlogPostPage = lazy(() => import("./pages/BlogPostPage").then((m) => ({ default: m.BlogPostPage })))
+const SettingsPage = lazy(() =>
+  import("./pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 )
 const ResetPasswordPage = lazy(() =>
   import("./pages/reset-password/ResetPasswordPage").then((m) => ({
@@ -72,8 +74,8 @@ function useScrollClass() {
 // Connections, Notifications, Likes, and Wardrobe read the session
 // via useAuthOptional and reset themselves when the user changes.
 const STATE_PROVIDERS: Array<({ children }: { children: ReactNode }) => ReactNode> = [
-  ThemeProvider,
   AuthProvider,
+  VerifyEmailProvider,
   ConnectionsProvider,
   NotificationsProvider,
   LikesProvider,
@@ -156,6 +158,8 @@ export default function App() {
                 path="editor"
                 element={
                   <Suspense fallback={<RouteFallback />}>
+                    {/* Open by design: drawing is local-only, and saving is gated
+                        server-side by garment RLS, so no client guard here. */}
                     <EditorPage />
                   </Suspense>
                 }
@@ -164,7 +168,12 @@ export default function App() {
                 path="settings"
                 element={
                   <Suspense fallback={<RouteFallback />}>
-                    <SettingsRoute />
+                    <RequireAuth
+                      title="Sign in to open settings"
+                      body="Your privacy, upload, and account controls live here once you're signed in."
+                    >
+                      <SettingsPage />
+                    </RequireAuth>
                   </Suspense>
                 }
               />
@@ -188,6 +197,22 @@ export default function App() {
               <Route path="terms" element={<LegalDocument docId="terms" />} />
               <Route path="cookies" element={<LegalDocument docId="cookies" />} />
               <Route path="guidelines" element={<LegalDocument docId="guidelines" />} />
+              <Route
+                path="blog"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <BlogPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="blog/:slug"
+                element={
+                  <Suspense fallback={<RouteFallback />}>
+                    <BlogPostPage />
+                  </Suspense>
+                }
+              />
               <Route
                 path="admin"
                 element={

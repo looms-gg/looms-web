@@ -4,10 +4,11 @@ import { flushSync } from "react-dom"
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthContext, type AuthContextValue } from "../../state/auth"
+import { makeAuthStub } from "../../test/authStub"
 import { CatalogProvider } from "../../state/catalog"
 import { WardrobeProvider } from "../../state/wardrobe"
 import { LikesProvider } from "../../state/likes"
-import { supabase } from "../../lib/supabase"
+import { mockSupabaseFrom } from "../../test/supabaseMock"
 import {
   clearPendingAction,
   peekPendingAction,
@@ -20,24 +21,7 @@ const activeRoots: ReturnType<typeof createRoot>[] = []
 beforeEach(() => {
   sessionStorage.clear()
   clearPendingAction()
-  vi.spyOn(supabase, "from").mockImplementation(() => {
-    // Every chained method returns the same thenable that resolves to an
-    // empty success payload — satisfies every query shape used by providers.
-    const chain = {
-      select: () => chain,
-      eq: () => chain,
-      order: () => chain,
-      limit: () => chain,
-      insert: () => chain,
-      update: () => chain,
-      delete: () => chain,
-      single: () => Promise.resolve({ data: null, error: null }),
-      maybeSingle: () => Promise.resolve({ data: null, error: null }),
-      then: (resolve: (value: { data: unknown[]; error: null }) => void) =>
-        Promise.resolve({ data: [], error: null }).then(resolve),
-    }
-    return chain as never
-  })
+  mockSupabaseFrom()
 })
 
 afterEach(() => {
@@ -54,32 +38,12 @@ afterEach(() => {
 })
 
 function stubAuth(userId: string | null, verified = true): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: userId ? ({ id: userId, email: "newbie@test.dev" } as AuthContextValue["user"]) : null,
     session: userId ? ({} as AuthContextValue["session"]) : null,
     profile: userId ? ({ id: userId, username: "Newbie" } as AuthContextValue["profile"]) : null,
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: verified,
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 function Probe({ path }: { path: { current: string } }) {

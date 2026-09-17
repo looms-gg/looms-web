@@ -7,7 +7,7 @@ import { tryDownloadSkinFile } from "../../skin/compose"
 import { useWardrobe, type Look } from "../../state/wardrobe"
 import { committedLookName } from "../../state/lookMeta"
 import { MAX_LIMITS, sanitizeText } from "../../lib/sanitize"
-import { copyShareLink, getLookShareUrl } from "../../lib/share"
+import { copyShareLink, getLookShareUrl } from "../../lib/content/share"
 import { InlineEditableText } from "./InlineEditableText"
 
 export function LookInspector({

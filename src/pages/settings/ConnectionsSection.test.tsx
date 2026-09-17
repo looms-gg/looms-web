@@ -4,6 +4,7 @@ import { flushSync } from "react-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ConnectionsSection } from "./ConnectionsSection"
 import type { AuthContextValue } from "../../state/auth"
+import { makeAuthStub } from "../../test/authStub"
 
 const state = vi.hoisted(() => ({ value: null as Record<string, unknown> | null }))
 
@@ -23,9 +24,9 @@ vi.mock("../../state/connections", async (importOriginal) => {
   }
 })
 
-const baseAuth = {
+const baseAuth: Record<string, unknown> = makeAuthStub({
   signInWithOAuth: vi.fn().mockResolvedValue({ error: null }),
-}
+})
 
 const baseConnections = {
   connections: [{ user_id: "u1", provider: "discord", featured: false, created_at: "x" }],

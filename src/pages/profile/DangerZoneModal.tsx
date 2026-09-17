@@ -3,7 +3,7 @@ import { Warning } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
 import { CloseButton } from "../../components/ui/CloseButton"
 import { ModalOverlay } from "../../components/ui/ModalOverlay"
-import { requestAccountDeletion } from "../../lib/accountDeletion"
+import { requestAccountDeletion } from "../../lib/auth/accountDeletion"
 import { formatErrorMessage } from "../../lib/errorFormat"
 
 export function DangerZoneModal({
@@ -43,7 +43,7 @@ export function DangerZoneModal({
       onClose={onClose}
       label="Delete account"
       scrimClassName="modal-scrim modal-scrim-soft"
-      panelClassName="modal-panel relative w-full max-w-md rounded-[18px] border border-white/10 bg-base-300 p-6 shadow-2xl"
+      panelClassName="modal-panel relative w-full max-w-md rounded-[18px] border border-base-content/10 bg-base-300 p-6 shadow-2xl"
     >
       <CloseButton onClick={onClose} className="absolute right-3 top-3" />
 

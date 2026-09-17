@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react"
 import { NavLink, Outlet, useLocation } from "react-router-dom"
-import { MagicWand, Newspaper, Package, PaintBrush, TShirt } from "@phosphor-icons/react"
+import { Newspaper, Package, PaintBrush, Pencil, TShirt } from "@phosphor-icons/react"
 import { useWardrobe } from "../../state/wardrobe"
 import { useAuth } from "../../state/auth"
+import { useIsAdmin } from "../../state/useIsAdmin"
 import { useLikes } from "../../state/likes"
 import { CookieConsentProvider } from "../../state/cookieConsent"
 import { CookieBanner } from "./CookieBanner"
@@ -11,18 +13,18 @@ import { LoomsLogo } from "../ui/LoomsLogo"
 import { ShellAuthControls } from "./ShellAuthControls"
 import { NotificationBell } from "./NotificationBell"
 import { SiteFooter } from "./SiteFooter"
-import { ThemeToggle } from "./ThemeToggle"
 import { VerifyEmailModal } from "../auth/VerifyEmailModal"
 import { OnboardingGate } from "../auth/OnboardingGate"
 import { useNavThumbs } from "./useNavThumbs"
 import { useStudioLock } from "./useStudioLock"
 import { usePendingActionReplay } from "./usePendingActionReplay"
+import { useVerifyEmail } from "../../state/verifyEmail"
 
 const links: { to: string; label: string; icon: IconType }[] = [
   { to: "/", label: "Explore", icon: TShirt },
   { to: "/wardrobe", label: "Wardrobe", icon: Package },
   { to: "/studio", label: "Studio", icon: PaintBrush },
-  { to: "/editor", label: "Editor", icon: MagicWand },
+  { to: "/editor", label: "Editor", icon: Pencil },
   { to: "/blog", label: "Updates", icon: Newspaper },
 ]
 
@@ -93,7 +95,7 @@ function ShellToast({ toast }: { toast: { message: string; onDismiss: () => void
         <span className="font-bold">{toast.message}</span>
         <button
           type="button"
-          className="btn btn-ghost btn-xs rounded-full"
+          className="btn btn-ghost btn-xs font-bold"
           onClick={toast.onDismiss}
         >
           OK
@@ -142,23 +144,45 @@ function ShellFrame() {
     user,
     profile,
     avatarUrl,
-    isAdmin,
     signOut,
     emailVerified,
-    openEmailVerify,
     profileError,
     dismissProfileError,
   } = useAuth()
+  const isAdmin = useIsAdmin()
+  const { show: openEmailVerify } = useVerifyEmail()
   const { loadError: likesLoadError, dismissLoadError } = useLikes()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from
   // Immersive routes: full-height shell, no footer, body scroll locked
   // (html.studio-lock) so the workspace owns the viewport.
-  const immersive =
-    location.pathname === "/studio" || location.pathname === "/editor"
+  const immersive = location.pathname === "/studio" || location.pathname === "/editor"
   const { navRef, dockRef, thumb, dockThumb } = useNavThumbs(location.pathname + (from ?? ""))
   useStudioLock(immersive)
   usePendingActionReplay()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    let ticking = false
+    function onScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const y = window.scrollY
+          // Hysteresis: dock past 28px, undock above 10px to prevent jitter/flicker
+          setScrolled((prev) => {
+            if (!prev && y > 28) return true
+            if (prev && y < 10) return false
+            return prev
+          })
+          ticking = false
+        })
+        ticking = true
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "Player"
   const toast = resolveActiveToast(
@@ -176,39 +200,53 @@ function ShellFrame() {
         immersive ? "flex h-svh flex-col overflow-hidden" : "min-h-svh"
       }`}
     >
-      <header className="sticky top-0 z-40 shrink-0 border-b border-base-content/10 bg-base-100/95 backdrop-blur-md">
-        <div className="mx-auto grid h-[72px] max-w-[1440px] grid-cols-[1fr_auto] items-center gap-4 px-5 md:grid-cols-[1fr_auto_1fr] lg:px-12">
-          <NavLink
-            to="/"
-            className="flex w-fit shrink-0 items-center justify-self-start rounded-lg outline-offset-4"
-            aria-label="looms home"
+      <header className="sticky top-0 z-40 w-full pointer-events-none">
+        <div
+          className={`nav-bar-container pointer-events-auto mx-auto ${
+            immersive || scrolled ? "nav-bar-docked" : "nav-bar-floating"
+          }`}
+        >
+          <div
+            className={`mx-auto flex h-[58px] sm:h-[64px] items-center justify-between gap-3 sm:gap-6 ${
+              immersive
+                ? "w-full max-w-[1440px] px-5 lg:px-12"
+                : "w-[calc(100%-40px)] lg:w-[calc(100%-96px)] max-w-[1344px] px-4 sm:px-6"
+            }`}
           >
-            <LoomsLogo decorative className="h-8 sm:h-10" />
-          </NavLink>
-          <nav ref={navRef} className="nav-pills hidden items-center gap-1 justify-self-center md:flex">
-            {thumb.ready ? (
-              <span
-                className="nav-thumb"
-                aria-hidden
-                style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }}
+            <div className="flex items-center gap-4 lg:gap-8 h-full min-w-0">
+              <NavLink
+                to="/"
+                className="flex w-fit shrink-0 items-center rounded-lg outline-offset-4"
+                aria-label="looms home"
+              >
+                <LoomsLogo decorative className="h-7 sm:h-8" />
+              </NavLink>
+              <nav ref={navRef} className="nav-pills hidden md:flex items-center h-full">
+                {thumb.ready ? (
+                  <span
+                    className="nav-thumb"
+                    aria-hidden
+                    style={{ transform: `translateX(${thumb.x}px)`, width: thumb.w }}
+                  />
+                ) : null}
+                <HeaderPills pathname={location.pathname} from={from} />
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <NotificationBell />
+              <ShellAuthControls
+                user={user}
+                isAdmin={isAdmin}
+                displayName={displayName}
+                username={profile?.username}
+                minecraftUsername={profile?.minecraft_username}
+                avatarUrl={avatarUrl}
+                emailVerified={emailVerified}
+                onOpenEmailVerify={openEmailVerify}
+                onSignOut={() => signOut()}
               />
-            ) : null}
-            <HeaderPills pathname={location.pathname} from={from} />
-          </nav>
-          <div className="flex items-center justify-self-end gap-2">
-            <ThemeToggle />
-            <ShellAuthControls
-              user={user}
-              isAdmin={isAdmin}
-              displayName={displayName}
-              username={profile?.username}
-              minecraftUsername={profile?.minecraft_username}
-              avatarUrl={avatarUrl}
-              emailVerified={emailVerified}
-              onOpenEmailVerify={openEmailVerify}
-              onSignOut={() => signOut()}
-            />
-            {user ? <NotificationBell /> : null}
+            </div>
           </div>
         </div>
       </header>
@@ -216,9 +254,11 @@ function ShellFrame() {
 
       <main
         className={
-          immersive
-            ? "studio-main mx-auto flex w-full min-h-0 max-w-[1440px] flex-1 flex-col overflow-hidden px-5 py-3 lg:px-12"
-            : "mx-auto max-w-[1440px] px-5 py-6 pb-28 lg:px-12"
+          location.pathname === "/editor"
+            ? "studio-main flex w-full min-h-0 flex-1 flex-col overflow-hidden p-0 relative"
+            : immersive
+              ? "studio-main flex w-full min-h-0 flex-1 flex-col overflow-hidden px-5 py-3 lg:px-6"
+              : "mx-auto max-w-[1440px] px-5 py-6 pb-28 lg:px-12"
         }
       >
         <Outlet />

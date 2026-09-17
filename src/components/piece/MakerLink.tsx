@@ -2,7 +2,7 @@ import { Link } from "react-router-dom"
 
 export function MakerLink({
   username,
-  className = "text-primary font-semibold",
+  className = "text-base-content/60 font-semibold",
   prefix = "by ",
 }: {
   username: string

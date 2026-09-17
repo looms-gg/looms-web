@@ -11,7 +11,7 @@ export function PieceSkeleton() {
     >
       <Bone className="h-4 w-24" rounded="rounded-md" />
 
-      <section className="overflow-hidden rounded-[18px] bg-base-200" aria-hidden>
+      <section className="overflow-hidden rounded-lg bg-base-200" aria-hidden>
         <div className="grid md:grid-cols-[minmax(280px,1fr)_minmax(0,1.05fr)]">
           <Bone className="min-h-[320px] w-full md:min-h-[440px]" />
           <div className="flex flex-col justify-center gap-5 p-6 md:p-8 lg:p-10">

@@ -18,6 +18,27 @@ describe("StudioMobileNav", () => {
     expect(host.querySelector("[data-testid='studio-mobile-tab-layers']")).toBeTruthy()
   })
 
+  it("adds a save tab and the 4-column grid class when saveAction is provided", () => {
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <StudioMobileNav stage="preview" onStage={() => {}} saveAction={() => {}} />
+      )
+    })
+    const nav = host.querySelector("nav")
+    expect(nav?.classList.contains("studio-mobile-nav--4")).toBe(true)
+    const tabs = host.querySelectorAll("[data-testid^='studio-mobile-tab-']")
+    expect(tabs.length).toBe(4)
+    const saveTab = host.querySelector(
+      "[data-testid='studio-mobile-tab-save']"
+    ) as HTMLButtonElement
+    expect(saveTab).toBeTruthy()
+    expect(saveTab.getAttribute("aria-label")).toBe("Save look")
+    expect(saveTab.classList.contains("editor-save-tab")).toBe(true)
+    expect(saveTab.getAttribute("aria-pressed")).toBeNull()
+    expect(saveTab.textContent).toContain("Save")
+  })
+
   it("marks the active stage with aria-pressed and active class", () => {
     const host = document.createElement("div")
     flushSync(() => {

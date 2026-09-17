@@ -8,6 +8,7 @@ import {
   mergeStack,
   moveStackId,
   piecesFromEquipped,
+  reorderStackId,
   resolveLookLayers,
   wearInStack,
   type Equipped,
@@ -42,6 +43,34 @@ describe("outfit stack", () => {
     const stack = [shirt.id, coat.id, hat.id]
     expect(moveStackId(stack, shirt.id, 1)).toEqual([coat.id, shirt.id, hat.id])
     expect(moveStackId(stack, shirt.id, -1)).toEqual(stack)
+  })
+
+  it("reorders stack items cleanly with reorderStackId", () => {
+    const stack = [shirt.id, coat.id, hat.id]
+
+    // Same index: returns identical array
+    expect(reorderStackId(stack, coat.id, 1)).toEqual(stack)
+
+    // Move to beginning (bottom of stack)
+    expect(reorderStackId(stack, hat.id, 0)).toEqual([hat.id, shirt.id, coat.id])
+
+    // Move to end (top of stack)
+    expect(reorderStackId(stack, shirt.id, 2)).toEqual([coat.id, hat.id, shirt.id])
+
+    // Out of bounds clamps
+    expect(reorderStackId(stack, shirt.id, 99)).toEqual([coat.id, hat.id, shirt.id])
+    expect(reorderStackId(stack, hat.id, -5)).toEqual([hat.id, shirt.id, coat.id])
+
+    // Single item
+    expect(reorderStackId([shirt.id], shirt.id, 0)).toEqual([shirt.id])
+
+    // Middle move in 4-item stack
+    const four = ["a", "b", "c", "d"]
+    expect(reorderStackId(four, "a", 2)).toEqual(["b", "c", "a", "d"])
+    expect(reorderStackId(four, "d", 1)).toEqual(["a", "d", "b", "c"])
+
+    // Missing id returns original
+    expect(reorderStackId(stack, "unknown", 1)).toEqual(stack)
   })
 
   it("builds pieces from equipped ids", () => {

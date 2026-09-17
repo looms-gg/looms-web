@@ -11,16 +11,20 @@ export type ProfileImageKind = "avatar" | "banner"
  * the new URL. Used by both the profile header and the settings page so the
  * two surfaces cannot drift.
  */
+export type ProfileImageUploadResult = { ok: boolean; error: string | null }
+
 export function useProfileImageUpload(options?: { onSaved?: () => void | Promise<void> }) {
   const { profile, updateProfile } = useAuth()
   const [uploading, setUploading] = useState<ProfileImageKind | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const upload = useCallback(
-    async (kind: ProfileImageKind, file: File, crop?: ProfileCrop): Promise<boolean> => {
-      if (!profile) return false
+    async (
+      kind: ProfileImageKind,
+      file: File,
+      crop?: ProfileCrop,
+    ): Promise<ProfileImageUploadResult> => {
+      if (!profile) return { ok: false, error: null }
       setUploading(kind)
-      setErrorMsg(null)
       try {
         const url = await uploadProfileImage(profile.id, kind, file, crop)
         const { error } =
@@ -28,14 +32,12 @@ export function useProfileImageUpload(options?: { onSaved?: () => void | Promise
             ? await updateProfile({ avatar_url: url })
             : await updateProfile({ banner_url: url })
         if (error) {
-          setErrorMsg(formatErrorMessage(error))
-          return false
+          return { ok: false, error: formatErrorMessage(error) }
         }
         await options?.onSaved?.()
-        return true
+        return { ok: true, error: null }
       } catch (err) {
-        setErrorMsg(formatErrorMessage(err))
-        return false
+        return { ok: false, error: formatErrorMessage(err) }
       } finally {
         setUploading(null)
       }
@@ -43,5 +45,5 @@ export function useProfileImageUpload(options?: { onSaved?: () => void | Promise
     [profile, updateProfile, options?.onSaved],
   )
 
-  return { upload, uploading, errorMsg }
+  return { upload, uploading }
 }

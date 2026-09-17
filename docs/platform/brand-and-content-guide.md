@@ -65,7 +65,7 @@ Verbs that don't: buy, unlock, purchase, earn, spend, claim, win, limited, drop-
 | warning | `#f59e0b` | warnings, admin badge |
 | error | `#f07068` | errors, destructive |
 
-Light theme `looms-light`: base `#f3f1f8`/`#e8e6f0`/`#dddce8`, ink `#1c1c24`, primary `#0088ff`, secondary `#6b5ad4`.
+Light theme `looms-light`: base `#f3f1f8`/`#e8e6f0`/`#dddce8`, ink `#1c1c24`, primary `#cf4878`, secondary `#a0305e`.
 
 ### Shape & type
 - **Pills everywhere** for actions and selected filters (999px radius); **18px tiles** for content cards; 10px inputs/fields; 12px buttons.

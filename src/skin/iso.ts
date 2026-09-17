@@ -1,17 +1,23 @@
 import { SkinViewer } from "skinview3d"
 import { DEFAULT_BODY_ID } from "../data/bodies"
 import { preparePreview, type Group, type Piece } from "../data/catalog"
-import { composePieceSkin, composeSkin, groupsFromAtlas, partsFromAtlas, type SkinPart } from "./compose"
+import { composePieceSkin, composeSkin, FULL_GROUPS, groupsFromAtlas, partsFromAtlas, type SkinPart } from "./compose"
+import { runOnceInflight } from "./inflight"
 import {
   applyGroupFocus,
   crispSkinTexture,
   lightSkinViewer,
   pauseViewerLoop,
   viewerModelName,
-} from "./focus"
+} from "./viewer"
 import { ensureModel, type SkinModel } from "./convert"
 import { getStoredThumb, setStoredThumb } from "./thumbCache"
-import { compositeIsoThumbFx } from "./thumbFx"
+import {
+  canvasToPng,
+  compositeIsoThumbFx,
+  thumbImageToUrl,
+  type ThumbImage,
+} from "./thumbFx"
 import { washFromCanvas } from "./wash"
 
 export type IsoThumbResult = {
@@ -24,10 +30,11 @@ type Prepared = {
   wash: string
   group: Group | "full"
   covers: Group[]
+  coverSpan: number
   parts?: SkinPart[]
   model: "slim" | "default"
   bakeFx: boolean
-  fx?: { rim?: number; rimAlpha?: number }
+  fx?: { rim?: number; rimAlpha?: number; fillW?: number; fillH?: number }
 }
 
 type Job = {
@@ -40,10 +47,29 @@ type Job = {
 
 const memCache = new Map<string, IsoThumbResult>()
 const inflight = new Map<string, Promise<IsoThumbResult>>()
+
+/** IndexedDB payload: the encoded PNG (Blob preferred, data URL fallback). */
+type StoredThumb = { png: ThumbImage; wash: string }
 const queue: Job[] = []
 let pumping = false
 let pumpQueued = false
 let viewer: SkinViewer | null = null
+
+/**
+ * Short fingerprint of a piece's texture URL. Overwrites keep the piece id and
+ * only bump the texture_url query (see piecePublish/overwritePieceTexture), so
+ * thumbs keyed on the id alone would pin the pre-overwrite render forever.
+ * FNV-1a 32-bit, hex — a cheap, stable key component that also stays tiny for
+ * system pieces whose `skin` is an inline data URL.
+ */
+export function skinHash(skin: string): string {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < skin.length; i++) {
+    hash ^= skin.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(36)
+}
 
 function getIsoViewer() {
   if (viewer) return viewer
@@ -101,21 +127,38 @@ export const OUTFIT_FX = { rim: 4, rimAlpha: 0.45 } as const
  *  hats) read too thin at full-character widths. */
 export const PIECE_FX = { rim: 6, rimAlpha: 0.45 } as const
 
+// Normalization fill by painted body-group span. Single-limb pieces keep the
+// original tile presence; head-to-toe garments read closer to full figures
+// instead of being shrunk to the same fixed fill as a hat.
+const SPAN_FILL: Record<number, { fillW: number; fillH: number }> = {
+  1: { fillW: 0.81, fillH: 0.52 },
+  2: { fillW: 0.87, fillH: 0.58 },
+  3: { fillW: 0.92, fillH: 0.64 },
+}
+
+function spanFill(span: number) {
+  return SPAN_FILL[Math.min(3, Math.max(1, span))] ?? SPAN_FILL[1]
+}
+
 /** Bake shadow+rim into a freshly rendered viewer canvas (same-task read). */
-function bakeViewerCanvas(
+function reviveStored(stored: StoredThumb): IsoThumbResult {
+  return { url: thumbImageToUrl(stored.png), wash: stored.wash }
+}
+
+async function bakeViewerCanvas(
   v: SkinViewer,
   bakeFx: boolean,
   fx?: Prepared["fx"],
-): string {
-  if (!bakeFx) return v.canvas.toDataURL("image/png")
+): Promise<ThumbImage> {
+  if (!bakeFx) return canvasToPng(v.canvas)
   try {
-    return compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height, fx)
+    return await compositeIsoThumbFx(v.canvas, v.canvas.width, v.canvas.height, fx)
   } catch {
-    return v.canvas.toDataURL("image/png")
+    return canvasToPng(v.canvas)
   }
 }
 
-function captureJob(job: Job, prepared: Prepared) {
+async function captureJob(job: Job, prepared: Prepared) {
   let v: SkinViewer
   try {
     v = getIsoViewer()
@@ -134,12 +177,11 @@ function captureJob(job: Job, prepared: Prepared) {
   v.render()
 
   try {
-    const result: IsoThumbResult = {
-      url: bakeViewerCanvas(v, prepared.bakeFx, prepared.fx),
-      wash: prepared.wash,
-    }
+    const fill = spanFill(prepared.coverSpan)
+    const png = await bakeViewerCanvas(v, prepared.bakeFx, { ...prepared.fx, ...fill })
+    const result: IsoThumbResult = reviveStored({ png, wash: prepared.wash })
     memCache.set(job.key, result)
-    setStoredThumb(job.key, result)
+    setStoredThumb(job.key, { png, wash: prepared.wash })
     job.resolve(result)
   } catch (err) {
     job.reject(err)
@@ -180,18 +222,17 @@ export async function isoPieceThumb(
   model: SkinModel = "classic",
   { priority = false, bakeFx = true }: { priority?: boolean; bakeFx?: boolean } = {},
 ): Promise<IsoThumbResult> {
-  // v75: piece rim lifted to 6px — zoomed pieces (hair) read too thin at 4.
-  const key = `piece:v75:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}`
-  const mem = memCache.get(key)
-  if (mem) return mem
-  const pending = inflight.get(key)
-  if (pending) return pending
-
-  const work = (async () => {
-    const stored = await getStoredThumb<IsoThumbResult>(key)
+  // v77: thumbs store a PNG Blob instead of a base64 data URL — the old data
+  // URLs were decoded by the image loader on every tile mount and kept a
+  // base64 copy in the JS heap. The key rides on a texture fingerprint so
+  // overwritten pieces re-bake (see skinHash).
+  const key = `piece:v77:${model}:${bakeFx ? "fx" : "raw"}:${piece.id}:${skinHash(piece.skin)}`
+  return runOnceInflight(memCache, inflight, key, async () => {
+    const stored = await getStoredThumb<StoredThumb>(key)
     if (stored) {
-      memCache.set(key, stored)
-      return stored
+      const result = reviveStored(stored)
+      memCache.set(key, result)
+      return result
     }
     return enqueue(
       key,
@@ -201,11 +242,13 @@ export async function isoPieceThumb(
         const normalized = ensureModel(skin, model)
         const painted = groupsFromAtlas(normalized)
         const { covers, group } = preparePreview([piece], painted)
+        const effective = covers ?? FULL_GROUPS
         return {
           skin: normalized,
           wash,
           group,
-          covers: covers ?? ["head", "torso", "legs"],
+          covers: effective,
+          coverSpan: effective.length,
           parts: partsFromAtlas(normalized),
           model: viewerModelName(model),
           bakeFx,
@@ -214,14 +257,7 @@ export async function isoPieceThumb(
       },
       priority,
     )
-  })()
-  inflight.set(key, work)
-  void work
-    .finally(() => {
-      if (inflight.get(key) === work) inflight.delete(key)
-    })
-    .catch(() => {})
-  return work
+  })
 }
 
 export async function isoOutfitThumb(
@@ -231,20 +267,21 @@ export async function isoOutfitThumb(
   model: SkinModel = "classic",
   { priority = false, bakeFx = true }: { priority?: boolean; bakeFx?: boolean } = {},
 ): Promise<IsoThumbResult> {
-  const outfitKey = pieces.map((piece) => piece.id).join("|") || "empty"
+  const outfitKey = pieces
+    .map((piece) => `${piece.id}~${skinHash(piece.skin)}`)
+    .join("|") || "empty"
   // v70: the rim became an inner overlay tinting the render's lit edge.
   // v71: thinner rim highlight (4px, 0.45 alpha) for full-figure looks.
-  const key = `outfit:v71:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
-  const mem = memCache.get(key)
-  if (mem) return mem
-  const pending = inflight.get(key)
-  if (pending) return pending
-
-  const work = (async () => {
-    const stored = await getStoredThumb<IsoThumbResult>(key)
+  // v72: thumbs store a PNG Blob instead of a base64 data URL (see piece v77).
+  // The outfit key rides on per-piece texture fingerprints so an overwrite of
+  // any stacked piece re-bakes the whole look.
+  const key = `outfit:v72:${bakeFx ? "fx" : "raw"}:${bodyId}:${bodyHue}:${model}:${outfitKey}`
+  return runOnceInflight(memCache, inflight, key, async () => {
+    const stored = await getStoredThumb<StoredThumb>(key)
     if (stored) {
-      memCache.set(key, stored)
-      return stored
+      const result = reviveStored(stored)
+      memCache.set(key, result)
+      return result
     }
     return enqueue(
       key,
@@ -255,7 +292,8 @@ export async function isoOutfitThumb(
           skin,
           wash,
           group: "full" as const,
-          covers: ["head", "torso", "legs"] satisfies Group[],
+          covers: FULL_GROUPS,
+          coverSpan: 1,
           model: viewerModelName(model),
           bakeFx,
           fx: OUTFIT_FX,
@@ -263,14 +301,7 @@ export async function isoOutfitThumb(
       },
       priority,
     )
-  })()
-  inflight.set(key, work)
-  void work
-    .finally(() => {
-      if (inflight.get(key) === work) inflight.delete(key)
-    })
-    .catch(() => {})
-  return work
+  })
 }
 
 export async function isoPieceUrl(piece: Piece, model: SkinModel = "classic"): Promise<string> {

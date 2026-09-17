@@ -65,7 +65,6 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
       setState(result.next)
       if (result.activeLook) setActiveLook(result.activeLook)
       if (result.message && options?.notify !== false) flash(result.message)
-      result.cloudOp?.()
     },
     [flash],
   )
@@ -90,6 +89,7 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
   const {
     clearSlot,
     moveStack,
+    reorderStack,
     setBody,
     setBodyHue,
     setModel,
@@ -109,6 +109,7 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
       addAndWear,
       clearSlot,
       moveStack,
+      reorderStack,
       setBody,
       setBodyHue,
       setModel,
@@ -133,6 +134,7 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
       addAndWear,
       clearSlot,
       moveStack,
+      reorderStack,
       setBody,
       setBodyHue,
       setModel,

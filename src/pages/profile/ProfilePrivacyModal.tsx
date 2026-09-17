@@ -31,7 +31,7 @@ export function ProfilePrivacyModal({
       onClose={onClose}
       label="Privacy settings"
       scrimClassName="modal-scrim modal-scrim-soft"
-      panelClassName="modal-panel relative w-full max-w-md rounded-[18px] border border-white/10 bg-base-300 p-6 shadow-2xl"
+      panelClassName="modal-panel relative w-full max-w-md rounded-[18px] border border-base-content/10 bg-base-300 p-6 shadow-2xl"
     >
       <CloseButton onClick={onClose} className="absolute right-3 top-3" />
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react"
+import { useState, type CSSProperties } from "react"
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import type { User } from "@supabase/supabase-js"
 import { getPiece, type Piece } from "../data/catalog"
@@ -17,40 +17,16 @@ import {
   pieceSeoTitle,
   pieceCanonicalUrl,
   SITE_ORIGIN,
-} from "../lib/seo"
+} from "../lib/content/seo"
 import { setPendingAction } from "../lib/pendingAction"
 import { PieceSheet } from "./piece/PieceSheet"
 import { PieceSkeleton } from "./piece/PieceSkeleton"
 import { InspectorModal } from "./wardrobe/InspectorModal"
 import { UploadInspector } from "./wardrobe/UploadInspector"
+import { resolveBackLink, useScrollToTop } from "./detailShared"
 
 function revealStyle(i: number): CSSProperties {
   return { "--piece-i": i } as CSSProperties
-}
-
-function resolvePieceBackLink(locationState: unknown): { to: string; label: string } {
-  const stateFrom = (locationState as { from?: string } | null)?.from
-  const to = stateFrom || "/"
-  const label = stateFrom?.startsWith("/wardrobe") ? "← Wardrobe" : "← Explore"
-  return { to, label }
-}
-
-function useScrollToTop(key: string, id: string | undefined) {
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        window.scrollTo({ top: 0, left: 0, behavior: "instant" })
-      } catch {
-        try {
-          window.scrollTo(0, 0)
-        } catch {
-          /* ignore */
-        }
-      }
-      if (document.documentElement) document.documentElement.scrollTop = 0
-      if (document.body) document.body.scrollTop = 0
-    }
-  }, [id, key])
 }
 
 function PiecePageMeta({ piece }: { piece: Piece }) {
@@ -190,7 +166,7 @@ export function PiecePage() {
     return <PieceNotFound loading={loading} />
   }
 
-  const { to: backTo, label: backLabel } = resolvePieceBackLink(location.state)
+  const { to: backTo, label: backLabel } = resolveBackLink(location.state)
   const isCreator = Boolean(
     user?.id && piece.userId && user.id === piece.userId,
   )
@@ -207,7 +183,7 @@ export function PiecePage() {
 
       <Link
         to={backTo}
-        className="piece-reveal link inline-flex min-h-11 items-center text-sm font-bold text-primary no-underline"
+        className="piece-reveal link inline-flex min-h-11 items-center gap-0.5 text-sm font-bold text-base-content/70 no-underline transition-colors duration-150 hover:text-primary"
         style={revealStyle(0)}
       >
         {backLabel}
@@ -219,6 +195,7 @@ export function PiecePage() {
         wearing={wearing}
         isCreator={isCreator}
         onEdit={() => setEditing(true)}
+        onEditInPainter={() => navigate(`/editor?piece=${piece.id}`)}
         onLikeCountChange={(likeCount) => upsert({ ...piece, likeCount })}
         onWear={wearPiece}
         onAddToWardrobe={handleAdd}

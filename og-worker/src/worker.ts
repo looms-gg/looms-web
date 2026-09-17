@@ -24,7 +24,6 @@ import {
   parseOgPath,
   sanitizeText,
   slotLabel,
-  truncate,
   cardElement,
   fallbackResponse,
   OG_WIDTH as W,

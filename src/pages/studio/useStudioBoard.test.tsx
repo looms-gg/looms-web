@@ -11,53 +11,20 @@ import { WardrobeProvider, useWardrobe, type Look } from "../../state/wardrobe"
 import { CatalogProvider } from "../../state/catalog"
 import * as authModule from "../../state/auth"
 import type { AuthContextValue } from "../../state/auth"
-import { supabase } from "../../lib/supabase"
+import { makeAuthStub } from "../../test/authStub"
+import { mockSupabaseFrom } from "../../test/supabaseMock"
 
 function stubAuth(userId: string): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: { id: userId, email: "test@looms.dev" } as AuthContextValue["user"],
     session: {} as AuthContextValue["session"],
     profile: { id: userId, username: "Tester" } as AuthContextValue["profile"],
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: true,
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 function mockCloudSession() {
-  vi.spyOn(supabase, "from").mockImplementation(() => {
-    return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }),
-      insert: vi.fn().mockResolvedValue({ error: null }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      }),
-    } as never
-  })
+  mockSupabaseFrom()
 }
 
 describe("ownedBySlotMap", () => {
@@ -68,29 +35,11 @@ describe("ownedBySlotMap", () => {
 })
 
 describe("pickBodyTone", () => {
-  it("retoggles hue on the current body and switches otherwise", () => {
-    const hues: boolean[] = []
+  it("sets the body id directly", () => {
     const bodies: string[] = []
-    pickBodyTone(
-      "a",
-      "a",
-      (id) => bodies.push(id),
-      (update) => {
-        const next = typeof update === "function" ? update(false) : update
-        hues.push(next)
-      },
-    )
-    pickBodyTone(
-      "b",
-      "a",
-      (id) => bodies.push(id),
-      (update) => {
-        const next = typeof update === "function" ? update(true) : update
-        hues.push(next)
-      },
-    )
-    expect(hues).toEqual([true, false])
-    expect(bodies).toEqual(["b"])
+    pickBodyTone("a", (id) => bodies.push(id))
+    pickBodyTone("b", (id) => bodies.push(id))
+    expect(bodies).toEqual(["a", "b"])
   })
 })
 

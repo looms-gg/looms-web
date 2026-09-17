@@ -58,7 +58,22 @@ describe("PieceActions", () => {
       wear.click()
     })
     expect(onWear).toHaveBeenCalled()
-    expect(host.textContent).toMatch(/Open studio/)
+  })
+
+  it("does not render an open-studio shortcut", () => {
+    const host = renderActions({ owned: true })
+    expect(host.textContent).not.toMatch(/Open studio/)
+  })
+
+  it("renders share after the primary action button", () => {
+    const host = renderActions({ owned: true })
+    const texts = Array.from(host.querySelectorAll("button")).map(
+      (b) => b.textContent ?? "",
+    )
+    const wearIdx = texts.findIndex((t) => /Wear in studio/.test(t))
+    const shareIdx = texts.findIndex((t) => /Share/.test(t))
+    expect(wearIdx).toBeGreaterThanOrEqual(0)
+    expect(shareIdx).toBeGreaterThan(wearIdx)
   })
 
   it("removes from wardrobe via two-tap confirm when owned", () => {
@@ -68,7 +83,7 @@ describe("PieceActions", () => {
       '[aria-label^="Remove "]',
     ) as HTMLButtonElement
     expect(savedBtn).toBeTruthy()
-    expect(savedBtn.textContent).toMatch(/Saved/)
+    expect(savedBtn.textContent).toMatch(/61/)
 
     // First tap arms confirmation without removing.
     flushSync(() => {
@@ -85,5 +100,26 @@ describe("PieceActions", () => {
       confirmBtn.click()
     })
     expect(onRemoveFromWardrobe).toHaveBeenCalledOnce()
+  })
+
+  it("shows the save count inside the save button and no passive badge", () => {
+    const host = renderActions({ owned: true })
+    expect(host.textContent).toMatch(/61/)
+    expect(host.querySelector('[title$="saved"]')).toBeNull()
+    expect(host.querySelector('[title$="saves"]')).toBeNull()
+  })
+
+  it("adds to wardrobe from the save button when not owned", () => {
+    const onAddToWardrobe = vi.fn()
+    const host = renderActions({ owned: false, onAddToWardrobe })
+    const saveBtn = host.querySelector(
+      '[aria-label="Add Ash Crop to wardrobe"]',
+    ) as HTMLButtonElement
+    expect(saveBtn).toBeTruthy()
+    expect(saveBtn.textContent).toMatch(/61/)
+    flushSync(() => {
+      saveBtn.click()
+    })
+    expect(onAddToWardrobe).toHaveBeenCalledOnce()
   })
 })

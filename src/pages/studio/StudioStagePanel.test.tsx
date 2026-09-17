@@ -13,6 +13,39 @@ describe("StudioStagePanel", () => {
     expect(typeof StudioStagePanel).toBe("function")
   })
 
+  it("no longer hands off canvas state to the editor", async () => {
+    const mod = (await import("../editor/useSkinEditor")) as unknown as Record<
+      string,
+      unknown
+    >
+    expect(mod.setEditorSessionCanvas).toBeUndefined()
+    expect(mod.getEditorSessionCanvas).toBeUndefined()
+    expect(mod.EDITOR_STORAGE_KEY).toBeUndefined()
+  })
+
+  it("does not render a 3D Painter button in the stage panel", () => {
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <StudioStagePanel
+          outfit={[]}
+          bodyId="steve"
+          bodyHue={0}
+          model="classic"
+          name="My Look"
+          onName={() => {}}
+          onSave={() => {}}
+          onDownload={() => {}}
+        />,
+      )
+    })
+
+    const painterBtn = Array.from(host.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("3D Painter"),
+    )
+    expect(painterBtn).toBeUndefined()
+  })
+
   it("renders the overwrite modal when confirmOverwriteLook is provided", () => {
     const host = document.createElement("div")
     const onConfirmOverwrite = vi.fn()
@@ -53,7 +86,7 @@ describe("StudioStagePanel", () => {
 
     const dialog = host.querySelector('[role="dialog"]')
     expect(dialog).toBeTruthy()
-    expect(dialog?.textContent).toContain("This skin seems to already exist!")
+    expect(dialog?.textContent).toContain("You already have a look with this name.")
     expect(dialog?.textContent).toContain("Cyber Knight")
 
     const overwriteBtn = Array.from(host.querySelectorAll("button")).find(

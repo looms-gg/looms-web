@@ -2,40 +2,21 @@ import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { supabase } from "../lib/supabase"
 import * as authModule from "./auth"
+import { makeAuthStub } from "../test/authStub"
+import { mockSupabaseFrom } from "../test/supabaseMock"
 import type { AuthContextValue } from "./auth"
 import { LikesProvider, useLikes } from "./likes"
 
 function stubAuth(userId: string | null): AuthContextValue {
-  return {
+  return makeAuthStub({
     user: userId ? ({ id: userId, email: "test@looms.dev" } as AuthContextValue["user"]) : null,
     session: userId ? ({} as AuthContextValue["session"]) : null,
     profile: userId
       ? ({ id: userId, username: "Tester" } as AuthContextValue["profile"])
       : null,
-    avatarUrl: null,
-    isAdmin: false,
-    loading: false,
     emailVerified: Boolean(userId),
-    pendingEmail: null,
-    emailVerifyOpen: false,
-    openEmailVerify: vi.fn(),
-    dismissEmailVerify: vi.fn(),
-    resendConfirmation: vi.fn(),
-    signInWithPassword: vi.fn(),
-    signUpWithPassword: vi.fn(),
-    signInWithOtp: vi.fn(),
-    resetPasswordForEmail: vi.fn(),
-    signOut: vi.fn(),
-    updateProfile: vi.fn(),
-    refreshProfile: vi.fn(),
-    profileError: null,
-    dismissProfileError: vi.fn(),
-    deleteAccount: vi.fn(),
-    signInWithOAuth: vi.fn(),
-    completeOnboarding: vi.fn(),
-  }
+  })
 }
 
 type Deferred<T> = {
@@ -56,10 +37,9 @@ type SelectResult = {
   error: { message: string } | null
 }
 
-type MutationResult = { error: { message: string } | null }
+type MutationResult = { data: null; error: { message: string } | null }
 
 type LikesMock = {
-  fromSpy: ReturnType<typeof vi.spyOn>
   holdSelect: Deferred<SelectResult>
   holdInsert: Deferred<MutationResult>
   holdDelete: Deferred<MutationResult>
@@ -70,26 +50,13 @@ function mockLikesTable(): LikesMock {
   const holdInsert = deferred<MutationResult>()
   const holdDelete = deferred<MutationResult>()
 
-  const fromSpy = vi.spyOn(supabase, "from").mockImplementation((table: string) => {
-    if (table !== "likes") {
-      return {} as never
-    }
-    return {
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockImplementation(() => holdSelect.promise),
-      }),
-      insert: vi.fn().mockImplementation(() => holdInsert.promise),
-      delete: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockImplementation(() => holdDelete.promise),
-          }),
-        }),
-      }),
-    } as never
+  mockSupabaseFrom().on("likes", (query) => {
+    if (query.operation === "insert") return holdInsert.promise
+    if (query.operation === "delete") return holdDelete.promise
+    return holdSelect.promise
   })
 
-  return { fromSpy, holdSelect, holdInsert, holdDelete }
+  return { holdSelect, holdInsert, holdDelete }
 }
 
 function mountLikes(
@@ -190,7 +157,7 @@ describe("LikesProvider", () => {
 
     let addResult!: { error: Error | null }
     await act(async () => {
-      mock.holdInsert.resolve({ error: null })
+      mock.holdInsert.resolve({ data: null, error: null })
       addResult = await addPromise
     })
     expect(addResult.error).toBeNull()
@@ -204,7 +171,7 @@ describe("LikesProvider", () => {
 
     let removeResult!: { error: Error | null }
     await act(async () => {
-      mock.holdDelete.resolve({ error: null })
+      mock.holdDelete.resolve({ data: null, error: null })
       removeResult = await removePromise
     })
     expect(removeResult.error).toBeNull()
@@ -225,7 +192,7 @@ describe("LikesProvider", () => {
 
     let result!: { error: Error | null }
     await act(async () => {
-      mock.holdInsert.resolve({ error: { message: "insert failed" } })
+      mock.holdInsert.resolve({ data: null, error: { message: "insert failed" } })
       result = await addPromise
     })
 
@@ -252,7 +219,7 @@ describe("LikesProvider", () => {
 
     let result!: { error: Error | null }
     await act(async () => {
-      mock.holdDelete.resolve({ error: { message: "delete failed" } })
+      mock.holdDelete.resolve({ data: null, error: { message: "delete failed" } })
       result = await removePromise
     })
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { mapProfileRow } from "../lib/mapProfileRow"
+import { mapProfileRow } from "../lib/content/mapProfileRow"
 
 describe("mapProfileRow notify columns", () => {
   it("carries the notify toggles through", () => {

@@ -31,13 +31,13 @@ export function ExploreHeaderBar({
   return (
     <section
       id="wardrobe"
-      className="flex flex-col gap-4 rounded-[18px] bg-base-200 p-5 md:flex-row md:items-center md:justify-between"
+      className="flex flex-col gap-4 py-2 md:flex-row md:items-center md:justify-between"
     >
       <div>
         <h2 className="text-2xl font-extrabold tracking-tight">
           {isPieces ? "Browse all pieces" : "Browse community looks"}
         </h2>
-        <p className="text-sm font-medium text-base-content/60">
+        <p className="text-sm font-medium text-base-content/70">
           {isPieces ? (
             <>
               <span className="tabular-nums">{pieceCount}</span> items
@@ -54,8 +54,8 @@ export function ExploreHeaderBar({
         </p>
       </div>
 
-      <div className="flex w-full max-w-md items-center gap-2">
-        <label className="input input-bordered flex h-11 grow items-center gap-2 rounded-full bg-base-100">
+      <div className="flex w-full max-w-md items-stretch gap-2">
+        <label className="input input-bordered flex h-11 grow items-center gap-2 bg-base-100">
           <Icon icon={MagnifyingGlass} size="sm" className="opacity-50" />
           <input
             type="search"
@@ -72,7 +72,7 @@ export function ExploreHeaderBar({
 
         <button
           type="button"
-          className="btn btn-primary btn-sm sm:btn-md rounded-full font-bold gap-2 shrink-0 px-3.5 sm:px-4 shadow-sm active:scale-[0.96] transition-transform"
+          className="btn btn-primary !h-11 font-bold gap-2 shrink-0 px-3.5 sm:px-4"
           onClick={onActionClick}
         >
           <Icon icon={isPieces ? CloudArrowUp : PaintBrush} size="sm" />

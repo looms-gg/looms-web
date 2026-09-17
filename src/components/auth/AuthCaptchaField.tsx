@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { isTurnstileEnabled } from "../../lib/turnstile"
+import { isTurnstileEnabled } from "../../lib/auth/turnstile"
 import { TurnstileWidget } from "./TurnstileWidget"
 
 /**

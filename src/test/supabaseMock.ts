@@ -30,6 +30,10 @@ export type QueryHandler<T = unknown> =
   | Promise<MockQueryResult<T>>
   | ((query: RecordedQuery) => MockQueryResult<T> | Promise<MockQueryResult<T>>)
 
+function isMutation(operation: QueryOperation): boolean {
+  return operation !== "select"
+}
+
 export class QueryBuilderStub<T = unknown> implements PromiseLike<MockQueryResult<T>> {
   readonly query: RecordedQuery
   private readonly handler: QueryHandler<T>
@@ -44,8 +48,13 @@ export class QueryBuilderStub<T = unknown> implements PromiseLike<MockQueryResul
   }
 
   select(columns?: string, options?: Record<string, unknown>): this {
-    this.query.operation = "select"
-    this.query.payload = { columns, options }
+    // A select chained onto a mutation (insert(...).select().single()) is a
+    // PostgREST returning-rows suffix, not a new query: keep the mutation as
+    // the recorded operation so payload/filters stay attributable.
+    if (!isMutation(this.query.operation)) {
+      this.query.operation = "select"
+      this.query.payload = { columns, options }
+    }
     return this
   }
 
@@ -196,6 +205,60 @@ export interface SupabaseMockController {
   reset(): void
 }
 
+export interface RecordedRpc {
+  fn: string
+  args?: unknown
+}
+
+export type RpcHandler =
+  | MockQueryResult
+  | ((call: RecordedRpc) => MockQueryResult | Promise<MockQueryResult>)
+
+export interface RpcMockController {
+  rpcSpy: MockInstance
+  calls: RecordedRpc[]
+  getCalls(fn?: string): RecordedRpc[]
+  on(fn: string, handler: RpcHandler): void
+  setDefaultHandler(handler: RpcHandler): void
+  reset(): void
+}
+
+/**
+ * Creates and installs a shared Supabase rpc mock that records each call
+ * (function name plus args) and dispatches to per-function or default handlers.
+ */
+export function mockSupabaseRpc(): RpcMockController {
+  const calls: RecordedRpc[] = []
+  const fnHandlers = new Map<string, RpcHandler>()
+  let defaultHandler: RpcHandler = { data: null, error: null }
+
+  const rpcSpy = vi.spyOn(supabase, "rpc").mockImplementation(((fn: string, args?: unknown) => {
+    const call: RecordedRpc = { fn, args }
+    calls.push(call)
+    const handler = fnHandlers.get(fn) ?? defaultHandler
+    return typeof handler === "function" ? handler(call) : handler
+  }) as never)
+
+  return {
+    rpcSpy,
+    calls,
+    getCalls(fn?: string): RecordedRpc[] {
+      return calls.filter((c) => !fn || c.fn === fn)
+    },
+    on(fn: string, handler: RpcHandler) {
+      fnHandlers.set(fn, handler)
+    },
+    setDefaultHandler(handler: RpcHandler) {
+      defaultHandler = handler
+    },
+    reset() {
+      calls.length = 0
+      fnHandlers.clear()
+      defaultHandler = { data: null, error: null }
+    },
+  }
+}
+
 /**
  * Creates and installs a shared Supabase query builder mock that records operations
  * and decouples tests from method chaining topology.
@@ -208,20 +271,23 @@ export function mockSupabaseFrom(): SupabaseMockController {
 
   const fromSpy = vi.spyOn(supabase, "from").mockImplementation((table: string) => {
     const handler: QueryHandler = (query: RecordedQuery) => {
-      queries.push(query)
       const opKey = `${query.table}:${query.operation}`
       if (tableOpHandlers.has(opKey)) {
         const h = tableOpHandlers.get(opKey)!
         return typeof h === "function" ? h(query) : h
       }
       if (tableHandlers.has(query.table)) {
-        const h = tableHandlers.get(query.table)!
+        const h = tableHandlers.get(table)!
         return typeof h === "function" ? h(query) : h
       }
       return typeof defaultHandler === "function" ? defaultHandler(query) : defaultHandler
     }
 
-    return new QueryBuilderStub(table, handler) as never
+    const stub = new QueryBuilderStub(table, handler)
+    // Record at chain-build time (like the real client dispatches), so
+    // fire-and-forget writes are observable without awaiting them.
+    queries.push(stub.query)
+    return stub as never
   })
 
   return {

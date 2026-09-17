@@ -12,7 +12,6 @@ export type PatchResult = {
   next: Persist
   message?: string
   activeLook?: Look
-  cloudOp?: () => void
 }
 
 export type PatchFn = (
@@ -33,6 +32,7 @@ export type WardrobeContextValue = Persist & {
   ) => Promise<WardrobeMutationResult>
   clearSlot: (slot: Slot) => void
   moveStack: (pieceId: string, steps: number) => void
+  reorderStack: (pieceId: string, targetIndex: number) => void
   setBody: (bodyId: string) => void
   setBodyHue: (hue: number) => void
   setModel: (model: SkinModel) => void

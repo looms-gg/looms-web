@@ -9,11 +9,13 @@ export type {
 } from "./pieceTypes"
 export {
   CLOTHING_SLOTS,
+  COLLECTION_CATEGORY_ORDER,
   focusForPiece,
   GROUP_LABEL,
   GROUPS,
   pieceCovers,
   preparePreview,
+  SLOT_BADGE_COLOR,
   SLOT_GROUP,
   SLOT_LABEL,
   SLOT_STACK,

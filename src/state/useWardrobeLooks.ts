@@ -136,11 +136,15 @@ export function useWardrobeLooks({
         },
       }))
       return runLookWrite(
-        updateCloudLookMeta(id, ownerId, {
-          name: updated.name,
-          description: updated.description,
-          visibility: updated.visibility,
-        }),
+        updateCloudLookMeta(
+          {
+            name: updated.name,
+            description: updated.description,
+            visibility: updated.visibility,
+          },
+          id,
+          ownerId,
+        ),
       )
     },
     [patch, runLookWrite, stateRef, user],

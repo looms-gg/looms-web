@@ -2,9 +2,10 @@ import { Link } from "react-router-dom"
 import { DiscordLogo, GithubLogo } from "@phosphor-icons/react"
 import { LoomsLogo } from "../ui/LoomsLogo"
 import { useCookieConsent } from "../../state/cookieConsent"
-import { DISCORD_URL, GITHUB_URL } from "../../lib/seo"
+import { DISCORD_URL, GITHUB_URL } from "../../lib/content/seo"
 
 const legalLinks = [
+  { to: "/blog", label: "Updates" },
   { to: "/privacy", label: "Privacy" },
   { to: "/terms", label: "Terms" },
   { to: "/cookies", label: "Cookies" },

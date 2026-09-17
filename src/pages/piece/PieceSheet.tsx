@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react"
-import { Pencil } from "@phosphor-icons/react"
+import { PaintBrush, Pencil } from "@phosphor-icons/react"
 import { GROUP_LABEL, SLOT_LABEL, pieceCovers, type Piece } from "../../data/catalog"
 import { Icon } from "../../components/ui/Icon"
 import { MakerLink } from "../../components/piece/MakerLink"
@@ -16,6 +16,7 @@ export function PieceSheet({
   wearing,
   isCreator,
   onEdit,
+  onEditInPainter,
   onLikeCountChange,
   onWear,
   onAddToWardrobe,
@@ -27,6 +28,7 @@ export function PieceSheet({
   wearing: boolean
   isCreator: boolean
   onEdit: () => void
+  onEditInPainter?: () => void
   onLikeCountChange: (likeCount: number) => void
   onWear: () => void
   onAddToWardrobe: () => void
@@ -36,11 +38,11 @@ export function PieceSheet({
   const coverLabels = pieceCovers(piece).map((g) => GROUP_LABEL[g])
 
   return (
-    <section className="piece-sheet relative overflow-hidden rounded-[18px] bg-base-200">
+    <section className="piece-sheet relative overflow-hidden rounded-lg bg-base-200">
       {isCreator ? (
         <button
           type="button"
-          className="btn btn-sm absolute right-3 top-3 z-20 min-h-10 rounded-full border border-base-content/15 bg-base-100/90 font-extrabold backdrop-blur"
+          className="btn btn-sm absolute right-3 top-3 z-20 min-h-10 bg-base-100 font-extrabold"
           aria-label={`Edit ${piece.name}`}
           title={`Edit ${piece.name}`}
           onClick={onEdit}
@@ -49,13 +51,25 @@ export function PieceSheet({
           Edit
         </button>
       ) : null}
+      {isCreator && onEditInPainter ? (
+        <button
+          type="button"
+          className="btn btn-sm absolute right-3 top-16 z-20 min-h-10 bg-base-100 font-extrabold"
+          aria-label="Paint this piece"
+          title="Open in the editor"
+          onClick={onEditInPainter}
+        >
+          <Icon icon={PaintBrush} size="sm" className="mr-1.5" />
+          Paint
+        </button>
+      ) : null}
       <div className="grid md:grid-cols-[minmax(280px,1fr)_minmax(0,1.05fr)]">
         <div
           className="piece-reveal piece-preview relative min-h-[320px] bg-base-300 md:min-h-[440px]"
           style={revealStyle(1)}
           role="img"
           aria-label={`${piece.name}, a ${SLOT_LABEL[piece.slot]} piece for Minecraft skins, shown on a 3D Minecraft character`}
-          title={`${piece.name} — ${SLOT_LABEL[piece.slot]} piece preview`}
+          title={`${piece.name}: ${SLOT_LABEL[piece.slot]} piece preview`}
         >
           <SkinStage
             outfit={[piece]}

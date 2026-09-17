@@ -48,6 +48,7 @@ function CommentComposer({
   const id = useId()
   const [body, setBody] = useState(initial)
   const [busy, setBusy] = useState(false)
+  const canSubmit = Boolean(body.trim()) && !busy && !disabled
 
   return (
     <form
@@ -69,33 +70,41 @@ function CommentComposer({
       </label>
       <textarea
         id={id}
-        className="textarea textarea-bordered min-h-24 w-full rounded-[18px] bg-base-100 text-sm leading-relaxed"
+        className="textarea textarea-bordered min-h-24 w-full rounded-lg bg-base-100 text-sm leading-relaxed"
         placeholder={placeholder}
         maxLength={MAX_LIMITS.COMMENT}
         value={body}
         disabled={busy || disabled}
-        onChange={(event) => setBody(event.target.value)} />
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="submit"
-          className="btn btn-primary btn-sm min-h-10 rounded-full font-extrabold active:scale-[0.96] transition-transform"
-          disabled={busy || disabled || !body.trim()}
-        >
-          {submitLabel}
-        </button>
+        onChange={(event) => setBody(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" || event.shiftKey) return
+          if (event.nativeEvent.isComposing) return
+          event.preventDefault()
+          if (canSubmit) event.currentTarget.form?.requestSubmit()
+        }} />
+      <div className="flex items-center gap-2">
         {onCancel ? (
           <button
             type="button"
-            className="btn btn-ghost btn-sm min-h-10 rounded-full font-bold active:scale-[0.96] transition-transform"
+            className="btn btn-ghost btn-sm min-h-10 font-bold"
             onClick={onCancel}
             disabled={busy}
           >
             Cancel
           </button>
         ) : null}
-        <span className="ml-auto text-xs font-bold tabular-nums text-base-content/45">
-          {body.length}/{MAX_LIMITS.COMMENT}
-        </span>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-xs font-bold tabular-nums text-base-content/45">
+            {body.length}/{MAX_LIMITS.COMMENT}
+          </span>
+          <button
+            type="submit"
+            className="btn btn-primary btn-sm min-h-10 font-extrabold"
+            disabled={!canSubmit}
+          >
+            {submitLabel}
+          </button>
+        </div>
       </div>
     </form>
   )
@@ -178,7 +187,7 @@ function CommentCard({
         {depth === 0 ? (
           <button
             type="button"
-            className="btn btn-ghost btn-xs min-h-9 rounded-full font-bold active:scale-[0.96] transition-transform"
+            className="btn btn-ghost btn-xs min-h-9 font-bold"
             title="Reply"
             onClick={() => {
               if (!viewerId) {
@@ -195,7 +204,7 @@ function CommentCard({
         {isAuthor ? (
           <button
             type="button"
-            className="btn btn-ghost btn-xs min-h-9 rounded-full font-bold active:scale-[0.96] transition-transform"
+            className="btn btn-ghost btn-xs min-h-9 font-bold"
             title="Edit comment"
             onClick={() => setEditing(true)}
           >
@@ -206,7 +215,7 @@ function CommentCard({
         {canDelete ? (
           <button
             type="button"
-            className="btn btn-ghost btn-xs min-h-9 rounded-full font-bold text-error active:scale-[0.96] transition-transform"
+            className="btn btn-ghost btn-xs min-h-9 font-bold text-error"
             title="Delete comment"
             onClick={async () => {
               if (!viewerId) return
@@ -226,7 +235,7 @@ function CommentCard({
         {!isAuthor ? (
           <button
             type="button"
-            className="btn btn-ghost btn-xs min-h-9 rounded-full font-bold opacity-60 hover:opacity-100 active:scale-[0.96] transition-opacity"
+            className="btn btn-ghost btn-xs min-h-9 font-bold opacity-60 hover:opacity-100"
             title="Report comment"
             aria-label="Report comment"
             onClick={() => {
@@ -346,7 +355,7 @@ export function CommentsSection({
   const commentCount = threads.reduce((n, t) => n + 1 + t.replies.length, 0)
 
   return (
-    <section className="rounded-[18px] bg-base-200 p-5 md:p-7" aria-label="Comments">
+    <section className="rounded-lg bg-base-200 p-5 md:p-7" aria-label="Comments">
       <div className="mb-4 flex items-baseline gap-2">
         <h2 className="text-lg font-extrabold tracking-tight">Comments</h2>
         <span className="text-xs font-extrabold tabular-nums text-base-content/50">
@@ -381,7 +390,7 @@ export function CommentsSection({
           </p>
           <button
             type="button"
-            className="btn btn-primary btn-sm min-h-10 rounded-full font-extrabold"
+            className="btn btn-primary btn-sm min-h-10 font-extrabold"
             onClick={() => setAuthOpen(true)}
           >
             Sign in
@@ -398,7 +407,7 @@ export function CommentsSection({
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Loading comments">
           {[1, 2, 3].map((n) => (
-            <Bone key={n} className="h-16" rounded="rounded-[18px]" />
+            <Bone key={n} className="h-16" rounded="rounded-lg" />
           ))}
         </div>
       ) : threads.length === 0 ? (

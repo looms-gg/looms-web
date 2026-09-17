@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { Warning } from "@phosphor-icons/react"
 import { supabase } from "../../lib/supabase"
-import { takeOAuthReturn } from "../../lib/oauth"
+import { takeOAuthReturn } from "../../lib/auth/oauth"
 import { Icon } from "../../components/ui/Icon"
 import { LoomsLogo } from "../../components/ui/LoomsLogo"
 
