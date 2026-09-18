@@ -89,6 +89,14 @@ describe("BlogPostPage", () => {
 
     const banner = host.querySelector('img[src="https://example.com/banner.png"]')
     expect(banner).not.toBeNull()
+
+    expect(document.title).toContain("Update V2 is Here")
+    expect(document.querySelector('meta[name="twitter:card"]')?.getAttribute("content")).toBe(
+      "summary_large_image",
+    )
+    expect(
+      document.querySelector('meta[property="og:image"]')?.getAttribute("content"),
+    ).toBe("https://example.com/banner.png")
   })
 
   it("shows admin edit shortcut when user isAdmin is true", async () => {

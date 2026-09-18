@@ -135,6 +135,27 @@ describe.skipIf(!hasBuild)("prerendered output contract (run `npm run build` fir
     expect(look).not.toContain("<h1>Community look — Minecraft outfit</h1>")
   })
 
+  it("blog pages: canonical, large card, thumbnail og:image, BlogPosting JSON-LD", () => {
+    // Same build-time gate as looks: no env or no published posts means no
+    // blog pages, and the contract check does not apply.
+    const blogRoot = path.join(DIST, "blog")
+    const blogDirs = existsSync(blogRoot)
+      ? readdirSync(blogRoot).filter((d) => existsSync(path.join(blogRoot, d, "index.html")))
+      : []
+    if (blogDirs.length === 0) return
+    const slug = blogDirs[0]
+    const page = readFileSync(path.join(blogRoot, slug, "index.html"), "utf8")
+    expect(page).toContain(`<link rel="canonical" href="https://looms.gg/blog/${slug}" />`)
+    // Blog links get the wide banner card with the post thumbnail.
+    expect(page).toContain('<meta name="twitter:card" content="summary_large_image" />')
+    expect(page).toMatch(/<meta property="og:image" content="https?:\/\/[^"]+" \/>/)
+    expect(page).toContain('"@type": "BlogPosting"')
+    expect(page).toMatch(/<title>.+ · looms<\/title>/)
+    expect(page.match(/<h1>/g)?.length).toBe(1)
+    expect(page).toContain("not affiliated with, endorsed by, or sponsored by Mojang")
+    expect(page).toContain('<div id="root"></div>')
+  })
+
   it("site.webmanifest ships in dist and is linked from the shell", () => {
     expect(existsSync(path.join(DIST, "site.webmanifest"))).toBe(true)
     expect(home).toContain('rel="manifest" href="/site.webmanifest"')

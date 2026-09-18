@@ -354,6 +354,47 @@ async function fetchPublicLooks() {
 }
 
 /**
+ * Published blog posts straight from the database. RLS scopes the anon select
+ * to published rows; the is_published filter restates the indexation gate so a
+ * draft can never get a prerendered page. Best-effort like the other fetches:
+ * a failed request means zero blog pages, never a failed build.
+ */
+async function fetchPublicBlogPosts() {
+  const { url, anonKey } = loadSupabaseEnv()
+  if (!url || !anonKey) return []
+  try {
+    const posts = await pagedPostgrestSelect({
+      url,
+      anonKey,
+      baseQueryString:
+        "blog_posts?is_published=eq.true&select=slug,title,excerpt,published_at,updated_at,thumbnail_url,author_id&order=published_at.desc.nullslast",
+      label: "blog_posts",
+    })
+    // Author names ride along for JSON-LD attribution. A failed lookup must
+    // never drop the posts themselves.
+    const authorIds = [...new Set(posts.map((p) => p.author_id).filter(Boolean))]
+    let authorsById = new Map()
+    if (authorIds.length) {
+      try {
+        const res = await fetch(
+          `${url}/rest/v1/profiles?id=in.(${authorIds.join(",")})&select=id,username`,
+          { headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` } },
+        )
+        if (res.ok) {
+          authorsById = new Map((await res.json()).map((p) => [p.id, p.username]))
+        }
+      } catch {
+        // authors optional: posts still prerender with looms as the author
+      }
+    }
+    return posts.map((p) => ({ ...p, username: authorsById.get(p.author_id) ?? null }))
+  } catch (err) {
+    console.warn(`⚠️  ${err?.message ?? err}; prerendering zero blog pages.`)
+    return []
+  }
+}
+
+/**
  * Makers with at least one public, non-hidden look qualify for a prerendered
  * profile page + sitemap entry (indexation gate: no public content, no page).
  */
@@ -744,7 +785,74 @@ async function main() {
     console.log(`✅ Prerendered ${profileCount} maker profile pages in dist/u/`)
   }
 
-  // 5. Home page — the SPA shell gets a crawlable copy of the hero copy.
+  // 5. Blog posts: published rows only, one static page per slug so social
+  // crawlers get the post card (title, excerpt, thumbnail) without running JS.
+  const blogPosts = await fetchPublicBlogPosts()
+  const BLOG_SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
+  let blogCount = 0
+  for (const post of blogPosts) {
+    const slug = typeof post?.slug === "string" ? post.slug : ""
+    if (!BLOG_SLUG_PATTERN.test(slug)) continue
+    const postTitle = sanitizePrerenderText(post.title ?? "", 120)
+    if (!postTitle) continue
+    const postDir = path.join(DIST, "blog", slug)
+    fs.mkdirSync(postDir, { recursive: true })
+    const postUrl = `${BASE_URL}/blog/${slug}`
+    const postExcerpt = sanitizePrerenderText(post.excerpt ?? "", 300)
+    const author = sanitizePrerenderText(post.username ?? "", 40)
+    // Social image: the post's own thumbnail; the shared outfit card is the
+    // fallback so an embed never points at a missing image.
+    const image = isHttpUrl(post.thumbnail_url)
+      ? post.thumbnail_url
+      : `${BASE_URL}/og/outfit-default.png`
+    const description = postExcerpt
+      ? truncateOnWordBoundary(postExcerpt, 160)
+      : `${postTitle} — a looms update.`
+
+    const html = injectMeta(template, {
+      title: `${postTitle} · looms`,
+      description,
+      url: postUrl,
+      image,
+      type: "article",
+      index: true,
+      card: "summary_large_image",
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: postTitle,
+        description,
+        url: postUrl,
+        image,
+        ...(post.published_at ? { datePublished: post.published_at } : {}),
+        ...(post.updated_at ? { dateModified: post.updated_at } : {}),
+        author: author
+          ? { "@type": "Person", name: author }
+          : { "@type": "Organization", name: "looms" },
+        publisher: { "@type": "Organization", name: "looms", url: `${BASE_URL}/` },
+        mainEntityOfPage: postUrl,
+        inLanguage: "en",
+      },
+    })
+
+    const body = buildPageBody({
+      h1: postTitle,
+      intro: postExcerpt || `${postTitle} — an update from the looms team.`,
+      links: [
+        { label: "All looms updates", href: `${BASE_URL}/blog` },
+        { label: "Browse Minecraft outfits", href: `${BASE_URL}/look` },
+      ],
+    })
+
+    fs.writeFileSync(path.join(postDir, "index.html"), injectBody(html, body), "utf8")
+    blogCount++
+  }
+
+  if (blogCount > 0) {
+    console.log(`✅ Prerendered ${blogCount} blog post page(s) in dist/blog/`)
+  }
+
+  // 6. Home page — the SPA shell gets a crawlable copy of the hero copy.
   // The home page shares the outfit card; it doesn't need its own banner.
   const homeHtml = injectMeta(template, {
     title: "looms — Free Minecraft Clothing & Skin Layers",

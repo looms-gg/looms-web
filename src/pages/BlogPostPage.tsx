@@ -236,6 +236,7 @@ export function BlogPostPage() {
         description={post.excerpt}
         image={post.thumbnailUrl ?? undefined}
         url={`/blog/${post.slug}`}
+        card="summary_large_image"
       />
 
       <ArticleMeta post={post} copied={copied} isAdmin={isAdmin} onCopyShareLink={handleCopyShareLink} />
