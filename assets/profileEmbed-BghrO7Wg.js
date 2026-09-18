@@ -1,0 +1,1 @@
+function e(e){if(e==null)return{username:`maker`,avatar_url:null};let t=Array.isArray(e)?e[0]:e;if(t&&typeof t==`object`){let{username:e,avatar_url:n}=t;return{username:typeof e==`string`&&e.trim()?e.trim():`maker`,avatar_url:typeof n==`string`?n:null}}return{username:`maker`,avatar_url:null}}export{e as t};

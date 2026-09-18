@@ -1,0 +1,1 @@
+function e(e){let t=2166136261;for(let n=0;n<e.length;n++)t^=e.charCodeAt(n),t=Math.imul(t,16777619);return(t>>>0).toString(36)}function t(t,n,r){return`piece:v77:${t}:${n?`fx`:`raw`}:${r.id}:${e(r.skin)}`}export{e as n,t};
