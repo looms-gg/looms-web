@@ -1,4 +1,4 @@
-export type LegalDocId = "privacy" | "terms" | "cookies" | "guidelines"
+export type LegalDocId = "privacy" | "terms" | "cookies" | "guidelines" | "ai"
 
 export type LegalSection = {
   heading: string
@@ -81,7 +81,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
   terms: {
     id: "terms",
     title: "Terms of Service",
-    updated: "2026-09-07",
+    updated: "2026-09-18",
     sections: [
       {
         heading: "The service",
@@ -107,6 +107,13 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         paragraphs: [
           "You retain rights to skins and garments you upload. By uploading, you grant looms a non-exclusive license to host, display, and process that content so the service can work (including public catalogue display when you make an item public).",
           "You must only upload content you have the right to use. Do not upload stolen intellectual property, malware, or prohibited material described in the Community Guidelines.",
+        ],
+      },
+      {
+        heading: "AI and generative tools",
+        paragraphs: [
+          "We use generative AI to help build the site, in the workshop only: code, tests, review, and docs. It does not make the art. looms does not generate skins, garments, logos, branding, or imagery, and it never trains on your uploads or feeds them to a generator.",
+          "Do not upload AI-generated skins or clothing layers, and do not post text written end to end by a generator, including piece names, descriptions, look titles, and profile copy. Spelling and grammar help is fine. The full AI Policy explains where the line sits and how reports are handled.",
         ],
       },
       {
@@ -178,7 +185,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
   guidelines: {
     id: "guidelines",
     title: "Community Guidelines",
-    updated: "2026-09-07",
+    updated: "2026-09-18",
     sections: [
       {
         heading: "Be cool in the wardrobe",
@@ -195,7 +202,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
       {
         heading: "Not allowed",
         paragraphs: [
-          "Child sexual abuse material or sexual content involving minors; hate speech; harassment; impersonation; malware or deceptive textures; stolen intellectual property; spam floods; or other illegal content.",
+          "Child sexual abuse material or sexual content involving minors; hate speech; harassment; impersonation; malware or deceptive textures; stolen intellectual property; spam floods; AI-generated skins or text written end to end by a generator; or other illegal content.",
         ],
       },
       {
@@ -209,6 +216,48 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         paragraphs: [
           `Report issues via the flag button on any look or piece, in Discord (${DISCORD}), or by email to ${CONTACT}. Include links or IDs when you can. Reports with enough detail hide the content from public view automatically while a moderator reviews it.`,
           `Copyright / DMCA notices follow the process in our Terms of Service: email ${CONTACT} with the work, the URL, and a good-faith statement.`,
+        ],
+      },
+    ],
+  },
+  ai: {
+    id: "ai",
+    title: "AI Policy",
+    updated: "2026-09-18",
+    sections: [
+      {
+        heading: "Our AI policy",
+        paragraphs: [
+          "This policy explains how looms approaches generative AI, in our work and in our community.",
+          "looms is a human-centric platform for creators. AI has uses in some contexts and does harm in others. AI-generated creative assets detract from human-made work and displace artists. We use AI for programming, not for art: no AI-generated looks, textures, or fully generated text. We never train AI models on user looks or uploads.",
+        ],
+      },
+      {
+        heading: "How looms uses AI",
+        paragraphs: [
+          "Our team uses AI-assisted code completion, code review, unit test generation, PR checking, and documentation writing in day-to-day development. Every change is reviewed, tested, and merged by a person on the team before it ships. No AI-generated change skips that review.",
+          "The images our tools generate come from our own code and real textures, not AI artwork. Everything else, including social graphics, blog imagery, logos, our artwork, and every catalog piece, from skins and clothing to poses and eye layers, is human-made. We intend to keep it that way.",
+        ],
+      },
+      {
+        heading: "What this means for makers",
+        paragraphs: [
+          "On looms, you may not upload or create looks, skins, textures, or layers with AI-generated assets. We also ask that you not generate descriptive text with AI. AI-assisted spelling and grammar checkers are fine.",
+          "We will never use your content to train AI models, ours or anyone else's. If that ever changes, we will say so in plain language first. Our promise not to train on your work or sell your data is a promise, not a setting.",
+        ],
+      },
+      {
+        heading: "Enforcement and appeals",
+        paragraphs: [
+          "Without detection tools, AI-generated content is hard to tell apart from human-made content, and we will not add those tools. AI-generated content is a violation of these guidelines and can be reported like any other.",
+          "Reported items are hidden from view until a person on our team reviews the report. If the item breaks our policies, we remove it and tell you why. Repeated violations may result in a ban.",
+          `If you believe a removal was a mistake and can show the content is not AI-generated, reach out on Discord (${DISCORD}) or by email (${CONTACT}). We will review your appeal.`,
+        ],
+      },
+      {
+        heading: "Changes",
+        paragraphs: [
+          "This policy carries the same weight as our Terms of Service. Changes show in the last-modified date at the top.",
         ],
       },
     ],

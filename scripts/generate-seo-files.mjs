@@ -259,6 +259,7 @@ async function main() {
     { path: `${BASE_URL}/guidelines`, changefreq: "monthly", priority: "0.3" },
     { path: `${BASE_URL}/privacy`, changefreq: "yearly", priority: "0.3" },
     { path: `${BASE_URL}/terms`, changefreq: "yearly", priority: "0.3" },
+    { path: `${BASE_URL}/ai`, changefreq: "yearly", priority: "0.3" },
     { path: `${BASE_URL}/cookies`, changefreq: "yearly", priority: "0.2" },
   ]
 

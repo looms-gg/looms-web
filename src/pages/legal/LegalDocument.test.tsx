@@ -32,4 +32,18 @@ describe("LegalDocument", () => {
     expect(host.textContent).toMatch(/free/i)
     expect(host.textContent).not.toMatch(/\bgems\b/i)
   })
+
+  it("renders the AI Policy with a link to it in the legal nav", () => {
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <MemoryRouter>
+          <LegalDocument docId="ai" />
+        </MemoryRouter>,
+      )
+    })
+    expect(host.querySelector("h1")?.textContent).toMatch(/AI Policy/i)
+    expect(host.textContent).toMatch(/human-centric platform for creators/i)
+    expect(host.querySelector('a[href="/ai"]')).not.toBeNull()
+  })
 })

@@ -35,7 +35,7 @@ export function ExploreHero({
         <h1 className="text-[clamp(2rem,7vw,3.15rem)] font-black leading-[1.08] tracking-tight text-balance">
           <span className="block">Meet your new</span>
           <span className="block">
-            <span className="text-primary">Minecraft</span> wardrobe.
+            <span className="text-primary">Minecraft</span>&nbsp;wardrobe.
           </span>
         </h1>
         <p className="mt-3 max-w-[44ch] text-base leading-[1.6] text-base-content/70 font-medium text-pretty">

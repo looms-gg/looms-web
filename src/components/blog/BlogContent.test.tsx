@@ -72,6 +72,25 @@ This is a paragraph with **bold** text and *italic* text.
     )
   })
 
+  it("does not stall on incomplete heading markers", () => {
+    const tokens = tokenizeMarkdown(
+      "Intro.\n#\n##\n## \n###\n####\n#####\n######\n# One\n#NoSpace\n## Ready\n",
+    )
+    expect(tokens).toEqual([
+      { type: "paragraph", text: "Intro." },
+      { type: "paragraph", text: "#" },
+      { type: "paragraph", text: "##" },
+      { type: "paragraph", text: "##" },
+      { type: "paragraph", text: "###" },
+      { type: "paragraph", text: "####" },
+      { type: "paragraph", text: "#####" },
+      { type: "paragraph", text: "######" },
+      { type: "paragraph", text: "# One" },
+      { type: "paragraph", text: "#NoSpace" },
+      { type: "h2", text: "Ready" },
+    ])
+  })
+
   it("renders external images with caption and middle alignment", async () => {
     const content = `
 ![Cosmetic Showcase](https://example.com/cosmetics.png)

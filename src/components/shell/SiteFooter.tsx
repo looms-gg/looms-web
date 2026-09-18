@@ -10,6 +10,7 @@ const legalLinks = [
   { to: "/terms", label: "Terms" },
   { to: "/cookies", label: "Cookies" },
   { to: "/guidelines", label: "Community Guidelines" },
+  { to: "/ai", label: "AI Policy" },
 ] as const
 
 const socials = [

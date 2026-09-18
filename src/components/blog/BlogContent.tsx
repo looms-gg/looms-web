@@ -232,6 +232,11 @@ export function tokenizeMarkdown(rawContent: string): Token[] {
 
     if (paraLines.length > 0) {
       tokens.push({ type: "paragraph", text: paraLines.join(" ") })
+    } else {
+      // Unmatched block marker such as "#", "#####", or "#Title". Consume the
+      // line so the tokenizer always advances instead of looping forever.
+      tokens.push({ type: "paragraph", text: trimmed })
+      i++
     }
   }
 

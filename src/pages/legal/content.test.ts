@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { LEGAL_DOCS, type LegalDocId } from "./content"
 
-const IDS: LegalDocId[] = ["privacy", "terms", "cookies", "guidelines"]
+const IDS: LegalDocId[] = ["privacy", "terms", "cookies", "guidelines", "ai"]
 
 describe("LEGAL_DOCS", () => {
   it("covers every legal doc id with matching id and non-empty sections", () => {
@@ -33,5 +33,20 @@ describe("LEGAL_DOCS", () => {
     const termsText = LEGAL_DOCS.terms.sections.flatMap((s) => s.paragraphs).join("\n")
     expect(termsText).toMatch(/free/i)
     expect(termsText).not.toMatch(/\bgems\b/i)
+  })
+
+  it("keeps the AI line plain: dev tooling yes, generated art and training no", () => {
+    const aiText = LEGAL_DOCS.ai.sections.flatMap((s) => s.paragraphs).join("\n")
+    expect(aiText).toMatch(/code completion/i)
+    expect(aiText).toMatch(/human-made/i)
+    expect(aiText).toMatch(/never use your content to train AI models/i)
+    expect(aiText).toMatch(/will not add those tools/i)
+    expect(aiText).toMatch(/sell your data/i)
+
+    const termsText = LEGAL_DOCS.terms.sections.flatMap((s) => s.paragraphs).join("\n")
+    expect(termsText).toMatch(/AI Policy/)
+    expect(LEGAL_DOCS.guidelines.sections.some((s) => s.paragraphs.some((p) => /AI-generated skins/i.test(p)))).toBe(
+      true,
+    )
   })
 })

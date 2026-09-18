@@ -6,6 +6,7 @@ const DOC_LINKS: { id: LegalDocId; label: string }[] = [
   { id: "terms", label: "Terms" },
   { id: "cookies", label: "Cookies" },
   { id: "guidelines", label: "Guidelines" },
+  { id: "ai", label: "AI" },
 ]
 
 export function LegalDocument({ docId }: { docId: LegalDocId }) {

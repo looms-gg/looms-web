@@ -33,6 +33,7 @@ describe("SiteFooter", () => {
     expect(host.querySelector('a[href="/terms"]')).not.toBeNull()
     expect(host.querySelector('a[href="/cookies"]')).not.toBeNull()
     expect(host.querySelector('a[href="/guidelines"]')).not.toBeNull()
+    expect(host.querySelector('a[href="/ai"]')).not.toBeNull()
     expect(host.textContent).toMatch(/Cookie settings/i)
     expect(host.textContent).toMatch(/PyreDev/)
     expect(host.textContent).toMatch(/not affiliated with, endorsed by, or sponsored by Mojang/i)

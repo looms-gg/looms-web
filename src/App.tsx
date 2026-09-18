@@ -197,6 +197,7 @@ export default function App() {
               <Route path="terms" element={<LegalDocument docId="terms" />} />
               <Route path="cookies" element={<LegalDocument docId="cookies" />} />
               <Route path="guidelines" element={<LegalDocument docId="guidelines" />} />
+              <Route path="ai" element={<LegalDocument docId="ai" />} />
               <Route
                 path="blog"
                 element={
