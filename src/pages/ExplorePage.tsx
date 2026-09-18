@@ -92,7 +92,7 @@ export function ExplorePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <HeadMeta
         title={meta.title}
         description={meta.description}

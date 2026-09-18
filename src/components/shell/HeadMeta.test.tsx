@@ -47,6 +47,27 @@ describe("HeadMeta", () => {
     expect(ogUrl?.getAttribute("content")).toBe("https://looms-gg.github.io/piece/ink-fall")
   })
 
+  it("sets the embed card type when a route asks for a compact card", async () => {
+    const host = document.createElement("div")
+    document.body.appendChild(host)
+
+    await act(async () => {
+      flushSync(() => {
+        createRoot(host).render(
+          <HeadMeta
+            title="Semi White Hair"
+            image="https://looms.gg/og/pieces/semi-white-hair.png"
+            card="summary"
+          />,
+        )
+      })
+      await Promise.resolve()
+    })
+
+    const card = document.querySelector('meta[name="twitter:card"]')
+    expect(card?.getAttribute("content")).toBe("summary")
+  })
+
   it("does not duplicate looms in document.title if already included", async () => {
     const host = document.createElement("div")
     document.body.appendChild(host)

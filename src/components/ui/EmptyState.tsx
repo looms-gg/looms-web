@@ -1,22 +1,28 @@
 import type { ReactNode } from "react"
+import { Icon, type IconType } from "./Icon"
 
 export function EmptyState({
   title,
   body,
   action,
+  icon,
   className = "",
 }: {
   title: string
   body?: ReactNode
   action?: ReactNode
+  icon?: IconType
   className?: string
 }) {
   return (
-    <div
-      className={`grid place-items-center rounded-[18px] border border-dashed border-base-content/15 bg-base-200 px-6 py-12 text-center ${className}`}
-    >
-      <p className="text-lg font-extrabold">{title}</p>
-      {body ? <p className="mt-1 max-w-sm text-sm text-base-content/65">{body}</p> : null}
+    <div className={`empty-state ${className}`}>
+      {icon ? (
+        <span className="empty-state-icon">
+          <Icon icon={icon} size="lg" />
+        </span>
+      ) : null}
+      <p className="empty-state-title">{title}</p>
+      {body ? <p className="empty-state-body">{body}</p> : null}
       {action}
     </div>
   )

@@ -210,7 +210,7 @@ describe("ExploreHero", () => {
     expect(skeletons.length).toBeGreaterThanOrEqual(3)
   })
 
-  it("renders the hero backdrop as a quiet dot texture", async () => {
+  it("renders the hero backdrop as scattered pixel blocks", async () => {
     const host = document.createElement("div")
 
     await act(async () => {
@@ -223,9 +223,31 @@ describe("ExploreHero", () => {
       })
     })
 
-    const dots = host.querySelector(".hero-dots-container")
-    expect(dots).not.toBeNull()
-    expect(dots?.querySelector("img")).toBeNull()
+    const blocks = host.querySelector(".hero-blocks-container")
+    expect(blocks).not.toBeNull()
+    expect(blocks?.querySelector("img")).toBeNull()
+    expect(blocks?.querySelectorAll("rect").length).toBeGreaterThan(0)
+  })
+
+  it("tints the headline keyword with the system accent token", async () => {
+    const host = document.createElement("div")
+
+    await act(async () => {
+      flushSync(() => {
+        createRoot(host).render(
+          <MemoryRouter>
+            <ExploreHero trendingLooks={topLooks} />
+          </MemoryRouter>,
+        )
+      })
+    })
+
+    const keyword = Array.from(host.querySelectorAll("span")).find(
+      (span) => span.textContent === "Minecraft",
+    )
+    expect(keyword).toBeTruthy()
+    expect(keyword?.className).toContain("text-primary")
+    expect((keyword as HTMLElement).style.color).toBe("")
   })
 })
 

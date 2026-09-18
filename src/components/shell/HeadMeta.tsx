@@ -6,6 +6,12 @@ export type HeadMetaProps = {
   description?: string
   image?: string
   url?: string
+  /**
+   * Twitter/Discord embed card: "summary" renders a compact card with a small
+   * thumbnail, "summary_large_image" a full-width banner. Piece pages stay
+   * compact so a link reads as a card, not a wall of image.
+   */
+  card?: "summary" | "summary_large_image"
   /** Set false to keep a route out of search indexes (auth-gated, private, reported). */
   index?: boolean
   /** JSON-LD structured data attached to the document head for this route. */
@@ -23,7 +29,7 @@ function updateMetaTag(selector: string, attr: string, value: string) {
   el.setAttribute(attr, value)
 }
 
-export function HeadMeta({ title, description, image, url, index = true, jsonLd }: HeadMetaProps) {
+export function HeadMeta({ title, description, image, url, card, index = true, jsonLd }: HeadMetaProps) {
   useEffect(() => {
     if (typeof document === "undefined") return
 
@@ -42,6 +48,10 @@ export function HeadMeta({ title, description, image, url, index = true, jsonLd 
     if (image) {
       updateMetaTag('meta[property="og:image"]', "content", image)
       updateMetaTag('meta[name="twitter:image"]', "content", image)
+    }
+
+    if (card) {
+      updateMetaTag('meta[name="twitter:card"]', "content", card)
     }
 
     if (url) {
@@ -77,7 +87,7 @@ export function HeadMeta({ title, description, image, url, index = true, jsonLd 
     } else {
       script?.remove()
     }
-  }, [title, description, image, url, index, jsonLd])
+  }, [title, description, image, url, card, index, jsonLd])
 
   return null
 }

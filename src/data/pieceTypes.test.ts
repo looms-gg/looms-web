@@ -94,13 +94,23 @@ describe("pieceTypes", () => {
     expect(SLOT_LABEL.set).toBe("Set")
   })
 
-  it("gives every slot a muted hex badge color", () => {
+  it("gives every slot a steel hex badge color", () => {
     expect(Object.keys(SLOT_BADGE_COLOR).sort()).toEqual(
       ["coat", "eyes", "face", "hair", "hat", "pants", "set", "shirt", "shoes"].sort(),
     )
     for (const color of Object.values(SLOT_BADGE_COLOR)) {
       expect(color).toMatch(/^#[0-9a-f]{6}$/)
     }
+  })
+
+  it("steps the badge ladder so slots stay distinguishable in grayscale", () => {
+    const luminance = (hex: string) => {
+      const n = Number.parseInt(hex.slice(1), 16)
+      return ((n >> 16) & 0xff) + ((n >> 8) & 0xff) + (n & 0xff)
+    }
+    const levels = Object.values(SLOT_BADGE_COLOR).map(luminance)
+    expect(new Set(levels).size).toBe(levels.length)
+    expect(Math.max(...levels) - Math.min(...levels)).toBeGreaterThan(220)
   })
 
   it("orders collection categories starting with hat, hair, eyes, face, shirt, coat, pants, shoes, set", () => {

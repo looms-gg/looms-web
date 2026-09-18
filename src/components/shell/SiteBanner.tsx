@@ -82,7 +82,7 @@ export function SiteBanner() {
     <aside
       role="region"
       aria-label="Site announcement"
-      className={`site-banner relative z-30 w-full border-b backdrop-blur-md px-4 py-2.5 transition-all duration-200 ${style.wrapper}`}
+      className={`site-banner relative z-30 mx-auto mt-2 w-[calc(100%-40px)] max-w-[1344px] rounded-lg border backdrop-blur-md px-4 py-2.5 transition-all duration-200 lg:w-[calc(100%-96px)] ${style.wrapper}`}
     >
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 text-xs sm:text-sm font-semibold">
         <div className="flex flex-1 items-center justify-center gap-2 text-center md:gap-3">

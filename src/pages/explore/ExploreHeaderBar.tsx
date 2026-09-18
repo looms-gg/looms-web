@@ -27,34 +27,28 @@ export function ExploreHeaderBar({
   onActionClick,
 }: ExploreHeaderBarProps) {
   const isPieces = mode === "pieces"
+  const count = isPieces ? pieceCount : lookCount
+  const scope = isPieces
+    ? slot === "all"
+      ? "pieces available"
+      : `pieces · ${SLOT_LABEL[slot]}`
+    : lookModel === "all"
+      ? "looks published"
+      : `looks · ${lookModel === "slim" ? "Slim 3px" : "Classic 4px"}`
 
   return (
-    <section
-      id="wardrobe"
-      className="flex flex-col gap-4 py-2 md:flex-row md:items-center md:justify-between"
-    >
-      <div>
-        <h2 className="text-2xl font-extrabold tracking-tight">
+    <section id="wardrobe" className="explore-toolbar">
+      <div className="explore-toolbar-id">
+        <h2 className="explore-toolbar-title">
           {isPieces ? "Browse all pieces" : "Browse community looks"}
         </h2>
-        <p className="text-sm font-medium text-base-content/70">
-          {isPieces ? (
-            <>
-              <span className="tabular-nums">{pieceCount}</span> items
-              {slot === "all" ? " available" : ` · ${SLOT_LABEL[slot]}`}
-            </>
-          ) : (
-            <>
-              <span className="tabular-nums">{lookCount}</span> looks published
-              {lookModel === "all"
-                ? ""
-                : ` · ${lookModel === "slim" ? "Slim 3px" : "Classic 4px"}`}
-            </>
-          )}
+        <p className="explore-toolbar-meta">
+          <span className="explore-toolbar-count tabular-nums">{count}</span>
+          <span>{scope}</span>
         </p>
       </div>
 
-      <div className="flex w-full max-w-md items-stretch gap-2">
+      <div className="explore-toolbar-actions">
         <label className="input input-bordered flex h-11 grow items-center gap-2 bg-base-100">
           <Icon icon={MagnifyingGlass} size="sm" className="opacity-50" />
           <input
@@ -84,4 +78,3 @@ export function ExploreHeaderBar({
     </section>
   )
 }
-

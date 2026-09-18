@@ -5,6 +5,7 @@ import { Icon } from "../../components/ui/Icon"
 import { DEFAULT_FEATURED_LOOKS, type PublicLook } from "../../state/publicLooks"
 import { HeroPosedFigure } from "../../components/hero/HeroPosedFigure"
 import { DISCORD_URL } from "../../lib/content/seo"
+import { HeroBlocks } from "./HeroBlocks"
 
 export function ExploreHero({
   trendingLooks = DEFAULT_FEATURED_LOOKS,
@@ -28,13 +29,13 @@ export function ExploreHero({
 
   return (
     <section className="plaza-panel hero-wardrobe rounded-[18px]">
-      <div className="hero-dots-container" aria-hidden="true" />
+      <HeroBlocks />
 
       <div className="hero-copy max-w-xl self-center text-left xl:-translate-y-2">
         <h1 className="text-[clamp(2rem,7vw,3.15rem)] font-black leading-[1.08] tracking-tight text-balance">
           <span className="block">Meet your new</span>
           <span className="block">
-            <span style={{ color: "var(--neon-pink)" }}>Minecraft</span>&nbsp;wardrobe.
+            <span className="text-primary">Minecraft</span> wardrobe.
           </span>
         </h1>
         <p className="mt-3 max-w-[44ch] text-base leading-[1.6] text-base-content/70 font-medium text-pretty">
@@ -83,14 +84,14 @@ export function ExploreHero({
             ? [0, 1, 2].map((idx) => (
                 <div
                   key={idx}
-                  className="skin-bone h-6 w-16 rounded-full opacity-50"
+                  className="skin-bone h-6 w-16 rounded-[6px] opacity-50"
                   aria-hidden="true" />
               ))
             : [0, 1, 2].map((idx) => (
                 <button
                   key={idx}
                   type="button"
-                  className={`btn btn-xs rounded-full font-extrabold max-w-[120px] truncate ${
+                  className={`btn btn-xs rounded-[6px] font-extrabold max-w-[120px] truncate ${
                     mobileTab === idx
                       ? "btn-ghost border border-base-content/15 bg-base-content/10"
                       : "btn-ghost border border-base-content/15"

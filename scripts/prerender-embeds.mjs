@@ -109,7 +109,7 @@ function truncateOnWordBoundary(text, maxLength) {
   return `${(cut > maxLength * 0.6 ? slice.slice(0, cut) : slice).trimEnd()}…`
 }
 
-function injectMeta(template, { title, description, url, image, type = "website", index = true, jsonLd = null }) {
+function injectMeta(template, { title, description, url, image, type = "website", index = true, jsonLd = null, card = null }) {
   const safeTitle = escapeHtml(title)
   const safeDesc = escapeHtml(description)
   const safeUrl = escapeHtml(url)
@@ -176,6 +176,16 @@ function injectMeta(template, { title, description, url, image, type = "website"
     /<meta\s+name="twitter:image"\s+content=".*?"\s*\/>/s,
     `<meta name="twitter:image" content="${safeImg}" />`,
   )
+
+  // Card layout: crawlers (Discord, Slack) pick a compact thumbnail card for
+  // "summary" and a full-width banner for "summary_large_image". Only routes
+  // that opt in override the shell's default.
+  if (card) {
+    html = html.replace(
+      /<meta\s+name="twitter:card"\s+content=".*?"\s*\/>/s,
+      `<meta name="twitter:card" content="${escapeHtml(card)}" />`,
+    )
+  }
 
   // JSON-LD structured data. JSON.stringify output with < and > escaped keeps
   // the block safe from `</script>` breakout inside raw script text.
@@ -543,6 +553,7 @@ async function main() {
       image: pieceImage,
       type: "article",
       index: !isThin,
+      card: "summary",
       jsonLd,
     })
 

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import { MakerLink } from "./MakerLink"
 
 /** Shared badge for look tiles so every surface shows the same sliver. */
-export const LOOK_BADGE = { text: "Look", color: "#8f7a4d" } as const
+export const LOOK_BADGE = { text: "Look", color: "#c2c9d4" } as const
 
 /**
  * Shared shell for catalog tiles (pieces and looks): the media link, the

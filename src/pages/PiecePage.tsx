@@ -41,6 +41,7 @@ function PiecePageMeta({ piece }: { piece: Piece }) {
       description={metaDesc}
       url={shareUrl}
       image={ogImage}
+      card="summary"
       index={!isThin}
       jsonLd={creativeWorkJsonLd({
         name: piece.name,

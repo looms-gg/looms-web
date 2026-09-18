@@ -37,9 +37,10 @@ end;
 $$;
 
 -- Two real auth users (minimal columns; rest fall back to schema defaults).
--- session_replication_role = replica skips the on-signup trigger (the local
--- CLI's auth.users schema lacks the app_metadata column it reads — CLI drift,
--- not a prod schema issue) and the auth FKs for the fixture inserts.
+-- session_replication_role = replica skips the on-signup trigger and the auth
+-- FKs so these fixtures and the profiles inserted below stay deterministic.
+-- The trigger is covered by 20260917160000_fix_handle_new_user_app_metadata.sql;
+-- do not treat a trigger error here as harmless schema drift.
 set local session_replication_role = replica;
 insert into auth.users
   (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)

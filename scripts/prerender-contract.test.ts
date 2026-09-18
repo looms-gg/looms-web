@@ -78,6 +78,8 @@ describe.skipIf(!hasBuild)("prerendered output contract (run `npm run build` fir
     expect(piece.match(/<h1>/g)?.length).toBe(1)
     expect(piece).toMatch(/<h1>.+ — Minecraft .+ layer<\/h1>/)
     expect(piece).toContain('"@type": "CreativeWork"')
+    // Compact embed card: a piece link is a card with a thumbnail, not a banner.
+    expect(piece).toContain('<meta name="twitter:card" content="summary" />')
     // Internal links: related pieces + look landing
     expect(piece).toContain('href="https://looms.gg/look"')
     expect(piece.match(/href="https:\/\/looms\.gg\/piece\//g)?.length).toBeGreaterThanOrEqual(Math.min(4, pieceDirs.length - 1))

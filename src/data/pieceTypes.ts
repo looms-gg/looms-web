@@ -73,18 +73,20 @@ export type Piece = {
 }
 
 /**
- * Muted badge color per slot for tile name slivers (faded to transparent in CSS).
+ * Steel badge ladder per slot for tile name slivers (faded to transparent in
+ * CSS). One cool-gray hue family, brightness stepped by slot, so the badge
+ * reads as material chrome instead of a per-slot color code.
  */
 export const SLOT_BADGE_COLOR: Record<Slot, string> = {
-  eyes: "#527d7a",
-  hair: "#96604e",
-  hat: "#8a6f4d",
-  face: "#97718c",
-  shirt: "#9a5a4a",
-  set: "#7c5f8a",
-  coat: "#5c7a55",
-  pants: "#4e5f82",
-  shoes: "#6b6f75",
+  shoes: "#4b5058",
+  pants: "#565c66",
+  eyes: "#616874",
+  shirt: "#6c7481",
+  set: "#777f8e",
+  coat: "#838c9b",
+  face: "#8f99a8",
+  hair: "#9ba6b5",
+  hat: "#a7b3c2",
 }
 
 export const SLOT_LABEL: Record<Slot, string> = {

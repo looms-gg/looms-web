@@ -285,10 +285,10 @@ label input.grow:focus-visible,
 
 .piece-tile:hover {
   transform: translateY(-2px);
-  border-color: #ededf2 !important;
+  border-color: var(--line-strong) !important;
   box-shadow:
     inset 0 0 0 2px var(--tactile-inner-frame),
-    0 8px 24px -4px rgba(0, 0, 0, 0.65) !important;
+    0 6px 18px -6px rgba(0, 0, 0, 0.6) !important;
 }
 
 .piece-tile [class*="border-t-2"] {
@@ -309,6 +309,7 @@ label input.grow:focus-visible,
   aspect-ratio: 1 / 1;
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
+  --iso-figure-size: 86%;
   box-shadow: var(--tactile-media-frame);
 }
 
@@ -333,11 +334,11 @@ label input.grow:focus-visible,
   line-height: 1.5;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-shadow: 0 1px 1px rgb(0 0 0 / 0.35);
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.28);
   background: linear-gradient(
     100deg,
     var(--badge-color) 0%,
-    color-mix(in oklab, var(--badge-color) 70%, transparent) 45%,
+    color-mix(in oklab, var(--badge-color) 55%, transparent) 38%,
     transparent 100%
   );
 }
@@ -1315,7 +1316,7 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
 
 @media (min-width: 768px) {
   .hero-wardrobe {
-    padding: 2.75rem 3rem;
+    padding: 2.25rem 2.5rem;
   }
 }
 
@@ -1345,11 +1346,12 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   }
 }
 
-/* Hero background: a quiet polka-dot plaza texture on the figure side. Static
-   (no drift): the hero is a first-paint surface, and a perpetually moving
-   backdrop behind the posed characters reads as noise. */
+/* Hero background: scattered pixel blocks on the figure side, sized and
+   dimmed at random inside a coarse grid so they never overlap. Static: the
+   hero is a first-paint surface, and a moving backdrop behind the posed
+   characters reads as noise. */
 .hero-banner-container,
-.hero-dots-container {
+.hero-blocks-container {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -1358,13 +1360,8 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
   z-index: 1;
 }
 
-.hero-dots-container {
-  background-image: radial-gradient(
-    color-mix(in srgb, var(--color-base-content) 9%, transparent) 2px,
-    transparent 2px
-  );
-  background-size: 24px 24px;
-  background-position: top right;
+.hero-blocks-container {
+  color: var(--color-base-content);
   mask-image: linear-gradient(
     to left,
     rgb(0 0 0 / 0.9) 0%,
@@ -1377,6 +1374,13 @@ body:has(.auth-scrim:not(.auth-scrim--inline)) header {
     rgb(0 0 0 / 0.5) 45%,
     transparent 80%
   );
+}
+
+.hero-blocks-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
 }
 
 
@@ -2599,6 +2603,122 @@ html.studio-lock #root {
 }
 
 /*
+  Explore toolbar: the browse heading, count, search, and upload action share
+  one framed row (same tactile frame as studio panels) so the browse surface
+  reads as a control bar instead of a title block stacked above inputs.
+*/
+.explore-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 0.875rem 0.9rem;
+  background: var(--color-base-200);
+  border: 2px solid var(--tactile-outline);
+  box-shadow: inset 0 0 0 2px var(--tactile-inner-frame);
+  border-radius: 8px;
+}
+
+@media (min-width: 768px) {
+  .explore-toolbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+.explore-toolbar-id {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  min-width: 0;
+}
+
+.explore-toolbar-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.explore-toolbar-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.explore-toolbar-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.0625rem 0.45rem;
+  border-radius: 6px;
+  background: var(--color-base-300);
+  box-shadow: inset 0 0 0 1px var(--line-hairline);
+  color: var(--color-base-content);
+  font-weight: 800;
+}
+
+.explore-toolbar-actions {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .explore-toolbar-actions {
+    width: auto;
+    max-width: 30rem;
+    flex: 1;
+  }
+}
+
+/*
+  Empty and error states share the tactile frame used by panels, so a missing
+  rack reads as part of the room instead of a dashed placeholder box.
+*/
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: 0.375rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  background: var(--color-base-200);
+  border: 2px solid var(--tactile-outline);
+  box-shadow: inset 0 0 0 2px var(--tactile-inner-frame);
+  border-radius: 8px;
+}
+
+.empty-state-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 0.5rem;
+  border-radius: 10px;
+  background: var(--color-base-300);
+  box-shadow: inset 0 0 0 2px var(--tactile-inner-frame);
+  color: var(--color-primary);
+}
+
+.empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.empty-state-body {
+  max-width: 24rem;
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+
+/*
   Explore rail: the Show switcher stays in normal flow so scrolling past it
   reads as committing to the current tab. The sort/category block below pins
   to the header and scrolls internally only once it reaches it. The rail
@@ -3075,7 +3195,6 @@ button.badge {
 
 /* Bento containers: double-frame borders & exact 8px corners */
 section.bg-base-200,
-/* SiteBanner is a full-width ribbon, not a bento panel */
 aside.bg-base-200:not(.site-banner),
 div.bg-base-200.rounded-\[18px\],
 section.rounded-\[18px\],
