@@ -13,6 +13,7 @@ const row: GarmentRow = {
   added: 19,
   covers: ["head", "torso"],
   texture_url: "https://example.test/ink-fall.png",
+  thumb_url: null,
   is_public: true,
   tags: [],
   created_at: "2026-09-07T00:00:00.000Z",
@@ -30,5 +31,15 @@ describe("garmentToPiece", () => {
     expect(piece.savedCount).toBe(33)
     expect(piece.likeCount).toBe(4)
     expect(piece).not.toHaveProperty("worn")
+  })
+
+  it("maps thumb_url onto the piece", () => {
+    const withThumb = garmentToPiece(
+      { ...row, thumb_url: "https://example.test/ink-fall.thumb.png?v=1" },
+      "loft",
+    )
+    expect(withThumb.thumb).toBe("https://example.test/ink-fall.thumb.png?v=1")
+    const withoutThumb = garmentToPiece({ ...row, thumb_url: null }, "loft")
+    expect(withoutThumb.thumb).toBeUndefined()
   })
 })

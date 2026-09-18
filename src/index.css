@@ -2939,6 +2939,30 @@ a.btn-primary,
   transform: translateX(calc(100% + 4px));
 }
 
+/* Compact variant for dense bars (editor options bar): same mechanics, less height. */
+.tactile-segment-track--compact {
+  padding: 2px;
+  gap: 3px;
+}
+
+.tactile-segment-track--compact .tactile-segment-thumb {
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 4px);
+  border-radius: 5px;
+}
+
+.tactile-segment-track--compact.on-right .tactile-segment-thumb {
+  transform: translateX(calc(100% + 3px));
+}
+
+.tactile-segment-track--compact .tactile-segment-tab {
+  min-height: 22px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+}
+
 .tactile-segment-tab {
   position: relative;
   z-index: 1;

@@ -23,6 +23,7 @@ describe("fetchGarments", () => {
           added: 18,
           covers: [],
           texture_url: "https://example.test/ash-crop.png",
+          thumb_url: null,
           is_public: true,
           tags: [],
           created_at: "2026-09-07T00:00:00.000Z",

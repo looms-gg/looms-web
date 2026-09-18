@@ -634,7 +634,6 @@ $$;
 revoke all on function public.check_rate_limit(text, integer, integer) from public, anon, authenticated;
 revoke all on function public.check_user_quota(text, integer) from public, anon, authenticated;
 revoke all on function public.handle_new_user() from public, anon, authenticated;
-revoke all on function public.rls_auto_enable() from public, anon, authenticated;
 revoke all on function public.trg_garment_comments_rate_limit_and_quota() from public, anon, authenticated;
 revoke all on function public.trg_garment_comments_reply_depth() from public, anon, authenticated;
 revoke all on function public.trg_garment_comments_target_guard() from public, anon, authenticated;

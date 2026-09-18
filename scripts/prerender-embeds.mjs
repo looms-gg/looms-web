@@ -48,6 +48,37 @@ function slotLabel(slot) {
   return SLOT_LABELS[slot] ?? "clothing"
 }
 
+function isHttpUrl(value) {
+  if (typeof value !== "string" || value.length === 0) return false
+  try {
+    return new URL(value).protocol === "https:" || new URL(value).protocol === "http:"
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Social image for a piece: the garment's own thumb when it has one, else the
+ * shared outfit image so the embed never 404s.
+ */
+function pieceImageUrl(piece) {
+  return piece.thumbUrl ?? `${BASE_URL}/og/outfit-default.png`
+}
+
+/**
+ * Social image for a look: the owner's baked iso render when it has one, else
+ * the shared outfit image so the embed never 404s.
+ */
+function lookImageUrl(look) {
+  return isHttpUrl(look?.thumb_url) ? look.thumb_url : `${BASE_URL}/og/outfit-default.png`
+}
+
+/** Intrinsic dimensions of a PNG file, from its IHDR header. */
+function pngSize(filePath) {
+  const buf = fs.readFileSync(filePath)
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) }
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -282,7 +313,7 @@ async function fetchPublicLooks() {
   if (!supabaseUrl || !supabaseAnonKey) return []
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/looks?visibility=eq.public&moderation_state=neq.hidden&select=id,name,description,updated_at,user_id,moderation_state`,
+      `${supabaseUrl}/rest/v1/looks?visibility=eq.public&moderation_state=eq.ok&select=id,name,description,updated_at,user_id,moderation_state,thumb_url`,
       {
         headers: { apikey: supabaseAnonKey, Authorization: `Bearer ${supabaseAnonKey}` },
       },
@@ -326,6 +357,100 @@ function qualifyingMakers(looks) {
   return byUsername
 }
 
+/** Copies the .env loader from scripts/bake-featured-look.mjs (kept local so each build script stays standalone). */
+function parseEnvFile(file) {
+  const out = {}
+  if (!fs.existsSync(file)) return out
+  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
+    if (!match) continue
+    let value = match[2].trim()
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1)
+    }
+    out[match[1]] = value
+  }
+  return out
+}
+
+function loadSupabaseEnv() {
+  const env = {
+    ...parseEnvFile(path.join(ROOT, ".env")),
+    ...parseEnvFile(path.join(ROOT, ".env.local")),
+    ...process.env,
+  }
+  return {
+    url: env.VITE_SUPABASE_URL,
+    anonKey: env.VITE_SUPABASE_ANON_KEY,
+  }
+}
+
+/**
+ * Public garments straight from the database — the same rows the client sees
+ * (the anon select policy enforces moderation). Every piece page comes from
+ * here; there is no bundled seed catalog. Best-effort: a missing env or a
+ * failed fetch must never block a deploy, it only means zero piece pages.
+ */
+const PAGE_SIZE = 1000
+
+/**
+ * Paginates a PostgREST select through its Range header: Supabase silently
+ * truncates a plain request at 1000 rows, so keep stepping pages while a full
+ * page returns.
+ */
+async function pagedPostgrestSelect({ url, anonKey, baseQueryString, label }) {
+  const rows = []
+  let offset = 0
+  while (true) {
+    const res = await fetch(
+      `${url}/rest/v1/${baseQueryString}`,
+      {
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+          Range: `${offset}-${offset + PAGE_SIZE - 1}`,
+        },
+      },
+    )
+    if (!res.ok) {
+      throw new Error(`${label} query returned ${res.status}`)
+    }
+    const page = await res.json()
+    if (!Array.isArray(page)) {
+      throw new Error(`${label} query returned a non-array body`)
+    }
+    rows.push(...page)
+    if (page.length < PAGE_SIZE) break
+    offset += PAGE_SIZE
+  }
+  return rows
+}
+
+async function fetchPublicGarments() {
+  const { url, anonKey } = loadSupabaseEnv()
+  if (!url || !anonKey) {
+    console.warn("⚠️  VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY missing; prerendering zero piece pages.")
+    return []
+  }
+  try {
+    const rows = await pagedPostgrestSelect({
+      url,
+      anonKey,
+      baseQueryString:
+        "garments?is_public=eq.true&select=id,name,description,slot,thumb_url&order=added.desc",
+      label: "garments",
+    })
+    console.log(`ℹ️  Fetched ${rows.length} public garment(s) for prerendering.`)
+    return rows
+  } catch (err) {
+    console.warn(`⚠️  ${err?.message ?? err}; prerendering zero piece pages.`)
+    return []
+  }
+}
+
 async function main() {
   if (!fs.existsSync(INDEX_HTML)) {
     console.error("❌ dist/index.html not found. Run `vite build` first.")
@@ -337,14 +462,20 @@ async function main() {
     console.error("❌ dist/index.html does not contain the SPA mount point — aborting to avoid clobbering the template.")
     process.exit(1)
   }
-  const seedPath = path.join(ROOT, "src/data/catalog-seed.json")
-  const catalog = JSON.parse(fs.readFileSync(seedPath, "utf8"))
+  const garments = await fetchPublicGarments()
+  const pieces = garments.map((row) => ({
+    id: typeof row?.id === "string" ? row.id : null,
+    name: sanitizePrerenderText(row?.name ?? "", 80),
+    blurb: sanitizePrerenderText(row?.description ?? "", 500),
+    slot: typeof row?.slot === "string" ? row.slot : "shirt",
+    thumbUrl: isHttpUrl(row?.thumb_url) ? row.thumb_url : null,
+  })).filter((piece) => piece.id)
 
   let count = 0
   let noindexCount = 0
 
-  // 1. Prerender catalog pieces: dist/piece/<id>/index.html
-  for (const piece of catalog) {
+  // 1. Prerender public pieces: dist/piece/<id>/index.html
+  for (const piece of pieces) {
     const pieceDir = path.join(DIST, "piece", piece.id)
     fs.mkdirSync(pieceDir, { recursive: true })
 
@@ -374,16 +505,18 @@ async function main() {
     // Related pieces: same slot first, then same body group — internal links
     // that give crawlers a path from every piece page to the rest of catalog.
     // The look landing rides along on every page so /look is never orphaned.
-    const related = catalog
+    const related = pieces
       .filter((p) => p.id !== piece.id)
       .sort((a, b) => {
-        const scoreA = (a.slot === piece.slot ? 2 : 0) + (a.group === piece.group ? 1 : 0)
-        const scoreB = (b.slot === piece.slot ? 2 : 0) + (b.group === piece.group ? 1 : 0)
+        const scoreA = a.slot === piece.slot ? 2 : 0
+        const scoreB = b.slot === piece.slot ? 2 : 0
         return scoreB - scoreA
       })
       .slice(0, 4)
       .map((p) => ({ label: `${p.name} (${slotLabel(p.slot)})`, href: `${BASE_URL}/piece/${p.id}` }))
     related.push({ label: "Browse all Minecraft outfits", href: `${BASE_URL}/look` })
+
+    const pieceImage = pieceImageUrl(piece)
 
     const jsonLd = {
       "@context": "https://schema.org",
@@ -391,7 +524,7 @@ async function main() {
       name: piece.name,
       description,
       url: pieceUrl,
-      image: `${BASE_URL}/og/pieces/${piece.id}.png`,
+      image: pieceImage,
       isAccessibleForFree: true,
       genre: `Minecraft ${slotLabel(piece.slot)}`,
       keywords: [...new Set([
@@ -407,7 +540,7 @@ async function main() {
       title,
       description,
       url: pieceUrl,
-      image: `${BASE_URL}/og/pieces/${piece.id}.png`,
+      image: pieceImage,
       type: "article",
       index: !isThin,
       jsonLd,
@@ -455,15 +588,15 @@ async function main() {
       "Browse layered Minecraft outfits made by the looms community. Every look is a stack of modular clothing pieces — preview it on a 3D character, open it in Studio to remix, and export a vanilla 64×64 skin PNG that works in Minecraft Java and Bedrock.",
     image: `${BASE_URL}/og/outfit-default.png`,
     imageAlt: "A Minecraft character wearing a layered community outfit from looms",
-    imageWidth: 1200,
-    imageHeight: 630,
+    imageWidth: pngSize(path.join(ROOT, "public", "og", "outfit-default.png")).width,
+    imageHeight: pngSize(path.join(ROOT, "public", "og", "outfit-default.png")).height,
     sections: [
       {
         heading: "How looks work",
         body: "A look is an ordered stack of pieces: eyes, shirt, set, coat, pants, shoes, hair, face, hat. Higher pieces punch the outer Minecraft skin layer of pieces below them, so outfits layer naturally instead of fighting for pixels.",
       },
     ],
-    links: catalog.slice(0, 6).map((p) => ({
+    links: pieces.slice(0, 6).map((p) => ({
       label: `${p.name} (${slotLabel(p.slot)})`,
       href: `${BASE_URL}/piece/${p.id}`,
     })),
@@ -486,7 +619,7 @@ async function main() {
         ? truncateOnWordBoundary(`${lookDesc} · Minecraft outfit on looms`, 160)
         : `${lookName} — community Minecraft outfit on looms. Preview in 3D and export the skin free.`,
       url: lookUrl,
-      image: `${BASE_URL}/og/outfit-default.png`,
+      image: lookImageUrl(look),
       type: "article",
       index: true,
       jsonLd: {
@@ -495,7 +628,7 @@ async function main() {
         name: lookName,
         description: lookDesc || `${lookName} — community Minecraft outfit on looms.`,
         url: lookUrl,
-        image: `${BASE_URL}/og/outfit-default.png`,
+        image: lookImageUrl(look),
         isAccessibleForFree: true,
         ...(maker ? { author: { "@type": "Person", name: maker } } : {}),
         keywords: [...new Set(["minecraft outfit", "minecraft skin", "looms", ...(lookDesc ? [lookName.toLowerCase()] : [])])].join(", "),
@@ -510,10 +643,10 @@ async function main() {
         : `${lookName} is a community-made layered Minecraft outfit on looms${maker ? ` by ${maker}` : ""}. Open it in Studio to wear or remix it, then export a vanilla skin PNG.`,
       image: `${BASE_URL}/og/outfit-default.png`,
       imageAlt: `${lookName}, a community-made layered Minecraft outfit preview on looms`,
-      imageWidth: 1200,
-      imageHeight: 630,
+      imageWidth: pngSize(path.join(ROOT, "public", "og", "outfit-default.png")).width,
+      imageHeight: pngSize(path.join(ROOT, "public", "og", "outfit-default.png")).height,
     links: [
-      ...catalog.slice(0, 4).map((p) => ({
+      ...pieces.slice(0, 4).map((p) => ({
         label: `${p.name} (${slotLabel(p.slot)})`,
         href: `${BASE_URL}/piece/${p.id}`,
       })),
@@ -645,7 +778,7 @@ async function main() {
       },
     ],
     links: [
-      ...catalog.slice(0, 6).map((p) => ({
+      ...pieces.slice(0, 6).map((p) => ({
         label: `${p.name} (${slotLabel(p.slot)})`,
         href: `${BASE_URL}/piece/${p.id}`,
       })),

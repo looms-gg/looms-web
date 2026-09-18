@@ -11,9 +11,12 @@ create table if not exists public.admin_users (
 
 alter table public.admin_users enable row level security;
 
--- Seed the initial admin user
+-- Seed the initial admin user. The operator's account exists on the deployed
+-- DB but not on fresh stacks (local dev, restore drills) — guard the seed so
+-- migration history replays cleanly everywhere.
 insert into public.admin_users (user_id)
-values ('45e6be54-c9a5-4627-af39-9c14b27ec92e'::uuid)
+select '45e6be54-c9a5-4627-af39-9c14b27ec92e'::uuid
+where exists (select 1 from auth.users where id = '45e6be54-c9a5-4627-af39-9c14b27ec92e'::uuid)
 on conflict (user_id) do nothing;
 
 create or replace function public.is_admin(p_user_id uuid default auth.uid())

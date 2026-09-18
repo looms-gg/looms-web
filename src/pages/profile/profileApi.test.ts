@@ -16,6 +16,7 @@ const garment = (id: string): GarmentRow =>
     added: 0,
     covers: [],
     texture_url: "https://example.com/a.png",
+    thumb_url: null,
     is_public: true,
     tags: [],
     created_at: "",

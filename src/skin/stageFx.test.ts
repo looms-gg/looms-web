@@ -41,13 +41,13 @@ describe("paintStageFx", () => {
     expect(shadow.height).toBe(400)
     expect(rim.width).toBe(600)
     expect(rim.height).toBe(400)
-    // Readback scales straight into the full-res scratch.
-    expect(ctxCalls.drawImage).toHaveBeenCalledWith(src, 0, 0, 600, 400)
+    // Readback scales straight into each overlay — no scratch pass.
+    expect(ctxCalls.drawImage).toHaveBeenCalledWith(src, 0, 0, 600, 400, 0, 0, 600, 400)
     // Rim band erodes by -bandPx: 4 cssPx * (600/600) = 4.
     const rimBand = ctxCalls.drawImage.mock.calls.find(
-      (c) => c[0] !== src && c[1] < 0,
+      (c) => c[0] === src && c[5] < 0,
     )
-    expect(rimBand?.[1]).toBe(-4)
+    expect(rimBand?.[5]).toBe(-4)
   })
 
   it("renders overlays at half resolution and converts the rim band into fx pixels", () => {
@@ -61,7 +61,7 @@ describe("paintStageFx", () => {
     expect(shadow.height).toBe(200)
     expect(rim.width).toBe(300)
     expect(rim.height).toBe(200)
-    expect(ctxCalls.drawImage).toHaveBeenCalledWith(src, 0, 0, 300, 200)
+    expect(ctxCalls.drawImage).toHaveBeenCalledWith(src, 0, 0, 600, 400, 0, 0, 300, 200)
   })
 
   it("keeps the rim band readable at tiny fx scales", () => {
@@ -70,7 +70,7 @@ describe("paintStageFx", () => {
 
     paintStageFx(src, [null, rim], 4, 0.1)
 
-    // 4 cssPx * (20/200) = 0.4 clamps up to the 2px floor.
+    // 4 cssPx * (20/100) = 0.8 rounds to 1, clamped up to the 2px floor.
     expect(rim.width).toBe(20)
   })
 })

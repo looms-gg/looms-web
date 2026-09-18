@@ -2,7 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
   fetchYesterdayTopLook,
   filterAndSortPublicLooks,
+  mapLookEmbedRow,
   type PublicLook,
+  type LookEmbedRow,
   DEFAULT_FEATURED_LOOKS,
 } from "./publicLooks"
 import { supabase } from "../lib/supabase"
@@ -158,5 +160,37 @@ describe("fetchYesterdayTopLook", () => {
     vi.spyOn(supabase, "rpc").mockRejectedValue(new Error("offline"))
 
     expect(await fetchYesterdayTopLook()).toBeNull()
+  })
+})
+
+describe("mapLookEmbedRow", () => {
+  const row: LookEmbedRow = {
+    id: "look-1",
+    user_id: "user-1",
+    name: "Neat outfit",
+    description: "Fresh",
+    visibility: "public",
+    stack: ["ink-fall"],
+    body_id: "slate",
+    body_hue: 0,
+    model: "classic",
+    like_count: 3,
+    created_at: "2026-01-02T00:00:00.000Z",
+    updated_at: "2026-01-02T00:00:00.000Z",
+  }
+
+  it("clamps oversized or hostile rows on read", () => {
+    const mapped = mapLookEmbedRow({
+      ...row,
+      name: `<script>alert(1)</script>${"B".repeat(300)}`,
+      stack: Array.from({ length: 200 }, (_, i) => `piece-${i}`),
+    })
+    expect(mapped.name.length).toBeLessThanOrEqual(50)
+    expect(mapped.name).not.toContain("<script>")
+    expect(mapped.stack.length).toBeLessThanOrEqual(16)
+  })
+
+  it("falls back to Untitled look when a row's name is empty after sanitizing", () => {
+    expect(mapLookEmbedRow({ ...row, name: "  <i></i> " }).name).toBe("Untitled look")
   })
 })

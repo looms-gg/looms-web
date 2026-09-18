@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest"
-import { poseGroupForParts, viewerModelName, visibleSkinParts } from "./viewer"
+import { poseGroupForParts, viewPixelRatio, viewerModelName, visibleSkinParts } from "./viewer"
+
+describe("viewPixelRatio", () => {
+  it("matches low-dpi devices exactly and caps high-dpi at 2", () => {
+    expect(viewPixelRatio(1)).toBe(1)
+    expect(viewPixelRatio(1.5)).toBe(1.5)
+    expect(viewPixelRatio(2)).toBe(2)
+    expect(viewPixelRatio(3)).toBe(2)
+    expect(viewPixelRatio(0)).toBe(1)
+  })
+})
 
 describe("viewerModelName", () => {
   it("maps arm fit onto skinview3d model names", () => {

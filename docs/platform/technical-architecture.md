@@ -101,7 +101,7 @@ Everything sensitive happens in **Postgres triggers + RLS**, never client-side:
 - **Auth flows**: unconfirmed sign-ins open a listening modal that polls `getUser()` every 4s and auto-unlocks; magic links; resend with 45s cooldown; `absoluteAppUrl()` bakes the Pages base path into every email redirect.
 - **Routing**: basename derived from Vite `BASE_URL` so the same build works at `/` (prod custom domain) or a subdirectory (`VITE_BASE=/looms-web/` for project Pages); canonical/share URLs re-add the origin + base.
 - **Testing**: colocated `*.test.ts(x)`; `happy-dom` environment; a shared setup seeds the catalog registry; pure domain logic (stack math, sanitizers, error formatting, quotas mapping) is heavily unit-tested; contexts and pages are component-tested.
-- **The dev "iso-saver"**: a Vite middleware that accepts batched PNG renders and writes them to `public/iso/pieces/`, how the pre-baked isometric tiles shipped in `public/` were generated. `scripts/generate-og-assets.py` similarly builds per-piece OG images; `scripts/prerender-embeds.mjs` runs after `vite build` to emit SEO-ready static HTML per piece/look.
+- **The dev "iso-saver"**: a Vite middleware that accepts batched PNG renders and writes them to `public/iso/pieces/`, how the pre-baked isometric tiles shipped in `public/` were generated. `scripts/prerender-embeds.mjs` runs after `vite build` to emit SEO-ready static HTML per piece/look; embed images are garment/look thumbs from Supabase with `public/og/outfit-default.png` (the featured look render, refreshed by `scripts/bake-featured-look.mjs`) as the shared fallback.
 
 ## 5. Deployment & operations
 

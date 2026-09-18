@@ -12,7 +12,7 @@ import type { LookRow } from "../lib/supabase"
 const base = {
   id: "look-1",
   name: "Rain day",
-  equipped: { hair: "ash-crop" },
+  equipped: { hair: "fixture-hair" },
   savedAt: 1,
   description: "Old blurb",
   visibility: "private" as const,
@@ -24,7 +24,7 @@ const row: LookRow = {
   name: "Cloud look",
   description: "Soft",
   visibility: "public",
-  stack: ["ash-crop"],
+  stack: ["fixture-hair"],
   body_id: "body-1",
   body_hue: 12,
   model: "slim",
@@ -59,7 +59,7 @@ describe("lookMeta", () => {
     expect(next.name).toBe("Rain day")
     expect(next.description).toBe("New")
     expect(next.visibility).toBe("public")
-    expect(next.equipped).toEqual({ hair: "ash-crop" })
+    expect(next.equipped).toEqual({ hair: "fixture-hair" })
   })
 
   it("sanitizes HTML and clamps name and description to MAX_LIMITS", () => {
@@ -78,14 +78,14 @@ describe("lookMeta", () => {
     const look = lookRowToLook(row)
     expect(look.bodyId).toBe("body-1")
     expect(look.bodyHue).toBe(12)
-    expect(look.equipped.hair).toBe("ash-crop")
+    expect(look.equipped.hair).toBe("fixture-hair")
     expect(lookPersistFields(look)).toMatchObject({
       name: "Cloud look",
       body_id: "body-1",
       body_hue: 12,
       model: "slim",
       visibility: "public",
-      stack: ["ash-crop"],
+      stack: ["fixture-hair"],
     })
   })
 
@@ -101,5 +101,22 @@ describe("lookMeta", () => {
     expect(look.bodyId).toBeTruthy()
     expect(look.bodyHue).toBe(0)
     expect(look.model).toBe("classic")
+  })
+
+  it("clamps oversized or hostile rows on read", () => {
+    const hostile = lookRowToLook({
+      ...row,
+      name: `<script>alert(1)</script>${"A".repeat(200)}`,
+      stack: Array.from({ length: 200 }, (_, i) => `piece-${i}`),
+      like_count: undefined,
+    })
+    expect(hostile.name.length).toBeLessThanOrEqual(50)
+    expect(hostile.name).not.toContain("<script>")
+    expect(hostile.stack.length).toBeLessThanOrEqual(16)
+  })
+
+  it("falls back to Untitled look when a row's name is empty after sanitizing", () => {
+    const look = lookRowToLook({ ...row, name: "   <b></b>   " })
+    expect(look.name).toBe("Untitled look")
   })
 })

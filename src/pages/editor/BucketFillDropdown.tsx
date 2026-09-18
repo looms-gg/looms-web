@@ -22,8 +22,7 @@ const FILL_TITLES: Record<BucketMode, string> = {
   colors: "Replace every texel of the clicked color",
 }
 
-const BUTTON =
-  "btn btn-xs h-7 min-h-0 rounded-full bg-base-200/80 px-2.5 border-0 gap-1 font-extrabold text-base-content/80 hover:text-base-content hover:bg-base-300 cursor-pointer"
+const BUTTON = "tactile-select-trigger h-7 min-h-0 rounded-lg px-2 text-xs"
 const MENU =
   `absolute z-50 w-max min-w-full ${DROPDOWN_MENU}`
 const ITEM = (active: boolean) =>
@@ -59,7 +58,11 @@ export function BucketFillDropdown({
           className={BUTTON}
         >
           {current.label}
-          <Icon icon={CaretDown} size="xs" />
+          <Icon
+            icon={CaretDown}
+            size="xs"
+            className={`shrink-0 opacity-60 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          />
         </button>
       </HoverTip>
 

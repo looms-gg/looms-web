@@ -21,10 +21,14 @@ export function asLookDescription(value: unknown): string {
 }
 
 export function lookRowToLook(row: LookRow): Look {
-  const stack = Array.isArray(row.stack) ? row.stack : []
+  // Rows may predate the server-side size constraints (or come from a
+  // hand-crafted write), so clamp on read as defense in depth.
+  const stack = Array.isArray(row.stack)
+    ? row.stack.slice(0, MAX_LIMITS.LOOK_STACK)
+    : []
   return {
     id: row.id,
-    name: row.name,
+    name: sanitizeText(row.name, MAX_LIMITS.LOOK_NAME) || "Untitled look",
     stack,
     equipped: equippedFromStack(stack),
     bodyId: bodyOrDefault(row.body_id).id,

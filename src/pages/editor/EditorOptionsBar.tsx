@@ -82,31 +82,24 @@ export function EditorOptionsBar({ editor, className = "" }: EditorOptionsBarPro
       <div
         role="group"
         aria-label="Arm model"
-        className="flex shrink-0 items-center gap-0.5 rounded-md bg-base-300/70 p-0.5"
+        className={`tactile-segment-track tactile-segment-track--compact w-32 shrink-0 ${model === "slim" ? "on-right" : ""}`}
       >
+        <span className="tactile-segment-thumb" aria-hidden />
         <button
           type="button"
+          className={`tactile-segment-tab ${model === "classic" ? "tactile-segment-tab-on" : ""}`}
           onClick={() => setModel?.("classic")}
           aria-pressed={model === "classic"}
           aria-label="Classic arms (4 pixels wide)"
-          className={`px-2.5 py-0.5 text-xs font-bold rounded-full cursor-pointer transition-colors ${
-            model === "classic"
-              ? "bg-primary text-primary-content shadow-xs"
-              : "text-base-content/70 hover:bg-base-content/10 hover:text-base-content"
-          }`}
         >
           Classic
         </button>
         <button
           type="button"
+          className={`tactile-segment-tab ${model === "slim" ? "tactile-segment-tab-on" : ""}`}
           onClick={() => setModel?.("slim")}
           aria-pressed={model === "slim"}
           aria-label="Slim arms (3 pixels wide)"
-          className={`px-2.5 py-0.5 text-xs font-bold rounded-full cursor-pointer transition-colors ${
-            model === "slim"
-              ? "bg-primary text-primary-content shadow-xs"
-              : "text-base-content/70 hover:bg-base-content/10 hover:text-base-content"
-          }`}
         >
           Slim
         </button>

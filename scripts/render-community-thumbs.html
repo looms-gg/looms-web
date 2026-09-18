@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>community thumbs render</title>
+</head>
+<body>
+  <pre id="out" style="font: 11px monospace"></pre>
+  <script type="module">
+    const log = (m) => { document.getElementById("out").textContent += m + "\n" }
+    try {
+      const garments = window.__COMMUNITY_GARMENTS__
+      if (!Array.isArray(garments) || garments.length === 0) throw new Error("missing garment payload")
+
+      const { replaceCatalog, SLOT_GROUP } = await import("/src/data/catalog")
+      const { isSlot, isGroup } = await import("/src/data/garment")
+      const { isoPieceThumb } = await import("/src/skin/iso")
+
+      // Same mapping garmentToPiece performs, inlined against the raw DB rows:
+      // engine needs id/skin/slot/group/covers; every other field rides along
+      // for shape parity.
+      const pieces = garments.map((row) => {
+        const slot = isSlot(row.slot) ? row.slot : "shirt"
+        const covers = (row.covers ?? []).filter(isGroup)
+        return {
+          id: row.id,
+          name: row.name,
+          slot,
+          group: isGroup(row.body_group) ? row.body_group : SLOT_GROUP[slot],
+          maker: "community",
+          savedCount: row.saved_count ?? 0,
+          likeCount: row.like_count ?? 0,
+          added: row.added ?? 0,
+          blurb: row.description ?? "",
+          skin: row.texture_url,
+          covers: covers.length ? covers : undefined,
+        }
+      })
+      replaceCatalog(pieces)
+
+      const results = []
+      const failures = []
+      for (const [index, piece] of pieces.entries()) {
+        try {
+          const res = await isoPieceThumb(piece, "classic")
+          // isoPieceThumb returns a blob: object URL in browsers; the driver's
+          // writePng consumes data URLs, so convert once in-page.
+          const blob = await (await fetch(res.url)).blob()
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result)
+            reader.onerror = () => reject(new Error("blob read failed"))
+            reader.readAsDataURL(blob)
+          })
+          results.push({ id: piece.id, png: dataUrl })
+          log(`baked ${index + 1}/${pieces.length} ${piece.id}`)
+        } catch (err) {
+          log(`FAILED ${piece.id} ${String(err)}`)
+          failures.push({ id: piece.id, error: String(err) })
+        }
+      }
+      if (results.length === 0) throw new Error(`every render failed: ${JSON.stringify(failures)}`)
+
+      window.__COMMUNITY_RESULT__ = { results, failures }
+      document.title = "RENDER_OK"
+    } catch (err) {
+      log("FAILED " + String((err && err.stack) || err))
+      document.title = "RENDER_FAILED"
+    }
+  </script>
+</body>
+</html>

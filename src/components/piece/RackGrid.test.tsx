@@ -29,4 +29,17 @@ describe("RackGrid", () => {
     const el = host.firstElementChild as HTMLElement
     expect(el.className).toBe(`${RACK_GRID_CLASS()} mt-2`)
   })
+
+  it("keeps rows top-aligned so a short grid inside a taller grid column does not stretch tiles", () => {
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(
+        <RackGrid>
+          <span>tile</span>
+        </RackGrid>,
+      )
+    })
+    const el = host.firstElementChild as HTMLElement
+    expect(el.className.split(/\s+/)).toContain("content-start")
+  })
 })

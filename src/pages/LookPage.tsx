@@ -8,8 +8,8 @@ import {
   creativeWorkJsonLd,
   lookCanonicalUrl,
   lookSeoDescription,
+  lookSeoImageUrl,
   lookSeoTitle,
-  SITE_ORIGIN,
 } from "../lib/content/seo"
 import { tryDownloadSkinFile } from "../skin/compose"
 import { CommentsSection } from "../components/comments/CommentsSection"
@@ -30,7 +30,7 @@ function revealStyle(i: number): CSSProperties {
 function LookPageMeta({ look }: { look: PublicLook }) {
   const shareUrl = lookCanonicalUrl(look.id)
   const metaDesc = lookSeoDescription(look)
-  const ogImage = `${SITE_ORIGIN}/og/outfit-default.png`
+  const ogImage = lookSeoImageUrl(look)
 
   return (
     <HeadMeta

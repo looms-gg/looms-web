@@ -67,6 +67,7 @@ export type LookRow = {
   body_hue: number
   model: SkinModel
   like_count?: number
+  thumb_url?: string | null
   created_at: string
   updated_at: string
 }

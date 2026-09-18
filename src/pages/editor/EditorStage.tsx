@@ -29,6 +29,9 @@ export function EditorStage({
   const fxRefs = useRef<(HTMLCanvasElement | null)[]>([])
   const viewerRef = useRef<SkinViewer | null>(null)
   const scheduleRef = useRef<() => void>(() => {})
+  // Per-frame pointer work (raycast, stroke, preview), drained by the
+  // viewer's frame loop before it renders.
+  const frameWorkRef = useRef<(() => void) | null>(null)
   const scheduleFrame = useCallback(() => {
     scheduleRef.current()
   }, [])
@@ -50,6 +53,7 @@ export function EditorStage({
     canvasRef,
     viewerInstance,
     scheduleFrame,
+    frameWorkRef,
     bodyParts,
     armorParts,
   })
@@ -59,6 +63,7 @@ export function EditorStage({
     fxRefs,
     viewerRef,
     scheduleRef,
+    frameWorkRef,
     viewerInstance,
     setViewerInstance,
     setReady,

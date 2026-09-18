@@ -194,7 +194,8 @@ export function EditorToolbar({
         ) : null}
       </div>
 
-      {/* Pinned color block */}
+      {/* Pinned color block; the popover lives inside this ref so
+          useDismissable keeps presses inside the picker open. */}
       <div className="relative mt-auto flex flex-col items-center gap-1 pt-1" ref={colorRef}>
         <button
           type="button"
@@ -230,28 +231,28 @@ export function EditorToolbar({
         >
           <Icon icon={Swap} size="sm" />
         </button>
-      </div>
 
-      {/* Color Picker Popover */}
-      {colorOpen ? (
-        <div
-          role="dialog"
-          aria-label="Color Palette"
-          className="absolute left-full bottom-2 ml-2 z-50 w-60 rounded-lg editor-float p-3 select-none editor-pop-in"
-        >
-          <div className="mb-2.5 border-b border-base-content/10 pb-1 text-xs font-bold uppercase tracking-wider text-base-content/55">
-            Color Picker
+        {/* Color Picker Popover */}
+        {colorOpen ? (
+          <div
+            role="dialog"
+            aria-label="Color Palette"
+            className="absolute left-full bottom-2 ml-2 z-50 w-60 rounded-lg editor-float p-3 select-none editor-pop-in"
+          >
+            <div className="mb-2.5 border-b border-base-content/10 pb-1 text-xs font-bold uppercase tracking-wider text-base-content/55">
+              Color Picker
+            </div>
+            <EditorColorPicker
+              color={primaryColor}
+              onChange={(hex, source) =>
+                setPrimaryColor(hex, source === "drag" ? false : true)
+              }
+              recentColors={recentColors}
+              swapColors={swapColors}
+            />
           </div>
-          <EditorColorPicker
-            color={primaryColor}
-            onChange={(hex, source) =>
-              setPrimaryColor(hex, source === "drag" ? false : true)
-            }
-            recentColors={recentColors}
-            swapColors={swapColors}
-          />
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   )
 }

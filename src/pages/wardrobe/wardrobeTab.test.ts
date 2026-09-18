@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest"
 import { parseWardrobeTab, wardrobeTabQuery } from "./wardrobeTab"
 
 describe("wardrobeTab", () => {
-  it("defaults to looks", () => {
-    expect(parseWardrobeTab("")).toBe("looks")
-    expect(parseWardrobeTab("?foo=1")).toBe("looks")
-    expect(parseWardrobeTab("?tab=nope")).toBe("looks")
+  it("defaults to pieces", () => {
+    expect(parseWardrobeTab("")).toBe("pieces")
+    expect(parseWardrobeTab("?foo=1")).toBe("pieces")
+    expect(parseWardrobeTab("?tab=nope")).toBe("pieces")
   })
 
-  it("reads pieces from the query", () => {
-    expect(parseWardrobeTab("?tab=pieces")).toBe("pieces")
-    expect(parseWardrobeTab("tab=pieces")).toBe("pieces")
+  it("reads looks from the query", () => {
+    expect(parseWardrobeTab("?tab=looks")).toBe("looks")
+    expect(parseWardrobeTab("tab=looks")).toBe("looks")
   })
 
   it("reads uploads from the query", () => {

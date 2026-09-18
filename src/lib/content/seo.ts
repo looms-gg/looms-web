@@ -5,11 +5,15 @@
  * run after `vite build` outside the TS pipeline — keep them in sync.
  */
 
+import type { Piece } from "../../data/pieceTypes"
+import { sanitizeUrl } from "../sanitize"
+
 export const SITE_ORIGIN = "https://looms.gg"
 export const SITE_NAME = "looms"
 export const DISCORD_URL = "https://discord.gg/UNTRgHBBPb"
 export const GITHUB_URL = "https://github.com/looms-gg/looms-web"
 export const SCHEMA_ORG_CONTEXT = "https://schema.org"
+export const OUTFIT_DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og/outfit-default.png`
 
 export type PieceSeoInput = {
   id: string
@@ -44,6 +48,28 @@ export function seoSlotLabel(slot: string): string {
 /** Canonical piece URL — always the production origin, never a preview host. */
 export function pieceCanonicalUrl(pieceId: string): string {
   return `${SITE_ORIGIN}/piece/${encodeURIComponent(pieceId)}`
+}
+
+/**
+ * Embed image for a piece, mirroring pieceImageUrl in
+ * scripts/prerender-embeds.mjs: the garment's own thumb when it has one, else
+ * the shared outfit image so the embed never 404s.
+ */
+export function pieceSeoImageUrl(piece: Pick<Piece, "thumb">): string {
+  return sanitizeUrl(piece.thumb) ?? OUTFIT_DEFAULT_OG_IMAGE
+}
+
+export type LookThumbSeoInput = {
+  thumb?: string | null
+}
+
+/**
+ * Embed image for a look, mirroring lookImageUrl in
+ * scripts/prerender-embeds.mjs: the owner's baked iso render when it has one,
+ * else the shared outfit image so the embed never 404s.
+ */
+export function lookSeoImageUrl(look: LookThumbSeoInput): string {
+  return sanitizeUrl(look.thumb) ?? OUTFIT_DEFAULT_OG_IMAGE
 }
 
 /** Canonical look URL — always the production origin, never a preview host. */

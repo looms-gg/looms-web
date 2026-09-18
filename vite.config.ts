@@ -14,7 +14,6 @@ export default defineConfig(() => ({
       "src/**/*.test.ts",
       "src/**/*.test.tsx",
       "scripts/**/*.test.ts",
-      "og-worker/**/*.test.ts",
     ],
     setupFiles: ["src/test/setupCatalog.ts"],
   },

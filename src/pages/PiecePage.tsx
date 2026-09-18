@@ -14,9 +14,9 @@ import {
   creativeWorkJsonLd,
   isThinPieceSeo,
   pieceSeoDescription,
+  pieceSeoImageUrl,
   pieceSeoTitle,
   pieceCanonicalUrl,
-  SITE_ORIGIN,
 } from "../lib/content/seo"
 import { setPendingAction } from "../lib/pendingAction"
 import { PieceSheet } from "./piece/PieceSheet"
@@ -33,7 +33,7 @@ function PiecePageMeta({ piece }: { piece: Piece }) {
   const shareUrl = pieceCanonicalUrl(piece.id)
   const metaDesc = pieceSeoDescription(piece)
   const isThin = isThinPieceSeo(piece)
-  const ogImage = `${SITE_ORIGIN}/og/pieces/${piece.id}.png`
+  const ogImage = pieceSeoImageUrl(piece)
 
   return (
     <HeadMeta

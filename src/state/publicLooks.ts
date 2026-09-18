@@ -4,8 +4,10 @@ import { bodyOrDefault } from "../data/bodies"
 import { type Look } from "./persist"
 import { clampHue } from "../skin/hue"
 import { asLookDescription, asLookVisibility } from "./lookMeta"
+import { MAX_LIMITS, sanitizeText } from "../lib/sanitize"
 import { equippedFromStack } from "../data/outfit"
 import { coerceProfileEmbed } from "../lib/content/profileEmbed"
+import { sanitizeUrl } from "../lib/sanitize"
 
 export type LookSort = "Trending" | "Popular" | "Newest"
 export type LookModelFilter = "all" | "classic" | "slim"
@@ -25,6 +27,8 @@ export type PublicLook = {
   updatedAt: number
   maker: string
   makerAvatarUrl: string | null
+  /** Baked iso render for embeds; falls back to the shared outfit image. */
+  thumb?: string
   recentLikeCount?: number
   /** True only for the bundled DEFAULT_FEATURED_LOOKS fixtures, never for DB rows. */
   featured?: boolean
@@ -41,6 +45,7 @@ export type LookEmbedRow = {
   body_hue: number
   model: string
   like_count?: number
+  thumb_url?: string | null
   created_at: string
   updated_at: string
   profiles?: unknown
@@ -65,10 +70,12 @@ export function mapLookEmbedRow(row: LookEmbedRow): PublicLook {
   return {
     id: row.id,
     userId: row.user_id,
-    name: row.name,
+    name: sanitizeText(row.name, MAX_LIMITS.LOOK_NAME) || "Untitled look",
     description: asLookDescription(row.description),
     visibility: asLookVisibility(row.visibility),
-    stack: Array.isArray(row.stack) ? row.stack : [],
+    stack: Array.isArray(row.stack)
+      ? row.stack.slice(0, MAX_LIMITS.LOOK_STACK)
+      : [],
     bodyId: bodyOrDefault(row.body_id).id,
     bodyHue: clampHue(row.body_hue),
     model: row.model === "slim" ? "slim" : "classic",
@@ -77,6 +84,7 @@ export function mapLookEmbedRow(row: LookEmbedRow): PublicLook {
     updatedAt: new Date(row.updated_at).getTime(),
     maker,
     makerAvatarUrl,
+    thumb: sanitizeUrl(row.thumb_url) ?? undefined,
     recentLikeCount: row.recent_like_count,
   }
 }
@@ -197,11 +205,17 @@ export function filterAndSortPublicLooks(
  */
 export async function fetchPublicLooksFeed(): Promise<PublicLook[]> {
   try {
+    // Bounded fetch: the feed has no pagination yet, and an unbounded select
+    // would stream the whole public table (including any oversized junk rows
+    // an attacker parked before the server-side limits) into every client.
+    // 500 covers a healthy catalog many times over; raise with pagination,
+    // not by removing the cap.
     const { data, error } = await supabase
       .from("looks")
       .select("*, profiles!looks_user_id_fkey(username, avatar_url)")
       .eq("visibility", "public")
       .order("created_at", { ascending: false })
+      .limit(MAX_LIMITS.PUBLIC_LOOK_FEED)
 
     if (error) throw error
     return ((data as unknown[]) ?? []).map((row) =>

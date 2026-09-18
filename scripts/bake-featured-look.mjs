@@ -5,12 +5,12 @@
  * Build-time pipeline:
  *   1. Ask the database for the top trending public look (falls back to
  *      yesterday's crown). No look or no credentials → leave the committed
- *      card untouched and exit cleanly.
+ *      image untouched and exit cleanly.
  *   2. Boot a short-lived Vite dev server and render that look's 3D isometric
  *      preview with the real skin engine in headless Chromium.
- *   3. Write the render to public/iso/pieces/__featured_outfit.png plus a
- *      sidecar JSON, which scripts/generate-og-assets.py turns into
- *      public/og/outfit-default.png (the og:image / twitter:image).
+ *   3. Write the plain render (no baked-in text) to
+ *      public/og/outfit-default.png — the shared og:image / twitter:image
+ *      fallback for the home page, looks, and pieces without a thumb.
  *
  * The step is best-effort by design: a browser or network failure must never
  * block a deploy, it just keeps the last committed preview.
@@ -170,26 +170,10 @@ async function main() {
     const result = await page.evaluate(() => window.__FEATURED_RESULT__)
     if (!result?.url) throw new Error("render produced no image")
 
-    const isoDir = path.join(ROOT, "public", "iso", "pieces")
-    const isoPath = path.join(isoDir, "__featured_outfit.png")
-    writePng(result.url, isoPath)
-    fs.writeFileSync(
-      path.join(isoDir, "__featured_outfit.json"),
-      JSON.stringify(
-        {
-          id: look.id,
-          wash: result.wash || "oklch(0.91 0.05 320)",
-          name: look.name || "Community look",
-          description: look.description || "",
-          maker: look.username || "",
-          layers: result.layers ?? look.stack.length,
-        },
-        null,
-        2,
-      ),
-    )
+    const ogPath = path.join(ROOT, "public", "og", "outfit-default.png")
+    writePng(result.url, ogPath)
 
-    log(`baked "${look.name}" (${result.layers} layers) into __featured_outfit.png`)
+    log(`baked "${look.name}" (${result.layers} layers) into public/og/outfit-default.png`)
   } catch (err) {
     warn(`${err.message} — keeping committed preview`)
   } finally {

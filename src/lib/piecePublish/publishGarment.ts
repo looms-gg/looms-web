@@ -1,5 +1,5 @@
 import { supabase } from "../supabase"
-import type { GarmentRow } from "../../data/garment"
+import { garmentToPiece, type GarmentRow } from "../../data/garment"
 import {
   GROUPS,
   SLOT_GROUP,
@@ -7,6 +7,8 @@ import {
   type Slot,
 } from "../../data/catalog"
 import { MAX_LIMITS, sanitizeText, sanitizeUsername } from "../../lib/sanitize"
+import type { Piece } from "../../data/pieceTypes"
+import { bakeAndUploadThumb } from "./thumbUpload"
 
 /** A set is a multi-region garment (bikini, tracksuit): one texture paints torso and legs. */
 export function coversForSlot(slot: Slot): Group[] {
@@ -98,6 +100,7 @@ export async function publishGarmentTexture(
       added: Date.now(),
       covers,
       texture_url: publicUrl,
+      thumb_url: null,
       is_public: args.isPublic,
       tags: [],
       created_at: new Date().toISOString(),
@@ -108,7 +111,18 @@ export async function publishGarmentTexture(
       throw new Error(`Failed to save garment record: ${dbError.message}`)
     }
 
-    return { pieceId, row, maker }
+    const piece: Piece = garmentToPiece(row, maker)
+    const thumbUrl = await bakeAndUploadThumb(supabase, args.userId, pieceId, piece)
+    let finalRow = row
+    if (thumbUrl) {
+      const { error: thumbDbError } = await supabase
+        .from("garments")
+        .update({ thumb_url: thumbUrl })
+        .eq("id", pieceId)
+      if (!thumbDbError) finalRow = { ...row, thumb_url: thumbUrl }
+    }
+
+    return { pieceId, row: finalRow, maker }
   } catch (err: unknown) {
     return { error: err instanceof Error ? err : new Error(String(err)) }
   }

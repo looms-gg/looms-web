@@ -6,6 +6,7 @@ import {
   pieceCanonicalUrl,
   pieceSeoDescription,
   pieceSeoHeading,
+  pieceSeoImageUrl,
   pieceSeoTitle,
   isThinPieceSeo,
   truncateSeoText,
@@ -21,6 +22,21 @@ describe("pieceCanonicalUrl", () => {
 
   it("encodes piece ids", () => {
     expect(pieceCanonicalUrl("weird id")).toBe("https://looms.gg/piece/weird%20id")
+  })
+})
+
+describe("pieceSeoImageUrl", () => {
+  it("uses the garment thumb when present", () => {
+    expect(pieceSeoImageUrl({ thumb: "https://example.test/p.thumb.png?v=3" })).toBe(
+      "https://example.test/p.thumb.png?v=3",
+    )
+  })
+
+  it("falls back to the shared outfit default so the card never 404s", () => {
+    expect(pieceSeoImageUrl({ thumb: undefined })).toBe("https://looms.gg/og/outfit-default.png")
+    expect(pieceSeoImageUrl({ thumb: "javascript:alert(1)" })).toBe(
+      "https://looms.gg/og/outfit-default.png",
+    )
   })
 })
 

@@ -25,6 +25,7 @@ const upload: GarmentRow = {
   added: Date.now(),
   covers: [],
   texture_url: "https://example.test/g1.png",
+  thumb_url: null,
   is_public: true,
   tags: [],
   created_at: "",

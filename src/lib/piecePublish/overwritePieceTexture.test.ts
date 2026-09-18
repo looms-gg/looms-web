@@ -13,8 +13,8 @@ vi.mock("../../lib/supabase", () => {
       storage: {
         from: () => ({
           upload,
-          getPublicUrl: () => ({
-            data: { publicUrl: "https://cdn.example.test/garments/u1/p1.png" },
+          getPublicUrl: (path: string) => ({
+            data: { publicUrl: `https://cdn.example.test/garments/${path}` },
           }),
         }),
       },
@@ -33,6 +33,12 @@ vi.mock("../../lib/supabase", () => {
 
 import { overwritePieceTexture } from "./overwritePieceTexture"
 
+const isoPieceThumb = vi.fn(async () => ({
+  url: "data:image/png;base64,AAAA",
+  wash: "",
+}))
+vi.mock("../../skin/iso", () => ({ isoPieceThumb }))
+
 const row: GarmentRow = {
   id: "p1",
   user_id: "u1",
@@ -45,6 +51,7 @@ const row: GarmentRow = {
   added: 123,
   covers: ["torso"],
   texture_url: "https://cdn.example.test/garments/u1/p1.png",
+  thumb_url: null,
   is_public: true,
   tags: [],
   created_at: "2026-01-01T00:00:00Z",
@@ -64,6 +71,10 @@ describe("overwritePieceTexture", () => {
       })
     })
     profileSingle.mockResolvedValue({ data: { username: "maker" }, error: null })
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      blob: async () => new Blob(["png"], { type: "image/png" }),
+    })))
   })
 
   it("uploads to the owner path with upsert and updates the row", async () => {
@@ -87,6 +98,22 @@ describe("overwritePieceTexture", () => {
       /^https:\/\/cdn\.example\.test\/garments\/u1\/p1\.png\?v=\d+$/,
     )
     expect("piece" in result && result.piece.skin).toContain("?v=")
+  })
+
+  it("re-uploads the thumb with the cache buster on overwrite", async () => {
+    const result = await overwritePieceTexture({ userId: "u1", pieceId: "p1", slot: "shirt", textureBlob: new Blob(["png"], { type: "image/png" }), painted: ["torso"] })
+    expect("error" in result).toBe(false)
+    const thumbCall = upload.mock.calls.find((c) => String(c[0]).endsWith(".thumb.png"))
+    expect(thumbCall).toBeTruthy()
+    // A second update call carries thumb_url with the ?v= buster.
+    const thumbUpdate = update.mock.calls.map((c) => c[0]).find((patch) => "thumb_url" in patch)
+    expect(thumbUpdate?.thumb_url).toMatch(/thumb\.png\?v=\d+/)
+  })
+
+  it("overwrites successfully even when the thumb bake fails", async () => {
+    isoPieceThumb.mockRejectedValueOnce(new Error("no webgl"))
+    const result = await overwritePieceTexture({ userId: "u1", pieceId: "p1", slot: "shirt", textureBlob: new Blob(["png"], { type: "image/png" }), painted: ["torso"] })
+    expect("error" in result).toBe(false)
   })
 
   it("returns a friendly error when storage rejects the overwrite", async () => {

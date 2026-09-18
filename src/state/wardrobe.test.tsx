@@ -186,13 +186,13 @@ describe("session module", () => {
       )
     })
     flushSync(() => {
-      session.addToWardrobe("ash-crop")
+      session.addToWardrobe("fixture-hair")
     })
     await vi.waitFor(() => {
-      expect(session.owns("ash-crop")).toBe(true)
+      expect(session.owns("fixture-hair")).toBe(true)
     })
     flushSync(() => {
-      session.wear("ash-crop")
+      session.wear("fixture-hair")
       session.saveLook("Custom Outfit")
     })
     const id = session.looks[0].id
@@ -206,7 +206,7 @@ describe("session module", () => {
     expect(session.looks[0].name).toBe("Custom Outfit")
     expect(session.looks[0].description).toBe("Night market")
     expect(session.looks[0].visibility).toBe("public")
-    expect(session.looks[0].equipped.hair).toBe("ash-crop")
+    expect(session.looks[0].equipped.hair).toBe("fixture-hair")
   })
 
   it("keeps description and visibility when overwriting a look", async () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest"
+import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { EditorToolbar } from "./EditorToolbar"
@@ -112,6 +113,34 @@ describe("EditorToolbar", () => {
     const shadingBtn = host.querySelector("button[aria-label='Shading (S)']") as HTMLButtonElement
     flushSync(() => shadingBtn.click())
     expect(patch).toHaveBeenCalledWith({ shadingMode: "darken" })
+  })
+
+  it("keeps the color popover open while pressing inside it, closes on outside press", async () => {
+    const host = document.createElement("div")
+    document.body.appendChild(host)
+    const root = createRoot(host)
+    await act(async () => {
+      root.render(<EditorToolbar editor={mockEditor as SkinEditorState} />)
+    })
+
+    const colorBtn = host.querySelector("button[aria-label='Color Picker']") as HTMLButtonElement
+    await act(async () => {
+      colorBtn.click()
+    })
+
+    // Pressing the gradient box (inside the popover) must not dismiss it.
+    const box = () => host.querySelector("[aria-label='Saturation and brightness']") as HTMLElement | null
+    expect(box()).not.toBeNull()
+    await act(async () => {
+      box()!.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }))
+    })
+    expect(box()).not.toBeNull()
+
+    await act(async () => {
+      host.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }))
+    })
+    expect(box()).toBeNull()
+    host.remove()
   })
 
   it("triggers undo on undo click", () => {

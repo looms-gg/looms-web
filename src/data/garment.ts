@@ -12,6 +12,7 @@ export type GarmentRow = {
   added: number
   covers: string[]
   texture_url: string
+  thumb_url: string | null
   is_public: boolean
   tags: string[]
   created_at: string
@@ -39,6 +40,7 @@ export function garmentToPiece(row: GarmentRow, maker: string): Piece {
     added: row.added,
     blurb: row.description ?? "",
     skin: row.texture_url,
+    thumb: row.thumb_url ?? undefined,
     covers: covers.length ? covers : undefined,
     userId: row.user_id,
     isPublic: row.is_public,

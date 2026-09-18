@@ -22,7 +22,7 @@ describe("filterExplorePieces", () => {
   })
 
   it("matches name search", () => {
-    const found = filterExplorePieces(pieces, "winter", "all", "Newest")
-    expect(found.some((piece) => piece.id === "winter-coat")).toBe(true)
+    const found = filterExplorePieces(pieces, "coat", "all", "Newest")
+    expect(found.some((piece) => piece.id === "fixture-coat")).toBe(true)
   })
 })

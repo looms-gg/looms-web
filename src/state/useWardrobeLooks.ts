@@ -1,10 +1,14 @@
 import { useCallback, type MutableRefObject } from "react"
 import type { User } from "@supabase/supabase-js"
 import { bodyOrDefault } from "../data/bodies"
+import { getPiece } from "../data/catalog"
 import { resolveLookLayers } from "../data/outfit"
+import type { Piece } from "../data/pieceTypes"
 import { formatErrorMessage } from "../lib/errorFormat"
 import { MAX_LIMITS, sanitizeText } from "../lib/sanitize"
 import { clampHue } from "../skin/hue"
+import { bakeAndUploadLookThumb } from "../lib/piecePublish/lookThumbUpload"
+import { supabase } from "../lib/supabase"
 import { applyLookMeta, type LookMetaPatch } from "./lookMeta"
 import { insertCloudLook, updateCloudLook, updateCloudLookMeta } from "./lookSync"
 import type { Look, Persist } from "./persist"
@@ -35,6 +39,38 @@ export function useWardrobeLooks({
       return { error: null }
     },
     [flash],
+  )
+
+  // Best-effort embed thumbnail: bake the iso render after a successful save
+  // and record its URL. A missing thumb just falls back to the shared outfit
+  // image in embeds, so failures are silent.
+  const bakeLookThumb = useCallback(
+    async (look: Look, ownerId: string, bustCache = false) => {
+      try {
+        const pieces = look.stack
+          .map(getPiece)
+          .filter((piece): piece is Piece => Boolean(piece))
+        if (pieces.length === 0) return
+        const url = await bakeAndUploadLookThumb(
+          supabase,
+          ownerId,
+          look.id,
+          pieces,
+          look.bodyId,
+          look.bodyHue,
+          look.model,
+        )
+        if (!url) return
+        await supabase
+          .from("looks")
+          .update({ thumb_url: bustCache ? `${url}?v=${Date.now()}` : url })
+          .eq("id", look.id)
+          .eq("user_id", ownerId)
+      } catch {
+        // embed-only convenience; never surface a thumbnail failure
+      }
+    },
+    [],
   )
 
   const loadLook = useCallback(
@@ -84,9 +120,11 @@ export function useWardrobeLooks({
         message: `Saved ${look.name}.`,
         activeLook: look,
       }))
-      return runLookWrite(insertCloudLook(look, ownerId))
+      const result = await runLookWrite(insertCloudLook(look, ownerId))
+      if (!result.error) void bakeLookThumb(look, ownerId)
+      return result
     },
-    [patch, runLookWrite, stateRef, user],
+    [bakeLookThumb, patch, runLookWrite, stateRef, user],
   )
 
   const overwriteLook = useCallback(
@@ -116,9 +154,11 @@ export function useWardrobeLooks({
         message: `Overwrote ${targetName}.`,
         activeLook: updated,
       }))
-      return runLookWrite(updateCloudLook(updated, id, ownerId))
+      const result = await runLookWrite(updateCloudLook(updated, id, ownerId))
+      if (!result.error) void bakeLookThumb(updated, ownerId, true)
+      return result
     },
-    [patch, runLookWrite, stateRef, user],
+    [bakeLookThumb, patch, runLookWrite, stateRef, user],
   )
 
   const updateLookMeta = useCallback(

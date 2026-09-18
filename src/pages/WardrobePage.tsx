@@ -12,8 +12,8 @@ import { WardrobePiecesPanel } from "./wardrobe/WardrobePiecesPanel"
 import { WardrobeUploadsPanel } from "./wardrobe/WardrobeUploadsPanel"
 
 const TABS: { id: WardrobeTab; label: string }[] = [
-  { id: "looks", label: "Looks" },
   { id: "pieces", label: "Pieces" },
+  { id: "looks", label: "Looks" },
   { id: "uploads", label: "My Uploads" },
 ]
 

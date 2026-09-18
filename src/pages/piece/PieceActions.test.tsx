@@ -83,7 +83,7 @@ describe("PieceActions", () => {
       '[aria-label^="Remove "]',
     ) as HTMLButtonElement
     expect(savedBtn).toBeTruthy()
-    expect(savedBtn.textContent).toMatch(/61/)
+    expect(savedBtn.textContent).toMatch(/12/)
 
     // First tap arms confirmation without removing.
     flushSync(() => {
@@ -104,7 +104,7 @@ describe("PieceActions", () => {
 
   it("shows the save count inside the save button and no passive badge", () => {
     const host = renderActions({ owned: true })
-    expect(host.textContent).toMatch(/61/)
+    expect(host.textContent).toMatch(/12/)
     expect(host.querySelector('[title$="saved"]')).toBeNull()
     expect(host.querySelector('[title$="saves"]')).toBeNull()
   })
@@ -113,10 +113,10 @@ describe("PieceActions", () => {
     const onAddToWardrobe = vi.fn()
     const host = renderActions({ owned: false, onAddToWardrobe })
     const saveBtn = host.querySelector(
-      '[aria-label="Add Ash Crop to wardrobe"]',
+      '[aria-label="Add Test Shirt to wardrobe"]',
     ) as HTMLButtonElement
     expect(saveBtn).toBeTruthy()
-    expect(saveBtn.textContent).toMatch(/61/)
+    expect(saveBtn.textContent).toMatch(/12/)
     flushSync(() => {
       saveBtn.click()
     })

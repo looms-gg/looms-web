@@ -36,7 +36,7 @@ const RACE_LOOK_ROW = {
   name: "Race look",
   description: "",
   visibility: "private",
-  stack: ["upload-1", "bear-hat"],
+  stack: ["upload-1", "fixture-hat"],
   body_id: "body-1",
   body_hue: 0,
   model: "classic",
@@ -131,10 +131,10 @@ describe("catalog hydration race", () => {
     })
 
     const look = session.looks[0]
-    expect(look.stack).toEqual(["upload-1", "bear-hat"])
+    expect(look.stack).toEqual(["upload-1", "fixture-hat"])
     // upload-1 is missing from the registry → outfit resolves to the hat only.
     const nakedIds = piecesFromEquipped(look.equipped, look.stack).map((p) => p.id)
-    expect(nakedIds).toEqual(["bear-hat"])
+    expect(nakedIds).toEqual(["fixture-hat"])
 
     // The catalog later loads with the private upload attached.
     replaceCatalog([...fixturePieces(), upload])
@@ -142,7 +142,7 @@ describe("catalog hydration race", () => {
     // Same look object, no refresh: healing fills the snapshot gap from the stack.
     const healedIds = piecesFromEquipped(look.equipped, look.stack).map((p) => p.id)
     expect(healedIds).toContain("upload-1")
-    expect(healedIds).toContain("bear-hat")
+    expect(healedIds).toContain("fixture-hat")
 
     root.unmount()
   })

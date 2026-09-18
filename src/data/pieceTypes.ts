@@ -60,6 +60,8 @@ export type Piece = {
   blurb: string
   /** 64×64 Minecraft skin PNG. Transparent pixels leave the base skin. */
   skin: string
+  /** Pre-baked static thumbnail (Supabase storage or bundled seed PNG). */
+  thumb?: string
   /**
    * Body regions this garment actually paints.
    * Wardrobe rack still uses `group`; iso and live previews honor this list.

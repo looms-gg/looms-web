@@ -90,7 +90,7 @@ function renderWardrobeWithLooks(...names: string[]) {
   activeRoots.push(root)
   flushSync(() => {
     root.render(
-      <MemoryRouter initialEntries={["/wardrobe"]}>
+      <MemoryRouter initialEntries={["/wardrobe?tab=looks"]}>
         <AuthContext.Provider value={signedInAuth}>
           <CatalogProvider>
             <WardrobeProvider>
@@ -110,10 +110,15 @@ function renderWardrobeWithLooks(...names: string[]) {
 }
 
 describe("WardrobePage", () => {
-  it("shows looks empty state by default", () => {
+  it("shows pieces empty state by default", () => {
     const host = renderWardrobe()
     expect(host.textContent).toMatch(/Wardrobe/)
     expect(host.textContent).toMatch(/Saved characters and pieces you own/)
+    expect(host.textContent).toMatch(/Explore pieces/)
+  })
+
+  it("shows looks empty state on ?tab=looks", () => {
+    const host = renderWardrobe("/wardrobe?tab=looks")
     expect(host.textContent).toMatch(/No looks yet/)
     expect(host.querySelector("a")?.getAttribute("href")).toBe("/studio")
   })

@@ -12,13 +12,15 @@ describe("catalog", () => {
   })
 
   it("uses covers when present, else the rack group", () => {
-    const hair = pieces.find((piece) => piece.id === "ash-crop")!
-    expect(pieceCovers(hair)).toEqual(["head"])
+    const hair = pieces.find((piece) => piece.id === "fixture-hair")!
+    expect(pieceCovers(hair)).toEqual(["head", "torso"])
+    const hat = pieces.find((piece) => piece.id === "fixture-hat")!
+    expect(pieceCovers(hat)).toEqual(["head"])
   })
 
-  it("drops atlas regions a hanging shirt does not claim", () => {
-    const sweater = getPiece("christmas-sweater")!
-    expect(visibleCovers(sweater, ["head", "torso", "legs"])).toEqual([
+  it("drops atlas regions a long coat does not claim", () => {
+    const coat = getPiece("fixture-coat")!
+    expect(visibleCovers(coat, ["head", "torso", "legs"])).toEqual([
       "torso",
       "legs",
     ])

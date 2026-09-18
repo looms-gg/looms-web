@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { DEFAULT_BODY_ID } from "../../data/bodies"
 import type { Piece } from "../../data/catalog"
 import type { SkinModel } from "../../skin/convert"
+import { getStoredThumb, setStoredThumb } from "../../skin/thumbCache"
+import { isoPieceCacheKey } from "../../skin/thumbKeys"
+import { staticIsoThumbUrl, staticIsoWash } from "./isoStatic"
 
 // Loaded on demand: skin/iso pulls in three.js + skinview3d (~large async
 // chunk). Static pre-rendered thumbs never need it at all. The shadow+rim
@@ -182,14 +185,54 @@ export function IsoThumb({
       setSrc(res?.url)
       setWash(!chip && res ? res.wash : undefined)
     }
-    void import("../../skin/iso")
-      .then(({ isoOutfitThumb, isoPieceThumb }) =>
-        piece
-          ? isoPieceThumb(piece, model, { priority, bakeFx: !chip })
-          : isoOutfitThumb(outfitRef.current ?? [], bodyId, bodyHue, model, { priority, bakeFx: !chip }),
-      )
-      .then(apply)
-      .catch(() => apply(null))
+    const renderDynamic = () => {
+      void import("../../skin/iso")
+        .then(({ isoOutfitThumb, isoPieceThumb }) =>
+          piece
+            ? isoPieceThumb(piece, model, { priority, bakeFx: !chip })
+            : isoOutfitThumb(outfitRef.current ?? [], bodyId, bodyHue, model, { priority, bakeFx: !chip }),
+        )
+        .then(apply)
+        .catch(() => apply(null))
+    }
+    const staticUrl = piece ? staticIsoThumbUrl(piece) : null
+    if (piece && staticUrl) {
+      const key = isoPieceCacheKey(model, true, piece)
+      let createdUrl: string | undefined
+      void (async () => {
+        const cached = await getStoredThumb<{ png: Blob | string; wash: string }>(key)
+        if (!alive) return
+        if (cached) {
+          if (typeof cached.png === "string") {
+            apply({ url: cached.png, wash: cached.wash })
+          } else {
+            createdUrl = URL.createObjectURL(cached.png)
+            apply({ url: createdUrl, wash: cached.wash })
+          }
+          return
+        }
+        const res = await fetch(staticUrl)
+        if (!res.ok) throw new Error(`thumb fetch ${res.status}`)
+        const blob = await res.blob()
+        const wash = chip ? "" : (await staticIsoWash(blob)) ?? ""
+        // Chips never write the shared cache: a chip-first render would
+        // persist wash "" and poison the full tile's pastel background.
+        if (!chip) setStoredThumb(key, { png: blob, wash })
+        createdUrl = URL.createObjectURL(blob)
+        apply({ url: createdUrl, wash: chip ? "" : wash })
+      })()
+        // A static thumb that cannot be served (404 from deleted storage, a
+        // bad blob, a revoked URL mid-async) must not strand the tile on the
+        // skeleton: fall through to the live render pipeline instead.
+        .catch(() => {
+          if (alive) renderDynamic()
+        })
+      return () => {
+        alive = false
+        if (createdUrl) URL.revokeObjectURL(createdUrl)
+      }
+    }
+    renderDynamic()
     return () => {
       alive = false
     }

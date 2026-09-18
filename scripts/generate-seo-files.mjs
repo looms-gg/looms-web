@@ -5,10 +5,11 @@
  * - robots.txt points crawlers at the sitemap and keeps them out of auth-gated
  *   and utility routes; it is a real static file in dist/ (previously both
  *   requests fell through to the HTML SPA shell and were unreadable).
- * - sitemap.xml lists only indexable canonical URLs. Catalog pieces come from
- *   the repo seed; public look URLs are discovered from Supabase at build time
- *   (same env contract as prerender-embeds.mjs) and skipped entirely when the
- *   env or network is unavailable, so no dead URLs ship in the sitemap.
+ * - sitemap.xml lists only indexable canonical URLs. Piece URLs come from
+ *   the public garments table at build time (same env contract as
+ *   prerender-embeds.mjs); public look URLs are discovered the same way.
+ *   Both are skipped entirely when the env or network is unavailable, so no
+ *   dead URLs ship in the sitemap.
  */
 
 import fs from "node:fs"
@@ -19,6 +20,99 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, "..")
 const DIST = path.join(ROOT, "dist")
 const BASE_URL = process.env.VITE_BASE_URL || "https://looms.gg"
+
+/** Copies the .env loader from scripts/bake-featured-look.mjs (kept local so each build script stays standalone). */
+function parseEnvFile(file) {
+  const out = {}
+  if (!fs.existsSync(file)) return out
+  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
+    if (!match) continue
+    let value = match[2].trim()
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1)
+    }
+    out[match[1]] = value
+  }
+  return out
+}
+
+function loadSupabaseEnv() {
+  const env = {
+    ...parseEnvFile(path.join(ROOT, ".env")),
+    ...parseEnvFile(path.join(ROOT, ".env.local")),
+    ...process.env,
+  }
+  return {
+    url: env.VITE_SUPABASE_URL,
+    anonKey: env.VITE_SUPABASE_ANON_KEY,
+  }
+}
+
+const PAGE_SIZE = 1000
+
+/**
+ * Paginates a PostgREST select through its Range header: Supabase silently
+ * truncates a plain request at 1000 rows, so keep stepping pages while a full
+ * page returns.
+ */
+async function pagedPostgrestSelect({ url, anonKey, baseQueryString, label }) {
+  const rows = []
+  let offset = 0
+  while (true) {
+    const res = await fetch(
+      `${url}/rest/v1/${baseQueryString}`,
+      {
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+          Range: `${offset}-${offset + PAGE_SIZE - 1}`,
+        },
+      },
+    )
+    if (!res.ok) {
+      throw new Error(`${label} query returned ${res.status}`)
+    }
+    const page = await res.json()
+    if (!Array.isArray(page)) {
+      throw new Error(`${label} query returned a non-array body`)
+    }
+    rows.push(...page)
+    if (page.length < PAGE_SIZE) break
+    offset += PAGE_SIZE
+  }
+  return rows
+}
+
+/**
+ * Public garment ids from the database — the same rows the client sees (RLS
+ * anon select policy). Best-effort: missing env or a failed fetch yields an
+ * empty list, never a broken build.
+ */
+async function fetchPublicGarmentIds() {
+  const { url, anonKey } = loadSupabaseEnv()
+  if (!url || !anonKey) {
+    console.warn("⚠️  VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY missing; sitemap will list no piece URLs.")
+    return []
+  }
+  try {
+    const rows = await pagedPostgrestSelect({
+      url,
+      anonKey,
+      baseQueryString:
+        "garments?is_public=eq.true&select=id,name,description,slot&order=added.desc",
+      label: "garments",
+    })
+    console.log(`ℹ️  Fetched ${rows.length} public garment(s) for the sitemap.`)
+    return rows.filter((row) => typeof row?.id === "string")
+  } catch (err) {
+    console.warn(`⚠️  ${err?.message ?? err}; sitemap will list no piece URLs.`)
+    return []
+  }
+}
 
 function escapeXml(str) {
   return String(str)
@@ -83,7 +177,7 @@ async function fetchPublicLookIds() {
     // break the build. Maker usernames ride along so qualifying profile pages
     // can join the sitemap.
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/looks?visibility=eq.public&moderation_state=neq.hidden&select=id,updated_at,user_id,moderation_state`,
+      `${supabaseUrl}/rest/v1/looks?visibility=eq.public&moderation_state=eq.ok&select=id,updated_at,user_id,moderation_state`,
       {
         headers: {
           apikey: supabaseAnonKey,
@@ -156,9 +250,7 @@ async function main() {
   }
 
   // 2. sitemap.xml — canonical, indexable URLs only.
-  const catalog = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "src/data/catalog-seed.json"), "utf8"),
-  )
+  const garments = await fetchPublicGarmentIds()
   const now = new Date().toISOString()
 
   const urls = [
@@ -170,7 +262,7 @@ async function main() {
     { path: `${BASE_URL}/cookies`, changefreq: "yearly", priority: "0.2" },
   ]
 
-  for (const piece of catalog) {
+  for (const piece of garments) {
     urls.push({
       path: `${BASE_URL}/piece/${encodeURIComponent(piece.id)}`,
       lastmod: now,
@@ -206,7 +298,7 @@ async function main() {
   fs.writeFileSync(path.join(DIST, "sitemap.xml"), sitemapXml(urls), "utf8")
 
   console.log(
-    `✅ Wrote dist/robots.txt and dist/sitemap.xml (${urls.length} URLs: ${catalog.length} pieces, ${looks.length} looks, ${usernames.size} profiles)`,
+      `✅ Wrote dist/robots.txt and dist/sitemap.xml (${urls.length} URLs: ${garments.length} pieces, ${looks.length} looks, ${usernames.size} profiles)`,
   )
 }
 

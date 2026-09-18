@@ -28,6 +28,7 @@ export function useEditorViewer({
   fxRefs,
   viewerRef,
   scheduleRef,
+  frameWorkRef,
   viewerInstance,
   setViewerInstance,
   setReady,
@@ -42,6 +43,7 @@ export function useEditorViewer({
   fxRefs: RefObject<(HTMLCanvasElement | null)[]>
   viewerRef: RefObject<SkinViewer | null>
   scheduleRef: RefObject<() => void>
+  frameWorkRef: RefObject<(() => void) | null>
   viewerInstance: SkinViewer | null
   setViewerInstance: (viewer: SkinViewer | null) => void
   setReady: (ready: boolean) => void
@@ -118,6 +120,9 @@ export function useEditorViewer({
     let frame: number | null = null
     const renderFrame = () => {
       frame = null
+      // Pointer work (raycast, stroke application, brush preview) runs
+      // against the pre-render camera state, then the frame bakes it in.
+      frameWorkRef.current?.()
       viewer.render()
       paintFx()
     }

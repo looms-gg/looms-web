@@ -2,6 +2,7 @@ import { supabase } from "../supabase"
 import { type Group, type Piece, type Slot } from "../../data/catalog"
 import { garmentToPiece, type GarmentRow } from "../../data/garment"
 import { uploadCovers, uploadGarmentTexture } from "./publishGarment"
+import { bakeAndUploadThumb } from "./thumbUpload"
 
 export interface OverwritePieceArgs {
   userId: string
@@ -56,7 +57,19 @@ export async function overwritePieceTexture(
       throw new Error("Failed to read back the piece maker.")
     }
 
-    return { piece: garmentToPiece(updatedRow as GarmentRow, profile.username) }
+    const piece = garmentToPiece(updatedRow as GarmentRow, profile.username)
+
+    const thumbUrl = await bakeAndUploadThumb(supabase, args.userId, args.pieceId, piece)
+    if (thumbUrl) {
+      const busted = `${thumbUrl}?v=${Date.now()}`
+      const { error: thumbDbError } = await supabase
+        .from("garments")
+        .update({ thumb_url: busted })
+        .eq("id", args.pieceId)
+      if (!thumbDbError) piece.thumb = busted
+    }
+
+    return { piece }
   } catch (err: unknown) {
     return { error: err instanceof Error ? err : new Error(String(err)) }
   }

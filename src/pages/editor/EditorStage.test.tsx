@@ -10,7 +10,7 @@ import type { EditorColorsState } from "./tools/useEditorColors"
 import type { EditorVisibilityState } from "./tools/useEditorVisibility"
 import type { SkinEditorState } from "./useSkinEditor"
 
-const state = vi.hoisted(() => ({ instances: [] as any[] }))
+const state = vi.hoisted(() => ({ instances: [] as any[], raycastMiss: false }))
 
 vi.mock("three", async (importOriginal) => {
   const actual = await importOriginal<typeof import("three")>()
@@ -21,7 +21,8 @@ vi.mock("three", async (importOriginal) => {
   class FakeRaycaster {
     setFromCamera() {}
     intersectObjects(meshes: any[]) {
-      if (!meshes.length) return []
+      // raycastMiss simulates the cursor missing the model (orbit start).
+      if (!meshes.length || state.raycastMiss) return []
       return [
         {
           uv: { x: 0.5, y: 0.5 },
@@ -143,6 +144,10 @@ vi.mock("skinview3d", async () => {
         loadSkin: vi.fn(),
         setSize: vi.fn(),
         dispose: vi.fn(),
+        composer: {
+          renderTarget1: { setSize: vi.fn() },
+          renderTarget2: { setSize: vi.fn() },
+        },
       })
       state.instances.push(this)
     }
@@ -425,6 +430,73 @@ describe("EditorStage", () => {
     expect(commitShape).toHaveBeenCalledWith({ x: 32, y: 32 }, { x: 32, y: 32 })
     expect(endStroke).toHaveBeenCalledTimes(1)
     expect(line.visible).toBe(false)
+  })
+
+  it("drains several paint moves into one stroke application per frame", async () => {
+    const applyStrokeAtTexel = vi.fn()
+    const { editor } = makeEditor({ applyStrokeAtTexel })
+    const host = await mountEditorStage(editor)
+    const viewer = state.instances.at(-1)
+    await nextFrames()
+    const render = viewer.renderer.render
+    const afterMount = render.mock.calls.length
+
+    const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
+    canvas.dispatchEvent(
+      new PointerEvent("pointerdown", { button: 0, clientX: 10, clientY: 10, bubbles: true }),
+    )
+    expect(applyStrokeAtTexel).toHaveBeenCalledTimes(1)
+
+    // Touch and high-poll mice queue several moves before the next frame;
+    // they drain as a single texel application per rAF.
+    for (let i = 0; i < 5; i++) {
+      canvas.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 20 + i, clientY: 20, bubbles: true }),
+      )
+    }
+    await nextFrames()
+    expect(applyStrokeAtTexel).toHaveBeenCalledTimes(2)
+    expect(render.mock.calls.length).toBe(afterMount + 1)
+  })
+
+  it("hides the brush footprint while orbiting and restores it after release", async () => {
+    const { editor } = makeEditor({
+      brush: { data: { tool: "pencil", brushSize: 2, brushShape: "square" } } as unknown as EditorBrushState,
+    })
+    const host = await mountEditorStage(editor)
+    const viewer = state.instances.at(-1)
+    await nextFrames()
+
+    const line = viewer.scene.add.mock.calls
+      .map((call: any[]) => call[0])
+      .find((obj: any) => obj.isLine)
+    expect(line).toBeTruthy()
+
+    const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
+
+    // Press that misses the model hands the drag to the orbit controls.
+    state.raycastMiss = true
+    canvas.dispatchEvent(
+      new PointerEvent("pointerdown", { button: 0, clientX: 10, clientY: 10, bubbles: true }),
+    )
+
+    // Cursor crosses the model mid-orbit: the footprint must stay hidden.
+    state.raycastMiss = false
+    canvas.dispatchEvent(
+      new MouseEvent("pointermove", { clientX: 40, clientY: 40, bubbles: true }),
+    )
+    await nextFrames()
+    expect(line.visible).toBe(false)
+
+    // Release ends the orbit; hovering previews again.
+    canvas.dispatchEvent(
+      new PointerEvent("pointerup", { clientX: 40, clientY: 40, bubbles: true }),
+    )
+    canvas.dispatchEvent(
+      new MouseEvent("pointermove", { clientX: 30, clientY: 30, bubbles: true }),
+    )
+    await nextFrames()
+    expect(line.visible).toBe(true)
   })
 
   it("keeps the studio's shadow + rim fx overlays, painted on rendered frames", async () => {

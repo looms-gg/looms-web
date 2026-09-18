@@ -26,6 +26,15 @@ export function viewerModelName(model: SkinModel = "classic"): "slim" | "default
   return model === "slim" ? "slim" : "default"
 }
 
+/**
+ * Live viewers rasterize at device resolution; skinview3d defaults to
+ * "match-device", so 3x phones rasterize (and stage-fx read back) three times
+ * the pixels for no visible gain on a nearest-filtered 64x64 texture. Cap at 2.
+ */
+export function viewPixelRatio(devicePixelRatio = window.devicePixelRatio || 1) {
+  return Math.min(devicePixelRatio || 1, 2)
+}
+
 export function poseIsoLimbs(player: PlayerObject, group: Group | "full") {
   const skin = player.skin
   // Wrapper yaw +π/4: right side nearer the camera. Same side back on shirts and boots.
@@ -251,8 +260,11 @@ export function mountLiveViewer(
   canvas: HTMLCanvasElement,
   width: number,
   height: number,
-  options?: { preserveDrawingBuffer?: boolean },
+  options?: { preserveDrawingBuffer?: boolean; pixelRatio?: number },
 ) {
+  // skinview3d defaults to "match-device"; on 3x phones that triples every
+  // fragment and every stage-fx readback pixel for no visible gain on a
+  // nearest-filtered 64x64 texture. Cap at 2.
   const viewer = new SkinViewer({
     canvas,
     width,
@@ -261,6 +273,7 @@ export function mountLiveViewer(
     background: undefined,
     fov: LIVE_VIEW.fov,
     zoom: LIVE_VIEW.zoom,
+    pixelRatio: options?.pixelRatio ?? viewPixelRatio(),
   // Reads happen in the same task as viewer.render() (stage fx copies), so
   // the drawing buffer does not need retention; retention costs a GPU copy
   // per composite. Pass true only if a caller reads back across tasks.
@@ -270,7 +283,25 @@ export function mountLiveViewer(
   flattenSkinMaterials(viewer)
   lightSkinViewer(viewer)
   lockTurntable(viewer)
+  shrinkComposerTargets(viewer)
+  // Every resize regrows the composer targets (viewer.setSize calls
+  // updateComposerSize), so keep them shrunk after each one.
+  const rawSetSize = viewer.setSize.bind(viewer)
+  viewer.setSize = (w: number, h: number) => {
+    rawSetSize(w, h)
+    shrinkComposerTargets(viewer)
+  }
   return viewer
+}
+
+/**
+ * lightSkinViewer bypasses the composer entirely, but skinview3d still keeps
+ * full-res composer render targets alive (float-type depth on WebGL2). Shrink
+ * them so a live viewer holds no unused full-res GPU buffers.
+ */
+export function shrinkComposerTargets(viewer: SkinViewer) {
+  viewer.composer.renderTarget1.setSize(1, 1)
+  viewer.composer.renderTarget2.setSize(1, 1)
 }
 
 /**

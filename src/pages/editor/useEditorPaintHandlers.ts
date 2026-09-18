@@ -26,6 +26,7 @@ export function useEditorPaintHandlers({
   canvasRef,
   viewerInstance,
   scheduleFrame,
+  frameWorkRef,
   bodyParts,
   armorParts,
 }: {
@@ -34,6 +35,7 @@ export function useEditorPaintHandlers({
   canvasRef: RefObject<HTMLCanvasElement | null>
   viewerInstance: SkinViewer | null
   scheduleFrame: () => void
+  frameWorkRef: RefObject<(() => void) | null>
   bodyParts: Record<LimbId, boolean>
   armorParts: Record<LimbId, boolean>
 }) {
@@ -49,6 +51,14 @@ export function useEditorPaintHandlers({
   // The outline covers the same texels while the pointer drifts within one
   // texel, so matching signatures skip the geometry rewrite and the render.
   const previewSigRef = useRef<string | null>(null)
+  // Move events land here and drain once per frame: touch and high-poll mice
+  // emit several moves per rAF, and each one would otherwise raycast and
+  // re-upload the 64x64 texture multiple times in a single frame.
+  const pendingMoveRef = useRef(false)
+  // True while a drag is being handed to the orbit controls: the cursor can
+  // cross the model mid-orbit, but an orbiting user is not aiming to paint,
+  // so the brush footprint preview stays hidden until the pointer releases.
+  const orbitingRef = useRef(false)
 
   const {
     model,
@@ -125,6 +135,7 @@ export function useEditorPaintHandlers({
         scheduleFrame()
       }
     }
+    if (orbitingRef.current) return hide()
     if (!hover || !PREVIEW_TOOLS.has(tool)) return hide()
     const res = raycastHit(hover.x, hover.y)
     if (!res) return hide()
@@ -201,6 +212,7 @@ export function useEditorPaintHandlers({
         }
         strokeFaceKeyRef.current = faceKeyAtTexel(res.texel)
         hoverRef.current = { x: e.clientX, y: e.clientY }
+        pendingMoveRef.current = false
         beginStroke()
         applyStrokeAtTexel(res.texel)
         updateBrushPreview()
@@ -212,6 +224,7 @@ export function useEditorPaintHandlers({
     viewer.controls.enabled = true
     isPaintingRef.current = false
     strokeFaceKeyRef.current = null
+    orbitingRef.current = true
   }
 
   const updateShapePreview = useCallback(
@@ -235,19 +248,26 @@ export function useEditorPaintHandlers({
     [faceKeyAtTexel, scheduleFrame, shapeKind],
   )
 
-  const onPointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
-    hoverRef.current = { x: e.clientX, y: e.clientY }
+  // Per-frame pointer work, run by the viewer's frame loop before it renders.
+  // Drains the latest queued move only — at most one raycast, one stroke
+  // application, and one texture upload per frame.
+  const processPointerWork = useCallback(() => {
+    if (!pendingMoveRef.current) return
+    pendingMoveRef.current = false
+    const hover = hoverRef.current
+    if (!hover) return
+
     if (!isPaintingRef.current) {
       updateBrushPreview()
       return
     }
 
     if (tool === "shape") {
-      updateShapePreview(raycastHit(e.clientX, e.clientY))
+      updateShapePreview(raycastHit(hover.x, hover.y))
       return
     }
 
-    const res = raycastHit(e.clientX, e.clientY)
+    const res = raycastHit(hover.x, hover.y)
     if (!res) {
       // Dragged off the model: clear the face so re-entry starts a fresh segment
       strokeFaceKeyRef.current = null
@@ -260,12 +280,46 @@ export function useEditorPaintHandlers({
       applyStrokeAtTexel(res.texel, { resetSegment })
     }
     updateBrushPreview()
+  }, [
+    applyStrokeAtTexel,
+    faceKeyAtTexel,
+    raycastHit,
+    tool,
+    updateBrushPreview,
+    updateShapePreview,
+  ])
+
+  // The frame loop picks up the work function through this ref, so the loop
+  // stays stable across re-renders while brush/tool state churns.
+  useEffect(() => {
+    frameWorkRef.current = processPointerWork
+    return () => {
+      if (frameWorkRef.current === processPointerWork) frameWorkRef.current = null
+    }
+  }, [frameWorkRef, processPointerWork])
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    hoverRef.current = { x: e.clientX, y: e.clientY }
+    if (!isPaintingRef.current) {
+      // Hover stays event-driven: the signature check inside the preview
+      // schedules a frame only when the footprint actually changes.
+      updateBrushPreview()
+      return
+    }
+    // Painting defers to the frame loop: several moves can land per rAF, and
+    // each one drains as a single raycast + stroke + texture upload.
+    pendingMoveRef.current = true
+    scheduleFrame()
   }
 
   const onPointerUp = () => {
     const viewer = viewerRef.current
     if (viewer) viewer.controls.enabled = true
+    orbitingRef.current = false
     if (isPaintingRef.current) {
+      // Drain the last queued move synchronously so the stroke's final
+      // segment is not lost if the release lands between frames.
+      if (pendingMoveRef.current) processPointerWork()
       isPaintingRef.current = false
       if (tool === "shape") {
         const start = shapeStartRef.current
