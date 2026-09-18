@@ -1,3 +1,4 @@
+import { memo } from "react"
 import {
   ArrowsClockwise,
   ArrowsLeftRight,
@@ -10,7 +11,11 @@ import { BucketFillDropdown } from "./BucketFillDropdown"
 import type { BucketMode } from "./tools/editorTools"
 import { EDITOR_TOOL_DEFS } from "./tools/editorToolDefs"
 
-export function EditorToolRail({ editor }: { editor: SkinEditorState }) {
+export const EditorToolRail = memo(function EditorToolRail({
+  editor,
+}: {
+  editor: SkinEditorState
+}) {
   const {
     tool,
     brushSize,
@@ -344,4 +349,4 @@ export function EditorToolRail({ editor }: { editor: SkinEditorState }) {
       </div>
     </aside>
   )
-}
+})

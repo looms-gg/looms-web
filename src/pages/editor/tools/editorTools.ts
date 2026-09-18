@@ -25,6 +25,9 @@ export interface BrushOptions {
   softness?: number
   blend?: BrushBlendMode
   clip?: Rect
+  // Stroke callers paint inside their own loop and never read the touched
+  // texels back, so they can opt out of building the return array.
+  collect?: boolean
 }
 
 export type FillOptions = {
@@ -128,8 +131,21 @@ export function getPixel(
   return [data[idx], data[idx + 1], data[idx + 2], data[idx + 3]]
 }
 
+// Offsets only depend on brush size and shape, and a single stroke applies the
+// same brush to every interpolated texel. Cache per (shape, size) so a drag of
+// dozens of stamps stops re-deriving the same lattice every time.
+const brushOffsetCache = new Map<string, BrushPixelOffset[]>()
+
 function getBrushOffsets(size: number, shape: BrushShape = "square"): BrushPixelOffset[] {
-  if (size <= 1) return [{ dx: 0, dy: 0, dist: 0 }]
+  const key = `${shape}:${size}`
+  const cached = brushOffsetCache.get(key)
+  if (cached) return cached
+
+  if (size <= 1) {
+    const single: BrushPixelOffset[] = [{ dx: 0, dy: 0, dist: 0 }]
+    brushOffsetCache.set(key, single)
+    return single
+  }
 
   // n-wide box anchored so the clicked texel (0,0) is always covered:
   // size 1 -> {0}, 2 -> {0,1}, 3 -> {-1,0,1}, 4 -> {-1,0,1,2}, 5 -> {-2..2}
@@ -154,6 +170,7 @@ function getBrushOffsets(size: number, shape: BrushShape = "square"): BrushPixel
       }
     }
   }
+  brushOffsetCache.set(key, offsets)
   return offsets
 }
 
@@ -218,7 +235,7 @@ export function applyBrush(
 ): Point[] {
   const { shape = "square", opacity = 1, softness = 0, blend = "normal", clip } = options
   const offsets = getBrushOffsets(size, shape)
-  const modified: Point[] = []
+  const modified: Point[] | null = options.collect === false ? null : []
   for (const { dx, dy, dist } of offsets) {
     const x = center.x + dx
     const y = center.y + dy
@@ -232,10 +249,10 @@ export function applyBrush(
           ? [color[0], color[1], color[2]]
           : blendChannels(blend, dst, color)
       setPixel(data, x, y, compositeOver(dst, blended, sa), atlasSize)
-      modified.push({ x, y })
+      modified?.push({ x, y })
     }
   }
-  return modified
+  return modified ?? []
 }
 
 export function applyEraser(
@@ -247,7 +264,7 @@ export function applyEraser(
 ): Point[] {
   const { shape = "square", opacity = 1, softness = 0, clip } = options
   const offsets = getBrushOffsets(size, shape)
-  const modified: Point[] = []
+  const modified: Point[] | null = options.collect === false ? null : []
   for (const { dx, dy, dist } of offsets) {
     const x = center.x + dx
     const y = center.y + dy
@@ -261,10 +278,10 @@ export function applyEraser(
       } else {
         setPixel(data, x, y, [current[0], current[1], current[2], outA], atlasSize)
       }
-      modified.push({ x, y })
+      modified?.push({ x, y })
     }
   }
-  return modified
+  return modified ?? []
 }
 
 export function applyShading(
@@ -278,7 +295,7 @@ export function applyShading(
 ): Point[] {
   const { shape = "square", opacity = 1, clip } = options
   const offsets = getBrushOffsets(size, shape)
-  const modified: Point[] = []
+  const modified: Point[] | null = options.collect === false ? null : []
   const step =
     Math.round(255 * delta * Math.max(0, Math.min(1, opacity))) *
     (mode === "lighten" ? 1 : -1)
@@ -294,10 +311,10 @@ export function applyShading(
       const g = Math.max(0, Math.min(255, current[1] + step))
       const b = Math.max(0, Math.min(255, current[2] + step))
       setPixel(data, x, y, [r, g, b, current[3]], atlasSize)
-      modified.push({ x, y })
+      modified?.push({ x, y })
     }
   }
-  return modified
+  return modified ?? []
 }
 
 export function applyColorJitter(baseHex: string, strength = 0.06): string {

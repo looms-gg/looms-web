@@ -144,18 +144,34 @@ export function useEditorVisibility(): EditorVisibilityState {
     outer: Object.values(data.armorParts).some(Boolean),
   }), [data.bodyParts, data.armorParts])
 
-  return {
-    data,
-    patch,
-    layers,
-    toggleLayer,
-    limbs,
-    toggleLimb,
-    isolateLimb,
-    showAllLimbs,
-    toggleBodyPart,
-    toggleArmorPart,
-    toggleAllBody,
-    toggleAllArmor,
-  }
+  return useMemo(
+    () => ({
+      data,
+      patch,
+      layers,
+      toggleLayer,
+      limbs,
+      toggleLimb,
+      isolateLimb,
+      showAllLimbs,
+      toggleBodyPart,
+      toggleArmorPart,
+      toggleAllBody,
+      toggleAllArmor,
+    }),
+    [
+      data,
+      patch,
+      layers,
+      toggleLayer,
+      limbs,
+      toggleLimb,
+      isolateLimb,
+      showAllLimbs,
+      toggleBodyPart,
+      toggleArmorPart,
+      toggleAllBody,
+      toggleAllArmor,
+    ],
+  )
 }

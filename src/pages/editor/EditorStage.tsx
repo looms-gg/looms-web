@@ -1,7 +1,8 @@
-import { useCallback, useRef, useState } from "react"
+import { memo, useCallback, useRef, useState } from "react"
 import type { SkinViewer } from "skinview3d"
+import type { Vector3 } from "three"
 import { RIM_OPACITY } from "../../skin/stageFx"
-import type { SkinEditorState } from "./useSkinEditor"
+import type { LimbId, SkinEditorState } from "./useSkinEditor"
 import { useEditorViewer } from "./useEditorViewer"
 import { useEditorPaintHandlers } from "./useEditorPaintHandlers"
 import { EditorUvDrawer } from "./EditorUvDrawer"
@@ -12,7 +13,7 @@ import { EditorActionBar } from "./EditorActionBar"
 import { RotationGizmo } from "./RotationGizmo"
 import { DesktopPartFilter } from "./DesktopPartFilter"
 
-export function EditorStage({
+export const EditorStage = memo(function EditorStage({
   editor,
   uvDrawerOpen,
   onToggleUvDrawer,
@@ -37,6 +38,15 @@ export function EditorStage({
   }, [])
   const [viewerInstance, setViewerInstance] = useState<SkinViewer | null>(null)
   const [ready, setReady] = useState(false)
+  // Shared between the paint handlers (which own the hover raycast) and the
+  // viewer (which owns the texel grid): the limb under the cursor, plus a
+  // handle the handlers call when that limb changes so the grid can rebuild
+  // without a re-render.
+  const hoveredLimbRef = useRef<LimbId | null>(null)
+  const gridRefreshRef = useRef<() => void>(() => {})
+  // Filled by useEditorViewer below; the paint handlers (declared first, so the
+  // stage's scene-add order stays stable) call it through this ref.
+  const focusCameraRef = useRef<(point: Vector3) => void>(() => {})
 
   const { gridVisible } = editor.brush.data
   const { data: visibilityData } = editor.visibility
@@ -47,6 +57,8 @@ export function EditorStage({
     onPointerMove,
     onPointerUp,
     onPointerLeave,
+    onContextMenu,
+    onDoubleClick,
   } = useEditorPaintHandlers({
     editor,
     viewerRef,
@@ -56,6 +68,9 @@ export function EditorStage({
     frameWorkRef,
     bodyParts,
     armorParts,
+    hoveredLimbRef,
+    gridRefreshRef,
+    focusCameraRef,
   })
 
   const { resetCamera } = useEditorViewer({
@@ -73,6 +88,9 @@ export function EditorStage({
     armorParts,
     gridVisible,
     subscribeTextureUpdate: editor.subscribeTextureUpdate,
+    hoveredLimbRef,
+    gridRefreshRef,
+    focusCameraRef,
   })
 
   return (
@@ -106,6 +124,8 @@ export function EditorStage({
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             onPointerLeave={onPointerLeave}
+            onContextMenu={onContextMenu}
+            onDoubleClick={onDoubleClick}
             className="skin-stage-canvas h-full w-full touch-none cursor-crosshair"
           />
 
@@ -129,7 +149,7 @@ export function EditorStage({
         />
 
         {/* Floating Top-Right Overlay: 3D Rotation Gizmo + Dual Silhouette Filter */}
-        <div className="absolute right-0 top-0 mr-4 mt-4 z-20 hidden md:flex flex-col items-center gap-3 select-none">
+        <div className="absolute right-7 top-7 z-20 hidden md:flex flex-col items-center gap-4 select-none">
           <div className="editor-float flex h-24 w-24 flex-col items-center justify-center overflow-hidden rounded-full bg-base-200 hover:bg-base-300 transition-colors pointer-events-auto">
             <RotationGizmo viewer={viewerInstance} size={96} />
           </div>
@@ -153,4 +173,4 @@ export function EditorStage({
       />
     </section>
   )
-}
+})

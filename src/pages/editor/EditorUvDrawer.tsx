@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react"
+import { memo, useEffect, useRef, useState, useCallback } from "react"
 import { MagnifyingGlassMinus, MagnifyingGlassPlus, X } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
 import { HoverTip } from "../../components/ui/HoverTip"
@@ -20,7 +20,7 @@ const REGION_LABELS = [
   { text: "L.Sleeve", x: 52, y: 50 },
 ]
 
-export function EditorUvDrawer({
+export const EditorUvDrawer = memo(function EditorUvDrawer({
   editor,
   open,
   onClose,
@@ -31,6 +31,11 @@ export function EditorUvDrawer({
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const isDrawingRef = useRef(false)
+  // Sheet strokes coalesce to one application per animation frame; the sheet
+  // lives next to the 3D stage and shares its per-event texture updates, which
+  // would otherwise run a full composite + upload on every pointermove.
+  const pendingTexelRef = useRef<Point | null>(null)
+  const strokeRafRef = useRef<number | null>(null)
   const [zoom, setZoom] = useState(1)
   const [showLabels, setShowLabels] = useState(true)
   const [shapePreview, setShapePreview] = useState<{ start: Point; end: Point } | null>(null)
@@ -45,6 +50,48 @@ export function EditorUvDrawer({
   } = editor
   const { tool, shapeKind = "rectangle" } = editor.brush.data
   const { primaryColor } = editor.colors.data
+
+  const drainStroke = useCallback(() => {
+    if (strokeRafRef.current !== null) {
+      cancelAnimationFrame(strokeRafRef.current)
+      strokeRafRef.current = null
+    }
+    const texel = pendingTexelRef.current
+    pendingTexelRef.current = null
+    if (texel) applyStrokeAtTexel(texel)
+  }, [applyStrokeAtTexel])
+
+  const scheduleStroke = useCallback(
+    (texel: Point) => {
+      pendingTexelRef.current = texel
+      if (strokeRafRef.current !== null) return
+      strokeRafRef.current = requestAnimationFrame(() => {
+        strokeRafRef.current = null
+        const pending = pendingTexelRef.current
+        pendingTexelRef.current = null
+        if (pending) applyStrokeAtTexel(pending)
+      })
+    },
+    [applyStrokeAtTexel],
+  )
+
+  useEffect(
+    () => () => {
+      if (strokeRafRef.current !== null) cancelAnimationFrame(strokeRafRef.current)
+    },
+    [],
+  )
+
+  // Closing the sheet mid-drag drops any queued texel instead of painting it
+  // after the pointer is gone.
+  useEffect(() => {
+    if (open) return
+    if (strokeRafRef.current !== null) {
+      cancelAnimationFrame(strokeRafRef.current)
+      strokeRafRef.current = null
+    }
+    pendingTexelRef.current = null
+  }, [open])
 
   const redrawCanvas = useCallback(() => {
     const canvas = canvasRef.current
@@ -101,12 +148,14 @@ export function EditorUvDrawer({
       setShapePreview((prev) => (prev ? { start: prev.start, end: texel } : null))
       return
     }
-    applyStrokeAtTexel(texel)
+    scheduleStroke(texel)
   }
 
   const handlePointerUp = () => {
     if (!isDrawingRef.current) return
     isDrawingRef.current = false
+    // Land the last queued texel before closing the stroke's undo entry.
+    drainStroke()
     if (tool === "shape") {
       setShapePreview((prev) => {
         if (prev) commitShape(prev.start, prev.end)
@@ -241,5 +290,5 @@ export function EditorUvDrawer({
       </div>
     </div>
   )
-}
+})
 

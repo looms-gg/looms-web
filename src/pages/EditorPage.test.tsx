@@ -181,7 +181,6 @@ describe("EditorPage (MineSkin 1:1)", () => {
     clickButton(host, "editor-gate-fresh")
     expect(host.textContent).toContain("Layer 1")
     expect(host.textContent).toContain("Layer 2")
-    expect(host.textContent).toContain("Editing")
     expect(host.querySelector("canvas")).not.toBeNull()
     expect(host.querySelector("button[aria-label='Save & Export']")).not.toBeNull()
     expect(host.querySelector("button[aria-label='Pen (P)']")).not.toBeNull()

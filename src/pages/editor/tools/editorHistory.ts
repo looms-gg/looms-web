@@ -7,21 +7,16 @@ export interface EditorHistory {
   clear(): void
 }
 
+// Snapshots are handed off, not copied: every caller passes a freshly captured
+// ImageData it never mutates afterwards (the history owns it). This keeps one
+// 16KB copy per step instead of two.
 export function createEditorHistory(maxSize = 50): EditorHistory {
   let undoStack: ImageData[] = []
   let redoStack: ImageData[] = []
 
-  function cloneImageData(img: ImageData): ImageData {
-    const copy = new Uint8ClampedArray(img.data)
-    if (typeof ImageData !== "undefined") {
-      return new ImageData(copy, img.width, img.height)
-    }
-    return { data: copy, width: img.width, height: img.height } as unknown as ImageData
-  }
-
   return {
     push(snapshot: ImageData) {
-      undoStack.push(cloneImageData(snapshot))
+      undoStack.push(snapshot)
       if (undoStack.length > maxSize) {
         undoStack.shift()
       }
@@ -30,13 +25,13 @@ export function createEditorHistory(maxSize = 50): EditorHistory {
     undo(current: ImageData): ImageData | null {
       if (undoStack.length === 0) return null
       const target = undoStack.pop()!
-      redoStack.push(cloneImageData(current))
+      redoStack.push(current)
       return target
     },
     redo(current: ImageData): ImageData | null {
       if (redoStack.length === 0) return null
       const target = redoStack.pop()!
-      undoStack.push(cloneImageData(current))
+      undoStack.push(current)
       return target
     },
     canUndo(): boolean {

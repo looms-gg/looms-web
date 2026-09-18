@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { memo, useRef, useState } from "react"
 import {
   ArrowClockwise,
   ArrowCounterClockwise,
@@ -34,7 +34,7 @@ const ICON_BTN =
   "flex h-8 w-8 items-center justify-center rounded-md transition-colors cursor-pointer text-base-content/70 hover:bg-base-content/10 hover:text-base-content"
 const ICON_BTN_ON = "bg-primary/15 text-primary hover:bg-primary/20"
 
-export function EditorToolbar({
+export const EditorToolbar = memo(function EditorToolbar({
   editor,
   onToggleUvDrawer,
   uvDrawerOpen = false,
@@ -255,5 +255,5 @@ export function EditorToolbar({
       </div>
     </div>
   )
-}
+})
 

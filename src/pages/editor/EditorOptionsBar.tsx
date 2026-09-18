@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { Square, Circle, Rectangle } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
 import type { SkinEditorState } from "./useSkinEditor"
@@ -42,7 +43,10 @@ export interface EditorOptionsBarProps {
   className?: string
 }
 
-export function EditorOptionsBar({ editor, className = "" }: EditorOptionsBarProps) {
+export const EditorOptionsBar = memo(function EditorOptionsBar({
+  editor,
+  className = "",
+}: EditorOptionsBarProps) {
   const {
     tool,
     brushSize = 1,
@@ -366,7 +370,7 @@ export function EditorOptionsBar({ editor, className = "" }: EditorOptionsBarPro
       )}
     </div>
   )
-}
+})
 
 // Re-export for consumers that want to type against these
 export type { BrushShape, BrushBlendMode } from "./tools/editorTools"

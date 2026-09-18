@@ -419,6 +419,72 @@ describe("useSkinEditor", () => {
     expect(editor.brush.data.shapeFill).toBe("filled")
   })
 
+  it("right-button strokes paint the secondary color", () => {
+    installRecordingContexts()
+    let editor!: ReturnType<typeof useSkinEditor>
+    function Harness() {
+      editor = useSkinEditor()
+      return null
+    }
+
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(React.createElement(Harness))
+    })
+
+    flushSync(() => {
+      editor.colors.setSecondaryColor("#ff0000")
+    })
+    flushSync(() => {
+      editor.beginStroke()
+      editor.applyStrokeAtTexel({ x: 8, y: 8 }, { secondary: true })
+      editor.endStroke()
+    })
+
+    expect(applyBrush).toHaveBeenCalledTimes(1)
+    expect(applyBrush).toHaveBeenCalledWith(
+      expect.any(Uint8ClampedArray),
+      { x: 8, y: 8 },
+      1,
+      [255, 0, 0, 255],
+      64,
+      expect.objectContaining({ clip: { x: 8, y: 8, w: 8, h: 8 } }),
+    )
+  })
+
+  it("right-button shapes commit in the secondary color", () => {
+    let editor!: ReturnType<typeof useSkinEditor>
+    function Harness() {
+      editor = useSkinEditor()
+      return null
+    }
+
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(React.createElement(Harness))
+    })
+
+    flushSync(() => {
+      editor.brush.patch({ tool: "shape" })
+      editor.colors.setSecondaryColor("#00ff00")
+    })
+    flushSync(() => {
+      editor.beginStroke()
+      editor.commitShape({ x: 9, y: 9 }, { x: 11, y: 10 }, { secondary: true })
+      editor.endStroke()
+    })
+
+    expect(drawRectangle).toHaveBeenCalledTimes(1)
+    expect(drawRectangle).toHaveBeenCalledWith(
+      expect.any(Uint8ClampedArray),
+      { x: 9, y: 9 },
+      { x: 11, y: 10 },
+      [0, 255, 0, 255],
+      64,
+      expect.objectContaining({ clip: { x: 8, y: 8, w: 8, h: 8 } }),
+    )
+  })
+
   it("commits a rectangle clipped to the face as one undo entry", () => {
     let editor!: ReturnType<typeof useSkinEditor>
     function Harness() {
@@ -915,6 +981,82 @@ describe("useSkinEditor", () => {
     })
 
     expect(sessionStorage.getItem("looms:editor_draft_v1")).toBeNull()
+  })
+
+  it("snapshots the draft on unmount so an in-app return can resume it", async () => {
+    const { ctxByCanvas } = installRecordingContexts()
+
+    let editor!: ReturnType<typeof useSkinEditor>
+    function Harness() {
+      editor = useSkinEditor()
+      return null
+    }
+    const host = document.createElement("div")
+    const root = createRoot(host)
+    flushSync(() => {
+      root.render(React.createElement(Harness))
+    })
+
+    // Paint one opaque texel on the paint layer (the recording context's
+    // shared store backs every getImageData/putImageData call).
+    const paintStore = (ctxByCanvas.get(editor.paintCanvas) as any).getImageData().data
+    paintStore[(8 * 64 + 1) * 4 + 3] = 255
+
+    // In-app navigation to another route is a departure without beforeunload
+    // or visibilitychange; the unmount itself must snapshot the draft.
+    await act(async () => {
+      root.unmount()
+    })
+    expect(sessionStorage.getItem("looms:editor_draft_v1")).toBeTruthy()
+
+    // Returning to the editor in the same page load surfaces the draft
+    let editor2!: ReturnType<typeof useSkinEditor>
+    function Harness2() {
+      editor2 = useSkinEditor()
+      return null
+    }
+    const host2 = document.createElement("div")
+    await act(async () => {
+      createRoot(host2).render(React.createElement(Harness2))
+    })
+    expect(editor2.pendingDraft).toBe(true)
+  })
+
+  it("unmount while a draft is pending keeps the stored draft intact", async () => {
+    installRecordingContexts()
+    let editor!: ReturnType<typeof useSkinEditor>
+    function Harness() {
+      editor = useSkinEditor()
+      return null
+    }
+    const host = document.createElement("div")
+    flushSync(() => {
+      createRoot(host).render(React.createElement(Harness))
+    })
+    flushSync(() => {
+      editor.saveDraft()
+    })
+    const stored = sessionStorage.getItem("looms:editor_draft_v1")
+    expect(stored).toBeTruthy()
+
+    // Return to the editor, see the prompt, then leave without choosing.
+    // A blank snapshot from the untouched canvas must not erase the draft.
+    let editor2!: ReturnType<typeof useSkinEditor>
+    function Harness2() {
+      editor2 = useSkinEditor()
+      return null
+    }
+    const root2 = createRoot(document.createElement("div"))
+    await act(async () => {
+      root2.render(React.createElement(Harness2))
+    })
+    expect(editor2.pendingDraft).toBe(true)
+
+    await act(async () => {
+      root2.unmount()
+    })
+
+    expect(sessionStorage.getItem("looms:editor_draft_v1")).toBe(stored)
   })
 
   it("does not surface a pending draft from a piece-session tag or other page loads", () => {

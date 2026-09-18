@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { Eye, EyeSlash } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
 import type { LimbId, SkinEditorState } from "./useSkinEditor"
@@ -24,7 +25,10 @@ const MANNEQUIN_PARTS: PartLayout[] = [
   { id: "rightLeg", label: "Right Leg", col: "3", row: "3" },
 ]
 
-export function DesktopPartFilter({ editor, className = "" }: DesktopPartFilterProps) {
+export const DesktopPartFilter = memo(function DesktopPartFilter({
+  editor,
+  className = "",
+}: DesktopPartFilterProps) {
   const { data: visibilityData } = editor.visibility
   const { bodyParts, armorParts } = visibilityData
 
@@ -41,7 +45,7 @@ export function DesktopPartFilter({ editor, className = "" }: DesktopPartFilterP
   return (
     <div data-tutorial-id="desktop-part-filter" className={`flex justify-around gap-3 select-none ${className}`}>
       {/* Layer 1 Column (Inner Layer) */}
-      <div className="group pointer-events-auto flex flex-col items-center gap-1.5">
+      <div className="group pointer-events-auto flex w-[46px] flex-col items-center gap-1.5">
         <span className="text-[10px] font-semibold text-base-content/70">
           Layer 1
         </span>
@@ -90,7 +94,7 @@ export function DesktopPartFilter({ editor, className = "" }: DesktopPartFilterP
       </div>
 
       {/* Layer 2 Column (Outer Layer) */}
-      <div className="group pointer-events-auto flex flex-col items-center gap-1.5">
+      <div className="group pointer-events-auto flex w-[46px] flex-col items-center gap-1.5">
         <span className="text-[10px] font-semibold text-base-content/70">
           Layer 2
         </span>
@@ -139,4 +143,4 @@ export function DesktopPartFilter({ editor, className = "" }: DesktopPartFilterP
       </div>
     </div>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import type { EditorControls } from "./editorControls"
 
 export type EditorColorsData = Pick<
@@ -67,5 +67,8 @@ export function useEditorColors(): EditorColorsState {
     setData((prev) => ({ ...prev, ...next }))
   }, [])
 
-  return { data, patch, setPrimaryColor, setSecondaryColor, swapColors, restore }
+  return useMemo(
+    () => ({ data, patch, setPrimaryColor, setSecondaryColor, swapColors, restore }),
+    [data, patch, setPrimaryColor, setSecondaryColor, swapColors, restore],
+  )
 }

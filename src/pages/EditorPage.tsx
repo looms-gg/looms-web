@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { FloppyDisk, PaintBrush, Stack, User } from "@phosphor-icons/react"
 import { Icon } from "../components/ui/Icon"
@@ -84,6 +84,11 @@ export function EditorPage() {
   const [gateOpen, setGateOpen] = useState(true)
   const gateVisible = pieceId === null && gateOpen
 
+  // Stable identities so the memoized stage and its panels skip re-renders
+  // when only page-level state changes.
+  const toggleUvDrawer = useCallback(() => setUvDrawerOpen((o) => !o), [])
+  const openSave = useCallback(() => setSaveOpen(true), [])
+
   const sessionNoticeNode = sessionNotice ? (
     <div
       role="status"
@@ -122,8 +127,8 @@ export function EditorPage() {
               <EditorStage
                 editor={editor}
                 uvDrawerOpen={uvDrawerOpen}
-                onToggleUvDrawer={() => setUvDrawerOpen((o) => !o)}
-                onOpenSave={() => setSaveOpen(true)}
+                onToggleUvDrawer={toggleUvDrawer}
+                onOpenSave={openSave}
               />
             )}
             {mobileTab === "parts" && <EditorPartsPanel editor={editor} />}
@@ -205,8 +210,8 @@ export function EditorPage() {
       <EditorStage
         editor={editor}
         uvDrawerOpen={uvDrawerOpen}
-        onToggleUvDrawer={() => setUvDrawerOpen((o) => !o)}
-        onOpenSave={() => setSaveOpen(true)}
+        onToggleUvDrawer={toggleUvDrawer}
+        onOpenSave={openSave}
       />
 
       {/* Save & Export Modal */}

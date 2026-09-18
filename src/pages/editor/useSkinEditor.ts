@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { SkinModel } from "../../skin/convert"
 import {
   classicToSlimImageData,
@@ -76,9 +76,9 @@ export interface SkinEditorState {
   undo: () => void
   redo: () => void
   beginStroke: () => void
-  applyStrokeAtTexel: (texel: Point, opts?: { resetSegment?: boolean }) => void
+  applyStrokeAtTexel: (texel: Point, opts?: { resetSegment?: boolean; secondary?: boolean }) => void
   endStroke: () => void
-  commitShape: (start: Point, end: Point) => void
+  commitShape: (start: Point, end: Point, opts?: { secondary?: boolean }) => void
   loadPiece: (piece: Piece, textureCanvas: HTMLCanvasElement) => void
   subscribeTextureUpdate: (cb: () => void) => () => void
   saveDraft: () => void
@@ -199,6 +199,35 @@ export function useSkinEditor(): SkinEditorState {
   const bufferCanvasRef = useRef(bufferCanvas)
   bufferCanvasRef.current = bufferCanvas
 
+  // Live ImageData mirror of the paint layer. Every stroke event mutates this
+  // in place and writes it back with putImageData; keeping the mirror avoids a
+  // full 64x64 getImageData readback on every pointer move. Nulled whenever the
+  // canvas is replaced wholesale (piece load, draft restore) and re-seeded from
+  // the canvas on the next stroke.
+  const paintImageDataRef = useRef<ImageData | null>(null)
+  const getPaintImageData = useCallback((ctx: CanvasRenderingContext2D): ImageData => {
+    const cached = paintImageDataRef.current
+    if (cached) return cached
+    const fresh = ctx.getImageData(0, 0, 64, 64)
+    paintImageDataRef.current = fresh
+    return fresh
+  }, [])
+
+  // The active color rarely changes between stroke events, so one-entry memo
+  // keeps hexToRgba off the per-event path.
+  // Set whenever pixels or controls change; a departure only re-encodes and
+  // writes the sessionStorage draft when something actually changed.
+  const draftDirtyRef = useRef(true)
+
+  const hexRgbaRef = useRef<{ hex: string; rgba: RgbaColor } | null>(null)
+  const cachedHexToRgba = useCallback((hex: string): RgbaColor => {
+    const cached = hexRgbaRef.current
+    if (cached && cached.hex === hex) return cached.rgba
+    const rgba = hexToRgba(hex)
+    hexRgbaRef.current = { hex, rgba }
+    return rgba
+  }, [])
+
   const historyRef = useRef<EditorHistory | null>(null)
   if (!historyRef.current) {
     historyRef.current = createEditorHistory(50)
@@ -207,6 +236,7 @@ export function useSkinEditor(): SkinEditorState {
   const listenersRef = useRef<Set<() => void>>(new Set())
 
   const notifyTextureUpdate = useCallback(() => {
+    draftDirtyRef.current = true
     listenersRef.current.forEach((cb) => cb())
   }, [])
 
@@ -254,6 +284,7 @@ export function useSkinEditor(): SkinEditorState {
             ? classicToSlimImageData(current)
             : slimToClassicImageData(current)
           paintCtx.putImageData(repaired, 0, 0)
+          paintImageDataRef.current = repaired
           compositeIntoBuffer()
           syncHistoryState()
         }
@@ -280,6 +311,7 @@ export function useSkinEditor(): SkinEditorState {
       return
     }
     restoreCanvasFromBase64(paintCanvasRef.current, draft.paint)
+    paintImageDataRef.current = null
     setModelState(draft.model)
     brush.patch(draft)
     colors.restore(draft)
@@ -337,16 +369,28 @@ export function useSkinEditor(): SkinEditorState {
     // Piece sessions keep the pre-piece draft untouched; their texture is
     // guarded by the save-over flow, so a snapshot would never restore.
     if (paintSessionRef.current.kind === "piece") return
+    // Nothing changed since the last snapshot: re-encoding the canvas would
+    // write the identical draft back.
+    if (!draftDirtyRef.current) return
     const snap = draftSnapshotRef.current
     saveEditorDraft({
       ...snap,
       baseCanvas: baseCanvasRef.current,
       paintCanvas: paintCanvasRef.current,
     })
+    draftDirtyRef.current = false
   }, [])
+
+  // Any control change marks the draft dirty so the departure snapshot picks
+  // it up; pixel changes mark it through notifyTextureUpdate.
+  useEffect(() => {
+    draftDirtyRef.current = true
+  }, [model, brush.data, colors.data, visibility.data])
 
   // SessionStorage is per-tab and survives reloads inside the same tab, so a
   // snapshot on every departure plus tab-close covers every navigation path.
+  // In-app route changes are departures that fire neither event, so the
+  // unmount itself snapshots too.
   useEffect(() => {
     const handleBeforeUnload = () => saveDraft()
     const handleVisibilityChange = () => {
@@ -357,6 +401,9 @@ export function useSkinEditor(): SkinEditorState {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
+      // A pending draft already lives in storage untouched; snapshotting the
+      // blank canvas here would erase it before the user chooses.
+      if (!pendingDraftRef.current) saveDraft()
     }
   }, [saveDraft])
 
@@ -408,13 +455,13 @@ export function useSkinEditor(): SkinEditorState {
   }, [captureSnapshot])
 
   const applyStrokeAtTexel = useCallback(
-    (texel: Point, opts?: { resetSegment?: boolean }) => {
+    (texel: Point, opts?: { resetSegment?: boolean; secondary?: boolean }) => {
       const paint = paintCanvasRef.current
       if (!paint) return
       const ctx = paint.getContext("2d", { willReadFrequently: true })
       if (!ctx) return
 
-      const imgData = ctx.getImageData(0, 0, 64, 64)
+      const imgData = getPaintImageData(ctx)
       const data = imgData.data
 
       // Dropper tool reads what the user sees: the composite buffer
@@ -447,10 +494,11 @@ export function useSkinEditor(): SkinEditorState {
         ? getSymmetricPoints(points, model === "slim")
         : points
 
-      let activeColorRgba: RgbaColor = hexToRgba(colors.data.primaryColor)
+      const paintHex = opts?.secondary ? colors.data.secondaryColor : colors.data.primaryColor
+      let activeColorRgba: RgbaColor = cachedHexToRgba(paintHex)
 
       if (brush.data.tool === "noise") {
-        const jitteredHex = applyColorJitter(colors.data.primaryColor, 0.08)
+        const jitteredHex = applyColorJitter(paintHex, 0.08)
         activeColorRgba = hexToRgba(jitteredHex)
       }
 
@@ -459,6 +507,7 @@ export function useSkinEditor(): SkinEditorState {
         opacity: brush.data.brushOpacity,
         softness: brush.data.brushSoftness,
         blend: brush.data.brushBlend,
+        collect: false,
       }
 
       if (brush.data.tool === "bucket") {
@@ -500,13 +549,12 @@ export function useSkinEditor(): SkinEditorState {
         // Face clipping: every stroke texel is clipped to the cuboid face it
         // lands on, so stamps and streaks never bleed across UV seams. Points
         // outside any named face (mirror offsets, seam gaps) are skipped.
+        // One options object is reused: only the clip rect changes per point.
+        const clippedOptions: BrushOptions = { ...strokeOptions }
         for (const pt of pointsToApply) {
           const faceHit = findCuboidFaceAtTexel(pt, model === "slim")
           if (!faceHit) continue
-          const clippedOptions: BrushOptions = {
-            ...strokeOptions,
-            clip: faceHit.rect,
-          }
+          clippedOptions.clip = faceHit.rect
           if (brush.data.tool === "pencil" || brush.data.tool === "noise") {
             applyBrush(data, pt, brush.data.brushSize, activeColorRgba, 64, clippedOptions)
           } else if (brush.data.tool === "eraser") {
@@ -527,6 +575,8 @@ export function useSkinEditor(): SkinEditorState {
       colors.setPrimaryColor,
       visibility.data,
       model,
+      getPaintImageData,
+      cachedHexToRgba,
       notifyTextureUpdate,
       compositeIntoBuffer,
     ],
@@ -547,15 +597,17 @@ export function useSkinEditor(): SkinEditorState {
   // Shape tool: rasterize the dragged rectangle/ellipse in one commit so the
   // whole shape lands as a single undo entry (beginStroke snapshots first).
   const commitShape = useCallback(
-    (start: Point, end: Point) => {
+    (start: Point, end: Point, opts?: { secondary?: boolean }) => {
       const paint = paintCanvasRef.current
       if (!paint) return
       const ctx = paint.getContext("2d", { willReadFrequently: true })
       if (!ctx) return
 
-      const imgData = ctx.getImageData(0, 0, 64, 64)
+      const imgData = getPaintImageData(ctx)
       const data = imgData.data
-      const colorRgba = hexToRgba(colors.data.primaryColor)
+      const colorRgba = cachedHexToRgba(
+        opts?.secondary ? colors.data.secondaryColor : colors.data.primaryColor,
+      )
       const slim = model === "slim"
 
       const drawAt = (s: Point, e: Point) => {
@@ -592,6 +644,8 @@ export function useSkinEditor(): SkinEditorState {
       brush.data,
       colors.data,
       model,
+      getPaintImageData,
+      cachedHexToRgba,
       notifyTextureUpdate,
       compositeIntoBuffer,
     ],
@@ -607,6 +661,7 @@ export function useSkinEditor(): SkinEditorState {
     if (previous) {
       const ctx = canvas.getContext("2d", { willReadFrequently: true })
       ctx?.putImageData(previous, 0, 0)
+      paintImageDataRef.current = previous
       compositeIntoBuffer()
       notifyTextureUpdate()
       syncHistoryState()
@@ -623,6 +678,7 @@ export function useSkinEditor(): SkinEditorState {
     if (next) {
       const ctx = canvas.getContext("2d", { willReadFrequently: true })
       ctx?.putImageData(next, 0, 0)
+      paintImageDataRef.current = next
       compositeIntoBuffer()
       notifyTextureUpdate()
       syncHistoryState()
@@ -643,6 +699,7 @@ export function useSkinEditor(): SkinEditorState {
       }
       ctx.clearRect(0, 0, 64, 64)
       ctx.drawImage(textureCanvas, 0, 0)
+      paintImageDataRef.current = null
       setPaintSession({ kind: "piece", piece })
       // A piece only opens with its second layer on for limbs it paints.
       visibility.patch({
@@ -696,29 +753,58 @@ export function useSkinEditor(): SkinEditorState {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [brush.patch, colors.swapColors, redo, undo])
 
-  return {
-    bufferCanvas,
-    paintCanvas,
-    paintSession,
-    model,
-    setModel,
-    brush,
-    colors,
-    visibility,
-    canUndo,
-    canRedo,
-    undo,
-    redo,
-    beginStroke,
-    applyStrokeAtTexel,
-    endStroke,
-    commitShape,
-    loadPiece,
-    subscribeTextureUpdate,
-    saveDraft,
-    draftRestored,
-    pendingDraft,
-    restoreDraft,
-    discardDraft,
-  }
+  // Stable across renders that do not touch editor state, so memoized stage
+  // children can skip work when only page-level state changes.
+  return useMemo(
+    () => ({
+      bufferCanvas,
+      paintCanvas,
+      paintSession,
+      model,
+      setModel,
+      brush,
+      colors,
+      visibility,
+      canUndo,
+      canRedo,
+      undo,
+      redo,
+      beginStroke,
+      applyStrokeAtTexel,
+      endStroke,
+      commitShape,
+      loadPiece,
+      subscribeTextureUpdate,
+      saveDraft,
+      draftRestored,
+      pendingDraft,
+      restoreDraft,
+      discardDraft,
+    }),
+    [
+      bufferCanvas,
+      paintCanvas,
+      paintSession,
+      model,
+      setModel,
+      brush,
+      colors,
+      visibility,
+      canUndo,
+      canRedo,
+      undo,
+      redo,
+      beginStroke,
+      applyStrokeAtTexel,
+      endStroke,
+      commitShape,
+      loadPiece,
+      subscribeTextureUpdate,
+      saveDraft,
+      draftRestored,
+      pendingDraft,
+      restoreDraft,
+      discardDraft,
+    ],
+  )
 }

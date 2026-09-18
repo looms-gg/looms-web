@@ -1,8 +1,9 @@
+import { memo } from "react"
 import { ArrowsCounterClockwise, Eye, EyeSlash, Sparkle } from "@phosphor-icons/react"
 import { Icon } from "../../components/ui/Icon"
 import type { SkinEditorState } from "./useSkinEditor"
 
-export function EditorPartsPanel({ editor }: { editor: SkinEditorState }) {
+export const EditorPartsPanel = memo(function EditorPartsPanel({ editor }: { editor: SkinEditorState }) {
   const {
     layers,
     toggleLayer,
@@ -238,4 +239,4 @@ export function EditorPartsPanel({ editor }: { editor: SkinEditorState }) {
       </div>
     </aside>
   )
-}
+})

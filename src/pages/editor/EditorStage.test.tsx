@@ -4,6 +4,7 @@ import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { flushSync } from "react-dom"
 import { EditorStage } from "./EditorStage"
+import { EDITOR_KEYBIND_TIPS } from "./EditorActionBar"
 import * as stageFx from "../../skin/stageFx"
 import type { EditorBrushState } from "./tools/useEditorBrush"
 import type { EditorColorsState } from "./tools/useEditorColors"
@@ -37,7 +38,7 @@ vi.mock("three", async (importOriginal) => {
 })
 
 vi.mock("skinview3d", async () => {
-  const { Euler, Matrix4, Vector3, BufferAttribute, BufferGeometry, Mesh, MeshBasicMaterial } =
+  const { Matrix4, Vector3, BufferAttribute, BufferGeometry, Group, Mesh, MeshBasicMaterial } =
     await import("three")
 
   // A real (non-WebGL) mesh so faceBasisFromIntersection can read real
@@ -119,7 +120,7 @@ vi.mock("skinview3d", async () => {
         fireChange: () => {
           for (const cb of [...changeListeners]) cb()
         },
-        playerWrapper: { rotation: new Euler(), position: new Vector3() },
+        playerWrapper: new Group(),
         playerObject: {
           skin: {
             visible: false,
@@ -222,7 +223,7 @@ async function mountEditorStage(editor: SkinEditorState) {
       )
     })
   })
-  return host
+  return { host, unmount: () => root.unmount() }
 }
 
 const nextFrames = async (n = 2) => {
@@ -242,22 +243,20 @@ describe("EditorStage", () => {
 
   it("renders 3D stage and overlay action buttons with MineSkin 1:1 layout", async () => {
     const { editor } = makeEditor()
-    const host = await mountEditorStage(editor)
+    const { host } = await mountEditorStage(editor)
 
     const gridBtn = host.querySelector("button[aria-label='Toggle Grid']")
     const uvBtn = host.querySelector("button[aria-label='Toggle 2D UV Sheet']")
-    const editingBtn = host.querySelector("button[aria-label='Mode Switcher']")
     const saveBtn = host.querySelector("button[aria-label='Save & Export']")
 
     expect(gridBtn).not.toBeNull()
     expect(uvBtn).not.toBeNull()
-    expect(editingBtn).not.toBeNull()
     expect(saveBtn).not.toBeNull()
   })
 
   it("mounts the same studio live viewer (fov 38) on the stage canvas", async () => {
     const { editor } = makeEditor()
-    const host = await mountEditorStage(editor)
+    const { host } = await mountEditorStage(editor)
     const canvas = host.querySelector("canvas.skin-stage-canvas")
     const viewer = state.instances.at(-1)
 
@@ -305,7 +304,7 @@ describe("EditorStage", () => {
     expect(render.mock.calls.length).toBe(afterMount + 1)
   })
 
-  it("grids the top-most visible layer of each limb, honoring the grid toggle", async () => {
+  it("grids only the hovered limb's top-most visible layer, hiding while orbiting", async () => {
     const { editor } = makeEditor({
       brush: { data: { gridVisible: true } } as unknown as EditorBrushState,
       visibility: {
@@ -329,7 +328,7 @@ describe("EditorStage", () => {
         },
       } as unknown as EditorVisibilityState,
     })
-    await mountEditorStage(editor)
+    const { host } = await mountEditorStage(editor)
     const viewer = state.instances.at(-1)
     await nextFrames()
 
@@ -337,21 +336,55 @@ describe("EditorStage", () => {
       .map((call: any[]) => call[0])
       .find((obj: any) => obj.isLineSegments)
     expect(grid).toBeTruthy()
+    // Nothing is under the cursor yet, so no limb carries the grid.
+    expect(grid.visible).toBe(false)
+
+    const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
+    canvas.dispatchEvent(
+      new MouseEvent("pointermove", { clientX: 10, clientY: 10, bubbles: true }),
+    )
+    await nextFrames()
+
+    // FakeRaycaster hits the first interactive mesh (head's outer layer), so
+    // only that piece carries the grid, whatever the active tool.
     expect(grid.visible).toBe(true)
     expect(grid.geometry.getAttribute("position").count).toBeGreaterThan(0)
+
+    // A press that misses the model hands the drag to the orbit controls; the
+    // grid must not follow the cursor mid-orbit.
+    state.raycastMiss = true
+    canvas.dispatchEvent(
+      new PointerEvent("pointerdown", { button: 0, clientX: 10, clientY: 10, bubbles: true }),
+    )
+    state.raycastMiss = false
+    canvas.dispatchEvent(
+      new MouseEvent("pointermove", { clientX: 40, clientY: 40, bubbles: true }),
+    )
+    await nextFrames()
+    expect(grid.visible).toBe(false)
+
+    // Release ends the orbit; hovering grids the piece under the cursor again.
+    canvas.dispatchEvent(
+      new PointerEvent("pointerup", { clientX: 40, clientY: 40, bubbles: true }),
+    )
+    canvas.dispatchEvent(
+      new MouseEvent("pointermove", { clientX: 30, clientY: 30, bubbles: true }),
+    )
+    await nextFrames()
+    expect(grid.visible).toBe(true)
   })
 
   it("shows and schedules the brush footprint outline on hover", async () => {
     const { editor } = makeEditor({
       brush: { data: { tool: "pencil", brushSize: 2, brushShape: "square" } } as unknown as EditorBrushState,
     })
-    const host = await mountEditorStage(editor)
+    const { host } = await mountEditorStage(editor)
     const viewer = state.instances.at(-1)
     await nextFrames()
 
     const line = viewer.scene.add.mock.calls
       .map((call: any[]) => call[0])
-      .find((obj: any) => obj.isLine)
+      .find((obj: any) => obj.isLine && !obj.isLineSegments)
     expect(line).toBeTruthy()
     expect(line.visible).toBe(false)
 
@@ -392,13 +425,13 @@ describe("EditorStage", () => {
       endStroke,
       applyStrokeAtTexel,
     })
-    const host = await mountEditorStage(editor)
+    const { host } = await mountEditorStage(editor)
     const viewer = state.instances.at(-1)
     await nextFrames()
 
     const line = viewer.scene.add.mock.calls
       .map((call: any[]) => call[0])
-      .find((obj: any) => obj.isLine)
+      .find((obj: any) => obj.isLine && !obj.isLineSegments)
 
     const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
 
@@ -427,15 +460,46 @@ describe("EditorStage", () => {
     await nextFrames()
     // FakeRaycaster always hits uv (0.5, 0.5) -> texel (32, 32)
     expect(commitShape).toHaveBeenCalledTimes(1)
-    expect(commitShape).toHaveBeenCalledWith({ x: 32, y: 32 }, { x: 32, y: 32 })
+    expect(commitShape).toHaveBeenCalledWith(
+      { x: 32, y: 32 },
+      { x: 32, y: 32 },
+      { secondary: false },
+    )
     expect(endStroke).toHaveBeenCalledTimes(1)
     expect(line.visible).toBe(false)
+  })
+
+  it("repaints when a drag's resolution is restored on release", async () => {
+    const { editor } = makeEditor()
+    const { host } = await mountEditorStage(editor)
+    const viewer = state.instances.at(-1)
+    await nextFrames()
+    const render = viewer.renderer.render
+
+    const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
+    canvas.dispatchEvent(
+      new PointerEvent("pointerdown", { button: 0, clientX: 10, clientY: 10, bubbles: true }),
+    )
+    canvas.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 20, clientY: 20, bubbles: true }),
+    )
+    await nextFrames()
+    const beforeRelease = render.mock.calls.length
+
+    // Restoring the pixel ratio reallocates the drawing buffer, which clears
+    // the canvas; without a following frame the stage shows the stale fx
+    // overlays (a black silhouette) until the next interaction.
+    canvas.dispatchEvent(
+      new PointerEvent("pointerup", { clientX: 20, clientY: 20, bubbles: true }),
+    )
+    await nextFrames()
+    expect(render.mock.calls.length).toBe(beforeRelease + 1)
   })
 
   it("drains several paint moves into one stroke application per frame", async () => {
     const applyStrokeAtTexel = vi.fn()
     const { editor } = makeEditor({ applyStrokeAtTexel })
-    const host = await mountEditorStage(editor)
+    const { host } = await mountEditorStage(editor)
     const viewer = state.instances.at(-1)
     await nextFrames()
     const render = viewer.renderer.render
@@ -463,13 +527,13 @@ describe("EditorStage", () => {
     const { editor } = makeEditor({
       brush: { data: { tool: "pencil", brushSize: 2, brushShape: "square" } } as unknown as EditorBrushState,
     })
-    const host = await mountEditorStage(editor)
+    const { host } = await mountEditorStage(editor)
     const viewer = state.instances.at(-1)
     await nextFrames()
 
     const line = viewer.scene.add.mock.calls
       .map((call: any[]) => call[0])
-      .find((obj: any) => obj.isLine)
+      .find((obj: any) => obj.isLine && !obj.isLineSegments)
     expect(line).toBeTruthy()
 
     const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
@@ -499,9 +563,33 @@ describe("EditorStage", () => {
     expect(line.visible).toBe(true)
   })
 
+  it("mounts a grey ground arrow icon at the model's feet, pointing to its front", async () => {
+    const { editor } = makeEditor()
+    const { unmount } = await mountEditorStage(editor)
+    const viewer = state.instances.at(-1)
+
+    const arrow = viewer.playerWrapper.children.find((obj: any) => obj.isMesh)
+    expect(arrow).toBeTruthy()
+    expect(arrow.visible).toBe(true)
+
+    const pos = arrow.geometry.getAttribute("position")
+    let tipZ = -Infinity
+    for (let i = 0; i < pos.count; i++) tipZ = Math.max(tipZ, pos.getZ(i))
+    expect(tipZ).toBeGreaterThan(8)
+
+    // Unmount removes the arrow and frees its resources.
+    const disposed: string[] = []
+    arrow.geometry.addEventListener("dispose", () => disposed.push("geometry"))
+    arrow.material.addEventListener("dispose", () => disposed.push("material"))
+    await act(async () => {
+      flushSync(() => unmount())
+    })
+    expect(disposed).toEqual(["geometry", "material"])
+  })
+
   it("keeps the studio's shadow + rim fx overlays, painted on rendered frames", async () => {
     const { editor } = makeEditor()
-    const host = await mountEditorStage(editor)
+    const { host } = await mountEditorStage(editor)
     await nextFrames()
 
     const fx = [...host.querySelectorAll<HTMLCanvasElement>("canvas")].filter((c) =>
@@ -524,5 +612,99 @@ describe("EditorStage", () => {
     const lastCall = paintSpy.mock.calls.at(-1)
     expect(lastCall?.[0]).toBe(webgl)
     expect(lastCall?.[3]).toBe(0.5)
+  })
+
+  it("repaints the fx overlays when the drawing buffer is reallocated", async () => {
+    const { editor } = makeEditor()
+    const { host } = await mountEditorStage(editor)
+    await nextFrames()
+
+    const webgl = host.querySelector<HTMLCanvasElement>("canvas.skin-stage-canvas")
+    expect(webgl).toBeTruthy()
+
+    // Settle a marker-only frame first: hovering the model re-grids it, which
+    // queues a render without dirtying the fx overlays.
+    webgl!.dispatchEvent(
+      new MouseEvent("pointermove", { clientX: 10, clientY: 10, bubbles: true }),
+    )
+    await nextFrames()
+
+    const paintSpy = vi.spyOn(stageFx, "paintStageFx")
+    // A resolution switch (or any resize) reallocates the buffer, so overlays
+    // baked from the old buffer must be recomputed from the new one.
+    webgl!.width += 64
+    webgl!.dispatchEvent(new MouseEvent("pointerleave", { bubbles: true }))
+    await nextFrames()
+
+    expect(paintSpy).toHaveBeenCalled()
+  })
+
+  it("shows the stage keybind tips in the bottom bar", async () => {
+    const { editor } = makeEditor()
+    const { host } = await mountEditorStage(editor)
+
+    for (const tip of EDITOR_KEYBIND_TIPS) {
+      expect(host.textContent).toContain(tip.text)
+    }
+    expect(host.textContent).toContain("Drag")
+    expect(host.textContent).toContain("Right click")
+    expect(host.textContent).toContain("Double click")
+  })
+
+  it("right-click strokes paint with the secondary color", async () => {
+    const applyStrokeAtTexel = vi.fn()
+    const { editor } = makeEditor({ applyStrokeAtTexel })
+    const { host } = await mountEditorStage(editor)
+    await nextFrames()
+
+    const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
+    canvas.dispatchEvent(
+      new PointerEvent("pointerdown", { button: 2, clientX: 10, clientY: 10, bubbles: true }),
+    )
+    expect(applyStrokeAtTexel).toHaveBeenCalledWith({ x: 32, y: 32 }, { secondary: true })
+
+    // The browser menu never interrupts a right-drag stroke.
+    const menu = new MouseEvent("contextmenu", { bubbles: true, cancelable: true })
+    canvas.dispatchEvent(menu)
+    expect(menu.defaultPrevented).toBe(true)
+  })
+
+  it("Shift hands the press to the camera instead of painting", async () => {
+    const applyStrokeAtTexel = vi.fn()
+    const beginStroke = vi.fn()
+    const { editor } = makeEditor({ applyStrokeAtTexel, beginStroke })
+    const { host } = await mountEditorStage(editor)
+    await nextFrames()
+
+    const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
+    canvas.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        button: 0,
+        shiftKey: true,
+        clientX: 10,
+        clientY: 10,
+        bubbles: true,
+      }),
+    )
+    expect(beginStroke).not.toHaveBeenCalled()
+    expect(applyStrokeAtTexel).not.toHaveBeenCalled()
+  })
+
+  it("Shift + double-click swings the camera onto the clicked limb", async () => {
+    const { editor } = makeEditor()
+    const { host } = await mountEditorStage(editor)
+    const viewer = state.instances.at(-1)
+    await nextFrames()
+
+    const before = viewer.camera.position.length()
+
+    const canvas = host.querySelector("canvas.skin-stage-canvas") as HTMLCanvasElement
+    canvas.dispatchEvent(
+      new MouseEvent("dblclick", { shiftKey: true, clientX: 10, clientY: 10, bubbles: true }),
+    )
+    await nextFrames()
+
+    expect(viewer.controls.update).toHaveBeenCalled()
+    expect(viewer.camera.position.length()).not.toBe(before)
   })
 })

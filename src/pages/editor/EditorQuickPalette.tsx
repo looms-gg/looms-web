@@ -1,7 +1,12 @@
+import { memo } from "react"
 import { PICKER_PRESETS } from "./tools/colorModel"
 import type { SkinEditorState } from "./useSkinEditor"
 
-export function EditorQuickPalette({ editor }: { editor: SkinEditorState }) {
+export const EditorQuickPalette = memo(function EditorQuickPalette({
+  editor,
+}: {
+  editor: SkinEditorState
+}) {
   const { setPrimaryColor } = editor.colors
   const { primaryColor = "" } = editor.colors.data
   const activeHex = primaryColor.toLowerCase()
@@ -34,4 +39,4 @@ export function EditorQuickPalette({ editor }: { editor: SkinEditorState }) {
       })}
     </div>
   )
-}
+})

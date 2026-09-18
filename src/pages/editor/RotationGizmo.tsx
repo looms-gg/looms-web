@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import React, { memo, useCallback, useEffect, useRef, useState } from "react"
 import { Spherical, Vector3 } from "three"
 import type { SkinViewer } from "skinview3d"
 
@@ -57,7 +57,11 @@ type RenderItem =
       label?: string
     }
 
-export function RotationGizmo({ viewer, className = "", size = 96 }: RotationGizmoProps) {
+export const RotationGizmo = memo(function RotationGizmo({
+  viewer,
+  className = "",
+  size = 96,
+}: RotationGizmoProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const isDraggingRef = useRef(false)
   const hasMovedRef = useRef(false)
@@ -352,4 +356,4 @@ export function RotationGizmo({ viewer, className = "", size = 96 }: RotationGiz
       />
     </div>
   )
-}
+})

@@ -158,6 +158,8 @@ export function gridSegmentsForMesh(mesh: GridLayer): Segment[] {
 /**
  * Picks which layer to grid per limb: the top-most visible layer. When the
  * outer layer toggle is off for a limb, the body layer below shows the grid.
+ * Visibility records may be partial: limbs they omit are never gridded, which
+ * lets callers scope the grid to a single limb.
  */
 /** The geometry-carrying surface the grid draws on: a box mesh at runtime. */
 export type GridLayer = {
@@ -169,8 +171,8 @@ export type GridLayer = {
 /** The limbs' layer meshes of a skinview3d SkinObject, keyed by limb id. */
 export function topLayerMeshes(
   skin: Partial<Record<LimbId, { innerLayer?: GridLayer; outerLayer?: GridLayer }>>,
-  bodyParts: Record<LimbId, boolean>,
-  armorParts: Record<LimbId, boolean>,
+  bodyParts: Partial<Record<LimbId, boolean>>,
+  armorParts: Partial<Record<LimbId, boolean>>,
 ): GridLayer[] {
   const meshes: GridLayer[] = []
   for (const limb of LIMBS) {

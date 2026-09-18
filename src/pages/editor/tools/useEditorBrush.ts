@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import type { EditorControls } from "./editorControls"
 
 export type EditorBrushData = Pick<
@@ -42,5 +42,7 @@ export function useEditorBrush(): EditorBrushState {
     setData((prev) => ({ ...prev, ...p }))
   }, [])
 
-  return { data, patch }
+  // Stable while the brush data is unchanged, so memoized panels that receive
+  // the brush slice skip re-renders on unrelated state (colors, visibility).
+  return useMemo(() => ({ data, patch }), [data, patch])
 }
