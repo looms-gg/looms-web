@@ -24,5 +24,5 @@ export const EDITOR_TOOL_DEFS: EditorToolDef[] = [
   { id: "shading", label: "Shading", shortcut: "S", icon: Sun },
   { id: "shape", label: "Shape", shortcut: "U", icon: SquareHalf },
   { id: "noise", label: "Noise", shortcut: "N", icon: Sparkle },
-  { id: "picker", label: "Eyedropper", shortcut: "I", icon: Eyedropper },
+  { id: "picker", label: "Dropper", shortcut: "I", icon: Eyedropper },
 ]

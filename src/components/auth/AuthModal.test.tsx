@@ -28,7 +28,27 @@ vi.mock("../../state/auth", async (importOriginal) => {
   }
 })
 
-vi.mock("../../lib/auth/turnstile", () => ({ isTurnstileEnabled: () => false }))
+const turnstileMock = vi.hoisted(() => ({ enabled: false }))
+
+vi.mock("../../lib/auth/turnstile", () => ({
+  isTurnstileEnabled: () => turnstileMock.enabled,
+  loadTurnstileScript: () => Promise.resolve(),
+  resolveTurnstileSiteKey: () => (turnstileMock.enabled ? "site-key" : null),
+  _resetTurnstileScriptPromiseForTests: () => {},
+}))
+
+function installFakeTurnstile(emitToken = true) {
+  const widget = {
+    render: vi.fn((_container: HTMLElement, options: { callback: (token: string) => void }) => {
+      if (emitToken) options.callback("token-abc")
+      return "w1"
+    }),
+    reset: vi.fn(),
+    remove: vi.fn(),
+  }
+  ;(window as unknown as { turnstile?: unknown }).turnstile = widget
+  return widget
+}
 
 function mountModal(overrides?: Partial<AuthModalProps>) {
   const host = document.createElement("div")
@@ -55,8 +75,70 @@ function submitForm(host: HTMLElement) {
 
 describe("AuthModal", () => {
   afterEach(() => {
+    turnstileMock.enabled = false
+    delete (window as unknown as { turnstile?: unknown }).turnstile
+    vi.clearAllMocks()
     vi.restoreAllMocks()
     document.body.innerHTML = ""
+  })
+
+  it("signup passes the captcha token from step one to signUpWithPassword", async () => {
+    turnstileMock.enabled = true
+    const widget = installFakeTurnstile()
+    const { root } = mountModal({ initialMode: "signup" })
+    await act(async () => {})
+
+    const email = document.body.querySelector<HTMLInputElement>("input[name=email]")!
+    const password = document.body.querySelector<HTMLInputElement>("input[name=password]")!
+    await act(async () => {
+      email.value = "weaver@looms.dev"
+      password.value = "hunter22"
+      submitForm(document.body)
+      await Promise.resolve()
+    })
+    flushSync(() => {})
+
+    expect(document.body.textContent).toContain("Pick your username")
+
+    const username = document.body.querySelector<HTMLInputElement>("input")!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )!.set!.call(username, "weaver")
+      username.dispatchEvent(new Event("input", { bubbles: true }))
+      submitForm(document.body)
+      await Promise.resolve()
+    })
+    flushSync(() => {})
+
+    expect(baseAuth.signUpWithPassword).toHaveBeenCalledWith(
+      expect.objectContaining({ captchaToken: "token-abc" }),
+    )
+    // Step one never contacts the server, so the token must not be reset there.
+    expect(widget.reset).not.toHaveBeenCalled()
+    flushSync(() => root.unmount())
+  })
+
+  it("blocks submit when captcha is enabled but unverified", async () => {
+    turnstileMock.enabled = true
+    installFakeTurnstile(false)
+    const { root } = mountModal({ initialMode: "signup" })
+
+    const email = document.body.querySelector<HTMLInputElement>("input[name=email]")!
+    const password = document.body.querySelector<HTMLInputElement>("input[name=password]")!
+    await act(async () => {
+      email.value = "weaver@looms.dev"
+      password.value = "hunter22"
+      submitForm(document.body)
+      await Promise.resolve()
+    })
+    flushSync(() => {})
+
+    expect(document.body.textContent).toContain("Please complete the captcha before continuing.")
+    expect(document.body.textContent).not.toContain("Pick your username")
+    expect(baseAuth.signUpWithPassword).not.toHaveBeenCalled()
+    flushSync(() => root.unmount())
   })
 
   it("renders three OAuth provider buttons on login and signup", () => {

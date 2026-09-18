@@ -2,7 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 type Rec = { data: unknown; at: number }
 
-function installFakeIndexedDB() {
+type FakeOptions = {
+  hangOpens?: boolean
+  hangFirstOpen?: boolean
+  failOpens?: boolean
+  counts?: { opens: number; deletes: number }
+}
+
+function installFakeIndexedDB(opts: FakeOptions = {}) {
+  const { hangOpens, hangFirstOpen, failOpens, counts } = opts
   const map = new Map<string, Rec>()
   const store = {
     get: (key: string) => {
@@ -101,13 +109,25 @@ function installFakeIndexedDB() {
     transaction: (_name: string, _mode?: string) => ({ objectStore: () => store }),
   }
   ;(globalThis as { indexedDB?: unknown }).indexedDB = {
+    deleteDatabase: () => {
+      if (counts) counts.deletes++
+      const req = { onsuccess: null as (() => void) | null, onerror: null, onblocked: null }
+      setTimeout(() => req.onsuccess?.(), 0)
+      return req
+    },
     open: () => {
+      if (counts) counts.opens++
       const req = {
         result: db,
         transaction: { objectStore: () => store },
         onsuccess: null as (() => void) | null,
-        onerror: null,
+        onerror: null as (() => void) | null,
         onupgradeneeded: null as (() => void) | null,
+      }
+      if (hangOpens || (hangFirstOpen && counts?.opens === 1)) return req
+      if (failOpens) {
+        setTimeout(() => req.onerror?.(), 0)
+        return req
       }
       queueMicrotask(() => req.onupgradeneeded?.())
       // Real IndexedDB fires onsuccess only after the versionchange
@@ -169,5 +189,68 @@ describe("thumbCache", () => {
       expect(map.get("legacy0")).toBeUndefined()
       expect(map.get("new")).toEqual({ data: 42, at: expect.any(Number) })
     })
+  })
+
+  it("renders proceed when the database open never fires any event", async () => {
+    vi.useFakeTimers()
+    try {
+      vi.spyOn(console, "warn").mockImplementation(() => {})
+      const counts = { opens: 0, deletes: 0 }
+      installFakeIndexedDB({ hangOpens: true, counts })
+      const { getStoredThumb } = await import("./thumbCache")
+      const pending = getStoredThumb("k")
+      await vi.advanceTimersByTimeAsync(6100)
+      await expect(pending).resolves.toBeNull()
+      expect(counts.opens).toBe(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("self-heals a wedged open by deleting and reopening the database", async () => {
+    vi.useFakeTimers()
+    try {
+      vi.spyOn(console, "warn").mockImplementation(() => {})
+      const counts = { opens: 0, deletes: 0 }
+      installFakeIndexedDB({ hangFirstOpen: true, counts })
+      const { getStoredThumb, setStoredThumb } = await import("./thumbCache")
+      const pending = getStoredThumb("k")
+      await vi.advanceTimersByTimeAsync(6100)
+      await expect(pending).resolves.toBeNull()
+      expect(counts.deletes).toBe(1)
+      expect(counts.opens).toBe(2)
+      setStoredThumb("k", { a: 1 })
+      await expect(getStoredThumb<{ a: number }>("k")).resolves.toEqual({ a: 1 })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("disables the cache for the session when the reopen also wedges", async () => {
+    vi.useFakeTimers()
+    try {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+      const counts = { opens: 0, deletes: 0 }
+      installFakeIndexedDB({ hangOpens: true, counts })
+      const { getStoredThumb } = await import("./thumbCache")
+      const pending = getStoredThumb("k")
+      await vi.advanceTimersByTimeAsync(6100)
+      await expect(pending).resolves.toBeNull()
+      expect(counts.opens).toBe(2)
+      expect(counts.deletes).toBe(1)
+      await expect(getStoredThumb("k2")).resolves.toBeNull()
+      expect(counts.opens).toBe(2)
+      expect(warn).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("does not delete the database when the open reports a real error", async () => {
+    const counts = { opens: 0, deletes: 0 }
+    installFakeIndexedDB({ failOpens: true, counts })
+    const { getStoredThumb } = await import("./thumbCache")
+    await expect(getStoredThumb("k")).resolves.toBeNull()
+    await vi.waitFor(() => expect(counts.deletes).toBe(0))
   })
 })

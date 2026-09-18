@@ -417,7 +417,7 @@ export function useSkinEditor(): SkinEditorState {
       const imgData = ctx.getImageData(0, 0, 64, 64)
       const data = imgData.data
 
-      // Eyedropper tool reads what the user sees: the composite buffer
+      // Dropper tool reads what the user sees: the composite buffer
       if (brush.data.tool === "picker") {
         const bufferCtx = bufferCanvasRef.current?.getContext("2d", {
           willReadFrequently: true,

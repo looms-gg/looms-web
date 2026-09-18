@@ -86,28 +86,30 @@ async function dispatchAuthMode({
     resetPasswordForEmail: NonNullable<ReturnType<typeof useAuthOptional>>["resetPasswordForEmail"]
   }
   handlers: AuthDispatchHandlers
-}) {
+}): Promise<boolean> {
   switch (mode) {
     case "login": {
       const { error } = await auth.signInWithPassword({ email, password, captchaToken })
       if (error) handlers.onError(error)
       else handlers.onSuccess()
-      break
+      return true
     }
     case "signup":
+      // No server call yet: credentials wait for the username step, which
+      // performs the signUp with this same captcha token.
       handlers.onSignupCredentials({ email, password })
-      break
+      return false
     case "magic_link": {
       const { error } = await auth.signInWithOtp({ email: email.trim(), captchaToken })
       if (error) handlers.onError(error)
       else handlers.onSuccess("Link sent. Check your inbox.")
-      break
+      return true
     }
     case "forgot": {
       const { error } = await auth.resetPasswordForEmail({ email: email.trim(), captchaToken })
       if (error) handlers.onError(error)
       else handlers.onSuccess("Reset link sent. Check your inbox.")
-      break
+      return true
     }
   }
 }
@@ -130,7 +132,11 @@ export function AuthModal({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [signupStep, setSignupStep] = useState<"credentials" | "username">("credentials")
-  const [pendingSignup, setPendingSignup] = useState<{ email: string; password: string } | null>(null)
+  const [pendingSignup, setPendingSignup] = useState<{
+    email: string
+    password: string
+    captchaToken?: string
+  } | null>(null)
   const [oauthBusy, setOauthBusy] = useState(false)
   const captcha = useCaptcha()
 
@@ -163,6 +169,7 @@ export function AuthModal({
     // Captured before the await: this token (if any) is consumed server-side
     // during this attempt and must not be replayed afterwards.
     const spentCaptchaToken = captcha.enabled && Boolean(captcha.token)
+    let contactedServer = false
 
     try {
       if (
@@ -181,7 +188,7 @@ export function AuthModal({
         return
       }
 
-      await dispatchAuthMode({
+      contactedServer = await dispatchAuthMode({
         mode,
         email,
         password,
@@ -198,7 +205,7 @@ export function AuthModal({
           },
           onError: (err) => setErrorMsg(formatErrorMessage(err)),
           onSignupCredentials: (creds) => {
-            setPendingSignup(creds)
+            setPendingSignup({ ...creds, captchaToken: captcha.token ?? undefined })
             setSignupStep("username")
           },
         },
@@ -207,9 +214,10 @@ export function AuthModal({
       setErrorMsg(formatErrorMessage(err))
     } finally {
       setLoading(false)
-      // Every auth attempt consumes the captcha token server-side (success or
-      // failure), so force a fresh one for whatever the user does next.
-      if (spentCaptchaToken) captcha.reset()
+      // Server-side auth consumes the captcha token (success or failure), so
+      // force a fresh one. Signup step one makes no server call, so its token
+      // stays valid for the signUp on the username step.
+      if (contactedServer && spentCaptchaToken) captcha.reset()
     }
   }
 
@@ -221,6 +229,7 @@ export function AuthModal({
       email: pendingSignup.email,
       password: pendingSignup.password,
       username,
+      captchaToken: pendingSignup.captchaToken,
     })
     setLoading(false)
     if (error) {
@@ -489,6 +498,16 @@ export function AuthButtons() {
       <div className="flex items-center gap-1.5">
         <button
           type="button"
+          className="btn btn-primary btn-xs sm:btn-sm font-extrabold px-3 sm:px-4 text-xs sm:text-sm"
+          onClick={() => {
+            setInitialMode("signup")
+            setOpen(true)
+          }}
+        >
+          Sign up
+        </button>
+        <button
+          type="button"
           className="btn btn-ghost btn-xs sm:btn-sm font-bold px-2.5 sm:px-3 text-xs sm:text-sm gap-1.5"
           onClick={() => {
             setInitialMode("login")
@@ -497,16 +516,6 @@ export function AuthButtons() {
         >
           <Icon icon={SignIn} size="sm" />
           <span>Log in</span>
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary btn-xs sm:btn-sm font-extrabold px-3 sm:px-4 text-xs sm:text-sm"
-          onClick={() => {
-            setInitialMode("signup")
-            setOpen(true)
-          }}
-        >
-          Sign up
         </button>
       </div>
 

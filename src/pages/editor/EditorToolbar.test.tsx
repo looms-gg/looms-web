@@ -33,7 +33,7 @@ describe("EditorToolbar", () => {
     colors: mockColors,
   }
 
-  it("renders color swatch, eyedropper, tool buttons, undo/redo, grid, and settings", () => {
+  it("renders color swatch, dropper, tool buttons, undo/redo, grid, and settings", () => {
     const host = document.createElement("div")
     flushSync(() => {
       createRoot(host).render(
@@ -52,7 +52,7 @@ describe("EditorToolbar", () => {
     expect(host.querySelector("button[aria-label='Shading (S)']")).not.toBeNull()
     expect(host.querySelector("button[aria-label='Shape (U)']")).not.toBeNull()
     expect(host.querySelector("button[aria-label='Noise (N)']")).not.toBeNull()
-    expect(host.querySelector("button[aria-label='Eyedropper (I)']")).not.toBeNull()
+    expect(host.querySelector("button[aria-label='Dropper (I)']")).not.toBeNull()
     expect(host.querySelector("button[aria-label='Undo (⌘Z)']")).not.toBeNull()
     expect(host.querySelector("button[aria-label='Redo (⌘⇧Z)']")).not.toBeNull()
     expect(host.querySelector("button[aria-label='Toggle Grid']")).not.toBeNull()
@@ -95,8 +95,8 @@ describe("EditorToolbar", () => {
     flushSync(() => noiseBtn.click())
     expect(patch).toHaveBeenCalledWith({ tool: "noise" })
 
-    const eyedropperBtn = host.querySelector("button[aria-label='Eyedropper (I)']") as HTMLButtonElement
-    flushSync(() => eyedropperBtn.click())
+    const dropperBtn = host.querySelector("button[aria-label='Dropper (I)']") as HTMLButtonElement
+    flushSync(() => dropperBtn.click())
     expect(patch).toHaveBeenCalledWith({ tool: "picker" })
   })
 

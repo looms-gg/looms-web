@@ -15,7 +15,7 @@ const TOOL_LABELS: Record<string, string> = {
   shading: "Shading",
   noise: "Noise",
   shape: "Shape",
-  picker: "Eyedropper",
+  picker: "Dropper",
 }
 
 // Tools whose stroke honors brushSize / shape / opacity / softness
@@ -82,7 +82,8 @@ export function EditorOptionsBar({ editor, className = "" }: EditorOptionsBarPro
       <div
         role="group"
         aria-label="Arm model"
-        className={`tactile-segment-track tactile-segment-track--compact w-32 shrink-0 ${model === "slim" ? "on-right" : ""}`}
+        className={`tactile-segment-track tactile-segment-track--compact shrink-0 ${model === "slim" ? "on-right" : ""}`}
+        style={{ width: "8rem" }}
       >
         <span className="tactile-segment-thumb" aria-hidden />
         <button
@@ -335,7 +336,7 @@ export function EditorOptionsBar({ editor, className = "" }: EditorOptionsBarPro
         </>
       )}
 
-      {/* Contextual hint (eyedropper has no tunable options) */}
+      {/* Contextual hint (dropper has no tunable options) */}
       {tool === "picker" && (
         <span className="text-xs text-base-content/55">
           Click the model to sample a color

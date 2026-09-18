@@ -237,7 +237,7 @@ describe("EditorOptionsBar", () => {
     expect(patch).toHaveBeenCalledWith({ bucketMode: "face" })
   })
 
-  it("shows a hint and no options for the eyedropper", () => {
+  it("shows a hint and no options for the dropper", () => {
     const host = document.createElement("div")
     flushSync(() => {
       createRoot(host).render(
@@ -245,7 +245,7 @@ describe("EditorOptionsBar", () => {
       )
     })
 
-    expect(host.querySelector("[aria-label='Selected Tool']")?.textContent).toBe("Eyedropper")
+    expect(host.querySelector("[aria-label='Selected Tool']")?.textContent).toBe("Dropper")
     expect(host.querySelector("button[aria-label='Brush Size']")).toBeNull()
     expect(host.querySelector("button[aria-label='Toggle Symmetry']")).toBeNull()
     expect(host.textContent).toContain("sample a color")

@@ -3075,7 +3075,8 @@ button.badge {
 
 /* Bento containers: double-frame borders & exact 8px corners */
 section.bg-base-200,
-aside.bg-base-200,
+/* SiteBanner is a full-width ribbon, not a bento panel */
+aside.bg-base-200:not(.site-banner),
 div.bg-base-200.rounded-\[18px\],
 section.rounded-\[18px\],
 .piece-sheet,

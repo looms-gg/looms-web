@@ -9,53 +9,109 @@ const DB_NAME = "looms_iso_cache_v1"
 const STORE_NAME = "thumbnails"
 // Device storage stays bounded: ~400 PNGs of ~40KB is ~16MB worst case.
 export const MAX_THUMB_ENTRIES = 400
+// A wedged IndexedDB open fires no events at all (seen live: a corrupt or
+// locked database left every tile and hero as a skeleton forever with zero
+// console errors, because every render awaits this cache read first). Bound
+// the wait, then heal or disable the cache instead of hanging the render.
+export const OPEN_TIMEOUT_MS = 3000
 
 let dbPromise: Promise<IDBDatabase | null> | null = null
+let cacheDisabled = false
+
+type OpenOutcome = { db: IDBDatabase | null; wedged: boolean }
+
+function openDbOnce(): Promise<OpenOutcome> {
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open(DB_NAME, 2)
+      let settled = false
+      const finish = (db: IDBDatabase | null, wedged: boolean) => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        resolve({ db, wedged })
+      }
+      const timer = setTimeout(() => finish(null, true), OPEN_TIMEOUT_MS)
+      req.onupgradeneeded = () => {
+        const db = req.result
+        let store: IDBObjectStore
+        const upgradeTx = req.transaction
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          store = db.createObjectStore(STORE_NAME)
+        } else if (upgradeTx) {
+          store = upgradeTx.objectStore(STORE_NAME)
+        } else {
+          return
+        }
+        if (!store.indexNames.contains("at")) {
+          store.createIndex("at", "at")
+        }
+        // One-time legacy sweep: pre-wrapper records lack `at`, so the
+        // index skips them while getAllKeys() counts them, permanently
+        // inflating `excess` and evicting live entries on every write.
+        // They are dead weight anyway (callers version-bumped their keys).
+        const sweep = store.openCursor()
+        sweep.onsuccess = () => {
+          const cursor = sweep.result
+          if (!cursor) return
+          if (!isWrapped<unknown>(cursor.value)) cursor.delete()
+          cursor.continue()
+        }
+        sweep.onerror = () => {}
+      }
+      req.onsuccess = () => {
+        finish(req.result, false)
+        // Best-effort boot prune; pruneStoredThumbs reuses this cached
+        // dbPromise, so this cannot recurse into another open().
+        void pruneStoredThumbs()
+      }
+      req.onerror = () => finish(null, false)
+    } catch {
+      resolve({ db: null, wedged: false })
+    }
+  })
+}
+
+function deleteDb(): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.deleteDatabase(DB_NAME)
+      let settled = false
+      const finish = () => {
+        if (settled) return
+        settled = true
+        clearTimeout(timer)
+        resolve()
+      }
+      const timer = setTimeout(finish, OPEN_TIMEOUT_MS)
+      req.onsuccess = finish
+      req.onerror = finish
+      req.onblocked = finish
+    } catch {
+      resolve()
+    }
+  })
+}
 
 function getDb(): Promise<IDBDatabase | null> {
   if (typeof indexedDB === "undefined") return Promise.resolve(null)
+  if (cacheDisabled) return Promise.resolve(null)
   if (!dbPromise) {
-    dbPromise = new Promise((resolve) => {
-      try {
-        const req = indexedDB.open(DB_NAME, 2)
-        req.onupgradeneeded = () => {
-          const db = req.result
-          let store: IDBObjectStore
-          const upgradeTx = req.transaction
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            store = db.createObjectStore(STORE_NAME)
-          } else if (upgradeTx) {
-            store = upgradeTx.objectStore(STORE_NAME)
-          } else {
-            return
-          }
-          if (!store.indexNames.contains("at")) {
-            store.createIndex("at", "at")
-          }
-          // One-time legacy sweep: pre-wrapper records lack `at`, so the
-          // index skips them while getAllKeys() counts them, permanently
-          // inflating `excess` and evicting live entries on every write.
-          // They are dead weight anyway (callers version-bumped their keys).
-          const sweep = store.openCursor()
-          sweep.onsuccess = () => {
-            const cursor = sweep.result
-            if (!cursor) return
-            if (!isWrapped<unknown>(cursor.value)) cursor.delete()
-            cursor.continue()
-          }
-          sweep.onerror = () => {}
-        }
-        req.onsuccess = () => {
-          resolve(req.result)
-          // Best-effort boot prune; pruneStoredThumbs reuses this cached
-          // dbPromise, so this cannot recurse into another open().
-          void pruneStoredThumbs()
-        }
-        req.onerror = () => resolve(null)
-      } catch {
-        resolve(null)
-      }
-    })
+    dbPromise = (async () => {
+      const first = await openDbOnce()
+      if (first.db) return first.db
+      if (!first.wedged) return null
+      // Wedged open: drop the (likely corrupt) database, reopen once, and if
+      // that wedges too, disable the cache for the session. Thumbs render
+      // live either way; the worst case is losing offline caching.
+      console.warn("thumb cache: database open timed out; rebuilding it")
+      await deleteDb()
+      const second = await openDbOnce()
+      if (second.db) return second.db
+      console.warn("thumb cache: still wedged; rendering without the cache this session")
+      cacheDisabled = true
+      return null
+    })()
   }
   return dbPromise
 }

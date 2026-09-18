@@ -22,7 +22,7 @@ export function EditorColorPicker({
 }) {
   const [hsv, setHsv] = useState<Hsv>(() => hexToHsv(color))
   const [hexText, setHexText] = useState<string>(normalizeHex(color) ?? "#000000")
-  // External color changes (eyedropper, presets elsewhere) re-sync the picker,
+  // External color changes (dropper, presets elsewhere) re-sync the picker,
   // but the picker's own emits do not feed back through the prop.
   const lastSyncedRef = useRef<string>(normalizeHex(color)?.toLowerCase() ?? "#000000")
   const dragRef = useRef<DragTarget>(null)
